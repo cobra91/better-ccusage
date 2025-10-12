@@ -372,7 +372,7 @@ if (import.meta.vitest != null) {
 			expect(result?.message.model).toBe('sonnet-4-5');
 			expect(result?.message.usage.input_tokens).toBe(1000);
 			expect(result?.message.usage.output_tokens).toBe(500);
-			expect(result?.cwd).toBe('/droid/test-session-1');
+			expect(result?.cwd).toBe('/droid/test');
 		});
 
 		it('should parse droid session with openai provider', async () => {

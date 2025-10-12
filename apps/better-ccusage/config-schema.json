@@ -635,13 +635,13 @@
 									"type": "boolean",
 									"description": "Show only active block with projections",
 									"markdownDescription": "Show only active block with projections",
-									"default": true
+									"default": false
 								},
 								"recent": {
 									"type": "boolean",
 									"description": "Show blocks from last 3 days (including active)",
 									"markdownDescription": "Show blocks from last 3 days (including active)",
-									"default": true
+									"default": false
 								},
 								"tokenLimit": {
 									"type": "string",
