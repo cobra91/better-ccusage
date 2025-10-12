@@ -11,15 +11,16 @@
 import type {
 	ModelName,
 } from './_types.ts';
-import type { LoadOptions } from './data-loader.ts';
+import type { LoadOptions, UsageData } from './data-loader.ts';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { Result } from '@praha/byethrow';
+import { createFixture } from 'fs-fixture';
 import { isDirectorySync, isFileSync } from 'path-type';
 import { globSync } from 'tinyglobby';
 import * as v from 'valibot';
 import { DEFAULT_DROID_SESSIONS_PATH, USER_HOME_DIR } from './_consts.ts';
-import { createModelName, createSessionId } from './_types.ts';
+import { createISOTimestamp, createMessageId, createModelName, createRequestId, createSessionId, createSource, createVersion } from './_types.ts';
 import { logger } from './logger.ts';
 
 /**
@@ -81,14 +82,14 @@ function mapProviderToModel(provider: string | undefined, apiProvider: string | 
  * Parse droid session files and transform to better-ccusage format
  * @param sessionPath - Path to droid session directory
  * @param sessionId - Session ID (directory name)
- * @param options - Load options for processing
+ * @param _options - Load options for processing
  * @returns Transformed usage data entry or null if parsing failed
  */
 export async function parseDroidSession(
 	sessionPath: string,
 	sessionId: string,
 	_options: LoadOptions = {},
-): Promise<any | null> {
+): Promise<UsageData | null> {
 	logger.debug(`Parsing droid session ${sessionId} from ${sessionPath}`);
 	const jsonlPath = path.join(sessionPath, `${sessionId}.jsonl`);
 	const settingsPath = path.join(sessionPath, `${sessionId}.settings.json`);
@@ -178,19 +179,20 @@ export async function parseDroidSession(
 
 		// Extract project from session title or fallback to session id
 		let projectName = sessionId;
-		if (sessionStart.title != null) {
-			// Extract project path from title if it contains one
+		if (sessionStart.title != null && sessionStart.title.length > 0) {
+			/// Extract project path from title if it contains one
 			const pathMatch = sessionStart.title?.match(/(?:for|in)?\s*([A-Z]:\\[^\\].*?|\.[^.\s].*?)(?:\s|$)/i);
-			if (pathMatch?.[1]) {
-				projectName = path.basename(pathMatch[1]);
+			if (pathMatch?.[1] != null) {
+				const normalizedPath = pathMatch[1].replace(/\\/g, '/');
+				projectName = path.basename(normalizedPath);
 			}
 		}
 
 		// Transform to better-ccusage format
 		const transformedEntry = {
-			timestamp,
+			timestamp: createISOTimestamp(timestamp),
 			sessionId: createSessionId(sessionId),
-			version: '1.0.0', // Default version
+			version: createVersion('1.0.0'), // Default version
 			message: {
 				usage: {
 					input_tokens: tokenUsage.inputTokens,
@@ -199,12 +201,12 @@ export async function parseDroidSession(
 					cache_read_input_tokens: tokenUsage.cacheReadTokens,
 				},
 				model,
-				id: sessionId, // Use session id as message id for droid
+				id: createMessageId(sessionId), // Use session id as message id for droid
 			},
 			// Cost will be calculated by better-ccusage based on model pricing
-			requestId: sessionId, // Use session id as request id for droid
+			requestId: createRequestId(sessionId), // Use session id as request id for droid
 			cwd: `/droid/${projectName}`, // Virtual working directory for droid
-			source: 'droid' as const, // Mark as droid source
+			source: createSource('droid'), // Mark as droid source
 		};
 
 		logger.debug(`Successfully parsed droid session ${sessionId} with model ${transformedEntry.message.model} and source ${transformedEntry.source}`);
@@ -288,11 +290,11 @@ export function findDroidSessions(droidPath: string): string[] {
 export async function processDroidSessions(
 	droidPath: string,
 	options: LoadOptions = {},
-): Promise<any[]> {
+): Promise<UsageData[]> {
 	logger.debug(`Processing droid sessions from ${droidPath}`);
 	const sessionDirs = findDroidSessions(droidPath);
 	logger.debug(`Found ${sessionDirs.length} session directories: ${sessionDirs.slice(0, 3).join(', ')}${sessionDirs.length > 3 ? '...' : ''}`);
-	const results: any[] = [];
+	const results: UsageData[] = [];
 	const processedSessionIds = new Set<string>();
 
 	for (const sessionDir of sessionDirs) {
@@ -334,16 +336,7 @@ export async function processDroidSessions(
 
 // Test suite for droid adapter
 if (import.meta.vitest != null) {
-	const { describe, it, expect, beforeEach } = await import('vitest');
-	const { createFixture } = await import('fs-fixture');
-
 	describe('parseDroidSession', () => {
-		let fixture: any;
-
-		beforeEach(async () => {
-			fixture = await createFixture();
-		});
-
 		it('should parse valid droid session with anthropic provider', async () => {
 			const sessionId = 'test-session-1';
 
@@ -474,8 +467,13 @@ if (import.meta.vitest != null) {
 				{ id: 'session-2', provider: 'openai', input: 2000, output: 1000 },
 			];
 
+			// Type for fixture structure
+			type FixtureStructure = Record<string, {
+				[filename: string]: string;
+			}>;
+
 			// Create fixture with session structure
-			const fixtureStructure: any = {};
+			const fixtureStructure: FixtureStructure = {};
 			for (const session of sessions) {
 				fixtureStructure[session.id] = {
 					[`${session.id}.jsonl`]: JSON.stringify({
@@ -499,10 +497,10 @@ if (import.meta.vitest != null) {
 			const results = await processDroidSessions(fixture.path);
 
 			expect(results).toHaveLength(2);
-			expect(results[0].message.model).toBe('sonnet-4-5');
-			expect(results[1].message.model).toBe('gpt-5');
-			expect(results[0].source).toBe('droid');
-			expect(results[1].source).toBe('droid');
+			expect(results[0]?.message.model).toBe('sonnet-4-5');
+			expect(results[1]?.message.model).toBe('gpt-5');
+			expect(results[0]?.source).toBe('droid');
+			expect(results[1]?.source).toBe('droid');
 		});
 	});
 

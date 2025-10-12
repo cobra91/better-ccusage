@@ -148,7 +148,7 @@ export const blocksCommand = define({
 			type: 'boolean',
 			short: 'p',
 			description: 'Show number of prompts in each block',
-			default: false,
+			default: true,
 		},
 	},
 	toKebab: true,
@@ -393,11 +393,9 @@ export const blocksCommand = define({
 				const tableHeaders = ['Block Start', 'Source', 'Duration/Status', 'Models', 'Tokens'];
 				const tableAligns: ('left' | 'right' | 'center')[] = ['left', 'left', 'left', 'left', 'right'];
 
-				// Add prompts column if requested
-				if (ctx.values.prompts) {
-					tableHeaders.push('Prompts');
-					tableAligns.push('right');
-				}
+				// Always add prompts column
+				tableHeaders.push('Prompts');
+				tableAligns.push('right');
 
 				// Add % column if token limit is set
 				if (actualTokenLimit != null && actualTokenLimit > 0) {
@@ -432,9 +430,7 @@ export const blocksCommand = define({
 							pc.gray('-'),
 							pc.gray('-'),
 						];
-						if (ctx.values.prompts) {
-							gapRow.push(pc.gray('-'));
-						}
+						gapRow.push(pc.gray('-'));
 						if (actualTokenLimit != null && actualTokenLimit > 0) {
 							gapRow.push(pc.gray('-'));
 						}
@@ -454,10 +450,8 @@ export const blocksCommand = define({
 							formatNumber(totalTokens),
 						];
 
-						// Add prompts count if requested
-						if (ctx.values.prompts) {
-							row.push(formatNumber(block.userPromptCount));
-						}
+						// Add prompts count
+						row.push(formatNumber(block.userPromptCount));
 
 						// Add percentage if token limit is set
 						if (actualTokenLimit != null && actualTokenLimit > 0) {
@@ -493,10 +487,7 @@ export const blocksCommand = define({
 									remainingText,
 								];
 
-								// Add prompts column if requested
-								if (ctx.values.prompts) {
-									remainingRow.push('');
-								}
+								remainingRow.push('');
 
 								remainingRow.push(remainingPercentText);
 								remainingRow.push(''); // No cost for remaining - it's about token limit, not cost
@@ -519,10 +510,7 @@ export const blocksCommand = define({
 									projectedText,
 								];
 
-								// Add prompts column if requested
-								if (ctx.values.prompts) {
-									projectedRow.push('');
-								}
+								projectedRow.push('');
 
 								// Add percentage if token limit is set
 								if (actualTokenLimit != null && actualTokenLimit > 0) {

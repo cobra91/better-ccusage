@@ -157,38 +157,38 @@ export class PricingFetcher implements Disposable {
 							try: fetch(this.url),
 							catch: error => new Error('Failed to fetch model pricing from external source', { cause: error }),
 						}),
-					Result.andThrough((response) => {
-						if (!response.ok) {
-							return Result.fail(new Error(`Failed to fetch pricing data: ${response.statusText}`));
-						}
-						return Result.succeed();
-					}),
-					Result.andThen(async response => Result.try({
-						try: response.json() as Promise<Record<string, unknown>>,
-						catch: error => new Error('Failed to parse pricing data', { cause: error }),
-					})),
-					Result.map((data) => {
-						const pricing = new Map<string, ModelPricing>();
-						for (const [modelName, modelData] of Object.entries(data)) {
-							if (typeof modelData !== 'object' || modelData == null) {
-								continue;
+						Result.andThrough((response) => {
+							if (!response.ok) {
+								return Result.fail(new Error(`Failed to fetch pricing data: ${response.statusText}`));
 							}
+							return Result.succeed();
+						}),
+						Result.andThen(async response => Result.try({
+							try: response.json() as Promise<Record<string, unknown>>,
+							catch: error => new Error('Failed to parse pricing data', { cause: error }),
+						})),
+						Result.map((data) => {
+							const pricing = new Map<string, ModelPricing>();
+							for (const [modelName, modelData] of Object.entries(data)) {
+								if (typeof modelData !== 'object' || modelData == null) {
+									continue;
+								}
 
-							const parsed = v.safeParse(modelPricingSchema, modelData);
-							if (!parsed.success) {
-								continue;
+								const parsed = v.safeParse(modelPricingSchema, modelData);
+								if (!parsed.success) {
+									continue;
+								}
+
+								pricing.set(modelName, parsed.output);
 							}
-
-							pricing.set(modelName, parsed.output);
-						}
-						return pricing;
-					}),
-					Result.inspect((pricing) => {
-						this.cachedPricing = pricing;
-						this.logger.info(`Loaded pricing for ${pricing.size} models`);
-					}),
-					Result.orElse(async error => this.handleFallbackToCachedPricing(error)),
-				);
+							return pricing;
+						}),
+						Result.inspect((pricing) => {
+							this.cachedPricing = pricing;
+							this.logger.info(`Loaded pricing for ${pricing.size} models`);
+						}),
+						Result.orElse(async error => this.handleFallbackToCachedPricing(error)),
+					);
 				}
 
 				// In offline mode or if offline loader failed, return the error

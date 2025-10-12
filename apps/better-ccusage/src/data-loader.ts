@@ -769,7 +769,7 @@ export async function loadDailyUsageData(
 	if (droidPath !== '') {
 		try {
 			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
-			droidEntries = await processDroidSessions(droidPath, options) as UsageData[];
+			droidEntries = await processDroidSessions(droidPath, options);
 			logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
 		}
 		catch (error) {
@@ -997,7 +997,7 @@ export async function loadSessionData(
 	if (droidPath !== '') {
 		try {
 			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
-			droidEntries = await processDroidSessions(droidPath, options) as UsageData[];
+			droidEntries = await processDroidSessions(droidPath, options);
 			logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
 		}
 		catch (error) {
@@ -1607,9 +1607,9 @@ export async function loadSessionBlockData(
 	if (droidPath !== '') {
 		try {
 			logger.debug(`Attempting to load droid sessions for blocks from ${droidPath}`);
-			const rawDroidEntries = await processDroidSessions(droidPath, options) as UsageData[];
+			const rawDroidEntries = await processDroidSessions(droidPath, options);
 			// Convert droid entries to LoadedUsageEntry format with Date timestamps
-			droidEntries = rawDroidEntries.map(entry => ({
+			droidEntries = rawDroidEntries.map((entry): LoadedUsageEntry => ({
 				timestamp: new Date(entry.timestamp),
 				usage: {
 					inputTokens: entry.message.usage.input_tokens,
@@ -1618,10 +1618,10 @@ export async function loadSessionBlockData(
 					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
 				},
 				costUSD: entry.costUSD ?? 0,
-				model: entry.message.model,
-				version: entry.version,
+				model: entry.message.model ?? 'unknown',
+				version: entry.version ?? undefined,
 				usageLimitResetTime: undefined,
-				source: entry.source,
+				source: entry.source ?? 'droid',
 			}));
 			logger.info(`Loaded ${droidEntries.length} droid entries for blocks from ${droidPath}`);
 		}

@@ -520,7 +520,7 @@ export function formatUsageDataRow(
 
 	const row: (string | number)[] = [
 		firstColumnValue,
-		data.source || 'claude', // Use source if provided, default to 'claude' only if null/undefined
+		data.source ?? 'claude', // Use source if provided, default to 'claude' only if null/undefined
 		data.modelsUsed != null ? formatModelsDisplayMultiline(data.modelsUsed) : '',
 		formatNumber(data.inputTokens),
 		formatNumber(data.outputTokens),
