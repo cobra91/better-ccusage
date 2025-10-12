@@ -62,6 +62,18 @@ export const DEFAULT_CLAUDE_CONFIG_PATH = `${XDG_CONFIG_DIR}/claude`;
 export const CLAUDE_CONFIG_DIR_ENV = 'CLAUDE_CONFIG_DIR';
 
 /**
+ * Environment variable for specifying droid sessions directory
+ * Allows users to specify custom path to droid session data
+ */
+export const DROID_SESSIONS_DIR_ENV = 'DROID_SESSIONS_DIR';
+
+/**
+ * Default droid sessions directory path
+ * Uses user's .factory/sessions
+ */
+export const DEFAULT_DROID_SESSIONS_PATH = `.factory/sessions`;
+
+/**
  * Claude projects directory name within the data directory
  * Contains subdirectories for each project with usage data
  */

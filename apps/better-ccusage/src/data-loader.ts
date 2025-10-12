@@ -52,6 +52,7 @@ import {
 	createProjectPath,
 	createRequestId,
 	createSessionId,
+	createSource,
 	createVersion,
 	dailyDateSchema,
 	isoTimestampSchema,
@@ -61,10 +62,12 @@ import {
 	projectPathSchema,
 	requestIdSchema,
 	sessionIdSchema,
+	sourceSchema,
 	versionSchema,
 	weeklyDateSchema,
 } from './_types.ts';
 import { unreachable } from './_utils.ts';
+import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
 import { logger } from './logger.ts';
 
 /**
@@ -180,6 +183,7 @@ export const usageDataSchema = v.object({
 	costUSD: v.optional(v.number()), // Made optional for new schema
 	requestId: v.optional(requestIdSchema), // Request ID for deduplication
 	isApiErrorMessage: v.optional(v.boolean()),
+	source: v.optional(sourceSchema), // Source of usage data (claude/droid or claude or droid)
 });
 
 /**
@@ -206,6 +210,24 @@ export const transcriptMessageSchema = v.object({
  * Type definition for Claude usage data entries from JSONL files
  */
 export type UsageData = v.InferOutput<typeof usageDataSchema>;
+
+/**
+ * Type definition for user messages from JSONL files
+ */
+export type UserMessage = v.InferOutput<typeof userMessageSchema>;
+
+/**
+ * Valibot schema for user messages (no usage data, just timestamps)
+ */
+export const userMessageSchema = v.object({
+	timestamp: isoTimestampSchema,
+	type: v.literal('user'),
+	message: v.object({
+		role: v.literal('user'),
+		content: v.union([v.string(), v.array(v.any())]),
+	}),
+	sessionId: v.optional(sessionIdSchema),
+});
 
 /**
  * Valibot schema for model-specific usage breakdown data
@@ -237,6 +259,7 @@ export const dailyUsageSchema = v.object({
 	modelsUsed: v.array(modelNameSchema),
 	modelBreakdowns: v.array(modelBreakdownSchema),
 	project: v.optional(v.string()), // Project name when groupByProject is enabled
+	source: v.optional(sourceSchema), // Source of usage data (claude or droid)
 });
 
 /**
@@ -259,6 +282,7 @@ export const sessionUsageSchema = v.object({
 	versions: v.array(versionSchema), // List of unique versions used in this session
 	modelsUsed: v.array(modelNameSchema),
 	modelBreakdowns: v.array(modelBreakdownSchema),
+	source: v.optional(sourceSchema), // Source of usage data (claude or droid)
 });
 
 /**
@@ -279,6 +303,7 @@ export const monthlyUsageSchema = v.object({
 	modelsUsed: v.array(modelNameSchema),
 	modelBreakdowns: v.array(modelBreakdownSchema),
 	project: v.optional(v.string()), // Project name when groupByProject is enabled
+	source: v.optional(sourceSchema), // Source of usage data (claude or droid)
 });
 
 /**
@@ -299,6 +324,7 @@ export const weeklyUsageSchema = v.object({
 	modelsUsed: v.array(modelNameSchema),
 	modelBreakdowns: v.array(modelBreakdownSchema),
 	project: v.optional(v.string()), // Project name when groupByProject is enabled
+	source: v.optional(sourceSchema), // Source of usage data (claude or droid)
 });
 
 /**
@@ -311,6 +337,7 @@ export type WeeklyUsage = v.InferOutput<typeof weeklyUsageSchema>;
  */
 export const bucketUsageSchema = v.object({
 	bucket: v.union([weeklyDateSchema, monthlyDateSchema]), // WeeklyDate or MonthlyDate
+	source: v.optional(sourceSchema), // Source of usage data (claude/droid, claude, or droid)
 	inputTokens: v.number(),
 	outputTokens: v.number(),
 	cacheCreationTokens: v.number(),
@@ -521,12 +548,13 @@ export function createUniqueHash(data: UsageData): string | null {
 	const messageId = data.message.id;
 	const requestId = data.requestId;
 
-	if (messageId == null || requestId == null) {
+	if (messageId == null) {
 		return null;
 	}
 
-	// Create a hash using simple concatenation
-	return `${messageId}:${requestId}`;
+	// Use both messageId and requestId if available, otherwise just messageId
+	// This handles cases where requestId is missing from JSONL entries
+	return requestId != null ? `${messageId}:${requestId}` : messageId;
 }
 
 /**
@@ -622,6 +650,7 @@ export async function calculateCostForEntry(
 	if (mode === 'calculate') {
 		// Always calculate from tokens
 		if (data.message.model != null) {
+			// Use standard cost calculation for both Claude and droid entries
 			return Result.unwrap(fetcher.calculateCostFromTokens(data.message.usage, data.message.model), 0);
 		}
 		return 0;
@@ -634,6 +663,7 @@ export async function calculateCostForEntry(
 		}
 
 		if (data.message.model != null) {
+			// Use standard cost calculation for both Claude and droid entries
 			return Result.unwrap(fetcher.calculateCostFromTokens(data.message.usage, data.message.model), 0);
 		}
 
@@ -732,7 +762,25 @@ export async function loadDailyUsageData(
 	const allFiles = await globUsageFiles(claudePaths);
 	const fileList = allFiles.map(f => f.file);
 
-	if (fileList.length === 0) {
+	// Also load droid sessions if available
+	const droidPath = getDroidPath();
+	logger.debug(`Droid path: ${droidPath}`);
+	let droidEntries: UsageData[] = [];
+	if (droidPath !== '') {
+		try {
+			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
+			droidEntries = await processDroidSessions(droidPath, options) as UsageData[];
+			logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
+		}
+		catch (error) {
+			logger.warn(`Failed to load droid sessions: ${String(error)}`);
+		}
+	}
+	else {
+		logger.debug('Droid path is null or undefined');
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0) {
 		return [];
 	}
 
@@ -749,8 +797,8 @@ export async function loadDailyUsageData(
 	// Fetch pricing data for cost calculation only when needed
 	const mode = options?.mode ?? 'auto';
 
-	// Use CcusagePricingFetcher with using statement for automatic cleanup
-	using fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	// Use CcusagePricingFetcher with try/finally for cleanup
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
 
 	// Track processed message+request combinations for deduplication
 	const processedHashes = new Set<string>();
@@ -773,6 +821,11 @@ export async function loadDailyUsageData(
 					continue;
 				}
 				const data = result.output;
+
+				// Add source field for Claude data if not present
+				if (data.source == null) {
+					data.source = createSource('claude');
+				}
 
 				// Check for duplicate message + request ID combination
 				const uniqueHash = createUniqueHash(data);
@@ -803,7 +856,44 @@ export async function loadDailyUsageData(
 		}
 	}
 
+	// Add droid entries to the collection
+	for (const droidData of droidEntries) {
+		// Add source field for droid data if not present
+		if (droidData.source === undefined) {
+			droidData.source = createSource('droid');
+		}
+
+		logger.debug(`Processing droid entry with source: ${droidData.source}, model: ${droidData.message.model}`);
+
+		// Check for duplicate message + request ID combination
+		const uniqueHash = createUniqueHash(droidData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			// Skip duplicate message
+			continue;
+		}
+
+		// Mark this combination as processed
+		markAsProcessed(uniqueHash, processedHashes);
+
+		// Always use DEFAULT_LOCALE for date grouping to ensure YYYY-MM-DD format
+		const date = formatDate(droidData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		// If fetcher is available, calculate cost based on mode and tokens
+		// If fetcher is null, use pre-calculated costUSD or default to 0
+		const cost = fetcher != null
+			? await calculateCostForEntry(droidData, mode, fetcher)
+			: droidData.costUSD ?? 0;
+
+		allEntries.push({
+			data: droidData,
+			date,
+			cost,
+			model: droidData.message.model,
+			project: droidData.cwd ?? '/droid/unknown',
+		});
+	}
+
 	// Group by date, optionally including project
+	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
 	const needsProjectGrouping = options?.groupByProject === true || options?.project != null;
 	const groupingKey = needsProjectGrouping
@@ -823,6 +913,26 @@ export async function loadDailyUsageData(
 			const parts = groupKey.split('\x00');
 			const date = parts[0] ?? groupKey;
 			const project = parts.length > 1 ? parts[1] : undefined;
+
+			// Determine combined source from all entries in this group
+			const sources = new Set(entries.map(entry => entry.data.source).filter(Boolean));
+			const claudeSource = createSource('claude');
+			const droidSource = createSource('droid');
+			const claudeDroidSource = createSource('claude/droid');
+			let combinedSource: string;
+			// If no valid sources found, default to 'claude'
+			if (sources.size === 0) {
+				combinedSource = claudeSource;
+			}
+			else if (sources.has(claudeSource) && sources.has(droidSource)) {
+				combinedSource = claudeDroidSource;
+			}
+			else if (sources.has(droidSource)) {
+				combinedSource = droidSource;
+			}
+			else {
+				combinedSource = claudeSource;
+			}
 
 			// Aggregate by model first
 			const modelAggregates = aggregateByModel(
@@ -846,6 +956,7 @@ export async function loadDailyUsageData(
 
 			return {
 				date: createDailyDate(date),
+				source: createSource(combinedSource), // Use combined source (claude/droid, claude, or droid)
 				...totals,
 				modelsUsed: modelsUsed as ModelName[],
 				modelBreakdowns,
@@ -879,7 +990,25 @@ export async function loadSessionData(
 	// Collect files from all paths with their base directories in parallel
 	const filesWithBase = await globUsageFiles(claudePaths);
 
-	if (filesWithBase.length === 0) {
+	// Also load droid sessions if available
+	const droidPath = getDroidPath();
+	logger.debug(`Droid path: ${droidPath}`);
+	let droidEntries: UsageData[] = [];
+	if (droidPath !== '') {
+		try {
+			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
+			droidEntries = await processDroidSessions(droidPath, options) as UsageData[];
+			logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
+		}
+		catch (error) {
+			logger.warn(`Failed to load droid sessions: ${String(error)}`);
+		}
+	}
+	else {
+		logger.debug('Droid path is null or undefined');
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0) {
 		return [];
 	}
 
@@ -905,8 +1034,8 @@ export async function loadSessionData(
 	// Fetch pricing data for cost calculation only when needed
 	const mode = options?.mode ?? 'auto';
 
-	// Use CcusagePricingFetcher with using statement for automatic cleanup
-	using fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	// Use CcusagePricingFetcher with try/finally for cleanup
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
 
 	// Track processed message+request combinations for deduplication
 	const processedHashes = new Set<string>();
@@ -948,6 +1077,11 @@ export async function loadSessionData(
 				}
 				const data = result.output;
 
+				// Add source field for Claude data if not present
+				if (data.source == null) {
+					data.source = createSource('claude');
+				}
+
 				// Check for duplicate message + request ID combination
 				const uniqueHash = createUniqueHash(data);
 				if (isDuplicateEntry(uniqueHash, processedHashes)) {
@@ -977,6 +1111,30 @@ export async function loadSessionData(
 				// Skip invalid JSON lines
 			}
 		}
+	}
+
+	// Add droid entries to the collection
+	for (const droidData of droidEntries) {
+		// Add source field if not present
+		if (droidData.source === undefined) {
+			droidData.source = createSource('droid');
+		}
+
+		// Set default source for Claude data (will be added later during processing)
+		const sessionKey = `/droid/${droidData.sessionId}`;
+		const cost = fetcher != null
+			? await calculateCostForEntry(droidData, mode, fetcher)
+			: droidData.costUSD ?? 0;
+
+		allEntries.push({
+			data: droidData,
+			sessionKey,
+			sessionId: droidData.sessionId ?? 'unknown-session',
+			projectPath: droidData.cwd ?? '/droid/unknown',
+			cost,
+			timestamp: droidData.timestamp,
+			model: droidData.message.model,
+		});
 	}
 
 	// Group by session using Object.groupBy
@@ -1034,6 +1192,7 @@ export async function loadSessionData(
 				versions: uniq(versions).sort() as Version[],
 				modelsUsed: modelsUsed as ModelName[],
 				modelBreakdowns,
+				source: latestEntry.data.source !== undefined ? createSource(latestEntry.data.source) : createSource('claude'),
 			};
 		})
 		.filter(item => item != null);
@@ -1107,7 +1266,7 @@ export async function loadSessionUsageById(
 	const lines = content.trim().split('\n').filter(line => line.length > 0);
 
 	const mode = options?.mode ?? 'auto';
-	using fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
 
 	const entries: UsageData[] = [];
 	let totalCost = 0;
@@ -1187,6 +1346,27 @@ export async function loadBucketUsageData(
 			}
 		}
 
+		// Determine combined source from all daily entries in this group
+		const sources = new Set(dailyEntries.map(entry => entry.source).filter(Boolean));
+		const claudeSource = createSource('claude');
+		const droidSource = createSource('droid');
+		const claudeDroidSource = createSource('claude/droid');
+		let combinedSource: string;
+		// If no valid sources found, default to 'claude'
+		if (sources.size === 0) {
+			combinedSource = claudeSource;
+		}
+		// Check for mixed sources including combined sources
+		else if (sources.has(claudeDroidSource) || (sources.has(claudeSource) && sources.has(droidSource))) {
+			combinedSource = claudeDroidSource;
+		}
+		else if (sources.has(droidSource)) {
+			combinedSource = droidSource;
+		}
+		else {
+			combinedSource = claudeSource;
+		}
+
 		// Calculate totals from daily entries
 		let totalInputTokens = 0;
 		let totalOutputTokens = 0;
@@ -1203,6 +1383,7 @@ export async function loadBucketUsageData(
 		}
 		const bucketUsage: BucketUsage = {
 			bucket,
+			source: createSource(combinedSource),
 			inputTokens: totalInputTokens,
 			outputTokens: totalOutputTokens,
 			cacheCreationTokens: totalCacheCreationTokens,
@@ -1269,7 +1450,7 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 				// Get context limit from CcusagePricingFetcher
 				let contextLimit = 200_000; // Fallback for when modelId is not provided
 				if (modelId != null && modelId !== '') {
-					using fetcher = new CcusagePricingFetcher(offline);
+					const fetcher = new CcusagePricingFetcher(offline);
 					const contextLimitResult = await fetcher.getModelContextLimit(modelId);
 					if (Result.isSuccess(contextLimitResult) && contextLimitResult.value != null) {
 						contextLimit = contextLimitResult.value;
@@ -1343,14 +1524,16 @@ export async function loadSessionBlockData(
 	// Fetch pricing data for cost calculation only when needed
 	const mode = options?.mode ?? 'auto';
 
-	// Use CcusagePricingFetcher with using statement for automatic cleanup
-	using fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	// Use CcusagePricingFetcher with try/finally for cleanup
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
 
 	// Track processed message+request combinations for deduplication
 	const processedHashes = new Set<string>();
 
 	// Collect all valid data entries first
 	const allEntries: LoadedUsageEntry[] = [];
+	// Also collect user messages for prompt counting
+	const allUserMessages: UserMessage[] = [];
 
 	for (const file of sortedFiles) {
 		const content = await readFile(file, 'utf-8');
@@ -1362,42 +1545,53 @@ export async function loadSessionBlockData(
 		for (const line of lines) {
 			try {
 				const parsed = JSON.parse(line) as unknown;
-				const result = v.safeParse(usageDataSchema, parsed);
-				if (!result.success) {
+				// Try to parse as usage data (assistant messages with tokens)
+				const usageResult = v.safeParse(usageDataSchema, parsed);
+				if (usageResult.success) {
+					const data = usageResult.output;
+
+					// Check for duplicate message + request ID combination
+					const uniqueHash = createUniqueHash(data);
+					if (isDuplicateEntry(uniqueHash, processedHashes)) {
+						// Skip duplicate message
+						continue;
+					}
+
+					// Mark this combination as processed
+					markAsProcessed(uniqueHash, processedHashes);
+
+					const cost = fetcher != null
+						? await calculateCostForEntry(data, mode, fetcher)
+						: data.costUSD ?? 0;
+
+					// Get Claude Code usage limit expiration date
+					const usageLimitResetTime = getUsageLimitResetTime(data);
+
+					allEntries.push({
+						timestamp: new Date(data.timestamp),
+						usage: {
+							inputTokens: data.message.usage.input_tokens,
+							outputTokens: data.message.usage.output_tokens,
+							cacheCreationInputTokens: data.message.usage.cache_creation_input_tokens ?? 0,
+							cacheReadInputTokens: data.message.usage.cache_read_input_tokens ?? 0,
+						},
+						costUSD: cost,
+						model: data.message.model ?? 'unknown',
+						version: data.version,
+						usageLimitResetTime: usageLimitResetTime ?? undefined,
+						source: data.source,
+					});
 					continue;
 				}
-				const data = result.output;
 
-				// Check for duplicate message + request ID combination
-				const uniqueHash = createUniqueHash(data);
-				if (isDuplicateEntry(uniqueHash, processedHashes)) {
-				// Skip duplicate message
+				// Try to parse as user message (for prompt counting)
+				const userResult = v.safeParse(userMessageSchema, parsed);
+				if (userResult.success) {
+					const userMessage = userResult.output;
+					allUserMessages.push(userMessage);
 					continue;
 				}
-
-				// Mark this combination as processed
-				markAsProcessed(uniqueHash, processedHashes);
-
-				const cost = fetcher != null
-					? await calculateCostForEntry(data, mode, fetcher)
-					: data.costUSD ?? 0;
-
-				// Get Claude Code usage limit expiration date
-				const usageLimitResetTime = getUsageLimitResetTime(data);
-
-				allEntries.push({
-					timestamp: new Date(data.timestamp),
-					usage: {
-						inputTokens: data.message.usage.input_tokens,
-						outputTokens: data.message.usage.output_tokens,
-						cacheCreationInputTokens: data.message.usage.cache_creation_input_tokens ?? 0,
-						cacheReadInputTokens: data.message.usage.cache_read_input_tokens ?? 0,
-					},
-					costUSD: cost,
-					model: data.message.model ?? 'unknown',
-					version: data.version,
-					usageLimitResetTime: usageLimitResetTime ?? undefined,
-				});
+			// Skip lines that don't match either schema
 			}
 			catch (error) {
 				// Skip invalid JSON lines but log for debugging purposes
@@ -1406,8 +1600,44 @@ export async function loadSessionBlockData(
 		}
 	}
 
+	// Also load droid sessions if available
+	const droidPath = getDroidPath();
+	logger.debug(`Droid path for blocks: ${droidPath}`);
+	let droidEntries: LoadedUsageEntry[] = [];
+	if (droidPath !== '') {
+		try {
+			logger.debug(`Attempting to load droid sessions for blocks from ${droidPath}`);
+			const rawDroidEntries = await processDroidSessions(droidPath, options) as UsageData[];
+			// Convert droid entries to LoadedUsageEntry format with Date timestamps
+			droidEntries = rawDroidEntries.map(entry => ({
+				timestamp: new Date(entry.timestamp),
+				usage: {
+					inputTokens: entry.message.usage.input_tokens,
+					outputTokens: entry.message.usage.output_tokens,
+					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+				},
+				costUSD: entry.costUSD ?? 0,
+				model: entry.message.model,
+				version: entry.version,
+				usageLimitResetTime: undefined,
+				source: entry.source,
+			}));
+			logger.info(`Loaded ${droidEntries.length} droid entries for blocks from ${droidPath}`);
+		}
+		catch (error) {
+			logger.warn(`Failed to load droid sessions for blocks: ${String(error)}`);
+		}
+	}
+	else {
+		logger.debug('Droid path for blocks is null or undefined');
+	}
+
+	// Combine Claude and droid entries
+	const combinedEntries = [...allEntries, ...droidEntries];
+
 	// Identify session blocks
-	const blocks = identifySessionBlocks(allEntries, options?.sessionDurationHours);
+	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);
 
 	// Filter by date range if specified
 	const dateFiltered = (options?.since != null && options.since !== '') || (options?.until != null && options.until !== '')
@@ -1503,7 +1733,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('loads usage data for a specific session', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'.claude': {
 					projects: {
 						'test-project': {
@@ -1549,7 +1779,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('loads usage data for a specific session with Sonnet 4.5', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'.claude': {
 					projects: {
 						'test-project': {
@@ -1595,7 +1825,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('returns null for non-existent session', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'.claude': {
 					projects: {
 						'test-project': {
@@ -1624,7 +1854,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('returns null for non-existent session with Sonnet 4.5', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'.claude': {
 					projects: {
 						'test-project': {
@@ -1684,7 +1914,7 @@ if (import.meta.vitest != null) {
 
 	describe('loadDailyUsageData', () => {
 		it('returns empty array when no files found', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {},
 			});
 
@@ -1713,7 +1943,7 @@ if (import.meta.vitest != null) {
 				costUSD: 0.03,
 			};
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1749,7 +1979,7 @@ if (import.meta.vitest != null) {
 				costUSD: 0.01,
 			};
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1784,7 +2014,7 @@ if (import.meta.vitest != null) {
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1824,7 +2054,7 @@ if (import.meta.vitest != null) {
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1860,7 +2090,7 @@ if (import.meta.vitest != null) {
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1900,7 +2130,7 @@ if (import.meta.vitest != null) {
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1930,7 +2160,7 @@ invalid json line
 {"timestamp":"2024-01-01T18:00:00Z","message":{"usage":{"input_tokens":300,"output_tokens":150}},"costUSD":0.03}
 `.trim();
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1958,7 +2188,7 @@ invalid json line
 {"timestamp":"2024-01-01T22:00:00Z","message":{"usage":{"input_tokens":300,"output_tokens":150}},"costUSD":0.03}
 `.trim();
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -1997,7 +2227,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2013,6 +2243,7 @@ invalid json line
 			expect(result).toHaveLength(2);
 			expect(result[0]).toEqual({
 				month: '2024-02',
+				source: 'claude',
 				inputTokens: 150,
 				outputTokens: 75,
 				cacheCreationTokens: 0,
@@ -2030,6 +2261,7 @@ invalid json line
 			});
 			expect(result[1]).toEqual({
 				month: '2024-01',
+				source: 'claude',
 				inputTokens: 300,
 				outputTokens: 150,
 				cacheCreationTokens: 0,
@@ -2048,7 +2280,7 @@ invalid json line
 		});
 
 		it('handles empty data', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {},
 			});
 
@@ -2070,7 +2302,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2085,6 +2317,7 @@ invalid json line
 			expect(result).toHaveLength(1);
 			expect(result[0]).toEqual({
 				month: '2024-01',
+				source: 'claude',
 				inputTokens: 300,
 				outputTokens: 150,
 				cacheCreationTokens: 0,
@@ -2126,7 +2359,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2166,7 +2399,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2209,7 +2442,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2255,7 +2488,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2305,7 +2538,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2343,7 +2576,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2359,6 +2592,7 @@ invalid json line
 			expect(result).toHaveLength(2);
 			expect(result[0]).toEqual({
 				week: '2024-01-14',
+				source: 'claude',
 				inputTokens: 150,
 				outputTokens: 75,
 				cacheCreationTokens: 0,
@@ -2376,6 +2610,7 @@ invalid json line
 			});
 			expect(result[1]).toEqual({
 				week: '2023-12-31',
+				source: 'claude',
 				inputTokens: 300,
 				outputTokens: 150,
 				cacheCreationTokens: 0,
@@ -2394,7 +2629,7 @@ invalid json line
 		});
 
 		it('handles empty data', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {},
 			});
 
@@ -2416,7 +2651,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2431,6 +2666,7 @@ invalid json line
 			expect(result).toHaveLength(1);
 			expect(result[0]).toEqual({
 				week: '2023-12-31',
+				source: 'claude',
 				inputTokens: 300,
 				outputTokens: 150,
 				cacheCreationTokens: 0,
@@ -2472,7 +2708,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2512,7 +2748,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2552,7 +2788,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2598,7 +2834,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2648,7 +2884,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2668,7 +2904,7 @@ invalid json line
 
 	describe('loadSessionData', () => {
 		it('returns empty array when no files found', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {},
 			});
 
@@ -2683,7 +2919,7 @@ invalid json line
 				costUSD: 0.01,
 			};
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					'project1/subfolder': {
 						session123: {
@@ -2737,7 +2973,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2783,7 +3019,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -2827,7 +3063,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
@@ -2873,7 +3109,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
@@ -2922,7 +3158,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
@@ -2971,7 +3207,7 @@ invalid json line
 				},
 			];
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
@@ -3007,7 +3243,7 @@ invalid json line
 					costUSD: 0.05, // Pre-calculated cost
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-old': {
 							'session-old': {
@@ -3043,7 +3279,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-new': {
 							'session-new': {
@@ -3083,7 +3319,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-sonnet45': {
 							'session-sonnet45': {
@@ -3123,7 +3359,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-opus': {
 							'session-opus': {
@@ -3167,7 +3403,7 @@ invalid json line
 				// No costUSD and no model - should be 0 cost
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-mixed': {
 							'session-mixed': {
@@ -3195,7 +3431,7 @@ invalid json line
 				// No costUSD and no model
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-no-cost': {
 							'session-no-cost': {
@@ -3230,7 +3466,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session1: {
@@ -3267,7 +3503,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-unknown': {
 							'session-unknown': {
@@ -3301,7 +3537,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-cache': {
 							'session-cache': {
@@ -3338,7 +3574,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-cache-sonnet45': {
 							'session-cache-sonnet45': {
@@ -3375,7 +3611,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project-opus-cache': {
 							'session-opus-cache': {
@@ -3415,7 +3651,7 @@ invalid json line
 					},
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3444,7 +3680,7 @@ invalid json line
 					costUSD: 99.99, // This should be ignored
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3483,7 +3719,7 @@ invalid json line
 				// No costUSD - should result in 0 cost
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3512,7 +3748,7 @@ invalid json line
 					costUSD: 99.99,
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session1: {
@@ -3549,7 +3785,7 @@ invalid json line
 					costUSD: 0.05,
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3579,7 +3815,7 @@ invalid json line
 					costUSD: 0.05,
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3610,7 +3846,7 @@ invalid json line
 				// No costUSD, so auto mode will need to calculate
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3640,7 +3876,7 @@ invalid json line
 					costUSD: 0.05,
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3670,7 +3906,7 @@ invalid json line
 					costUSD: 0.05,
 				};
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'test-project': {
 							session: {
@@ -3695,7 +3931,35 @@ invalid json line
 		});
 	});
 
-	describe('calculateCostForEntry', () => {
+	describe('cost calculation for droid entries', () => {
+		it('should use standard cost calculation without multipliers', async () => {
+			const mockUsage = {
+				input_tokens: 1000,
+				output_tokens: 500,
+				cache_creation_input_tokens: 0,
+				cache_read_input_tokens: 0,
+			};
+
+			const mockFetcher = {
+				calculateCostFromTokens: vi.fn((_usage, _model) => Result.succeed(1.00)), // $1.00 base cost
+			};
+
+			// Test different models - all should return base cost without multipliers
+			const sonnetCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'sonnet-4-5'));
+			expect(sonnetCost).toBe(1.00);
+
+			const gpt5Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'gpt-5'));
+			expect(gpt5Cost).toBe(1.00);
+
+			const glmCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-4.6'));
+			expect(glmCost).toBe(1.00);
+
+			const unknownCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'unknown-model'));
+			expect(unknownCost).toBe(1.00);
+		});
+	});
+
+	describe('calculateCostForEntry with droid data', () => {
 		const mockUsageData: UsageData = {
 			timestamp: createISOTimestamp('2024-01-01T10:00:00Z'),
 			message: {
@@ -3712,7 +3976,7 @@ invalid json line
 
 		describe('display mode', () => {
 			it('should return costUSD when available', async () => {
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(mockUsageData, 'display', fetcher);
 				expect(result).toBe(0.05);
 			});
@@ -3721,14 +3985,14 @@ invalid json line
 				const dataWithoutCost = { ...mockUsageData };
 				dataWithoutCost.costUSD = undefined;
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithoutCost, 'display', fetcher);
 				expect(result).toBe(0);
 			});
 
 			it('should not use model pricing in display mode', async () => {
 			// Even with model pricing available, should use costUSD
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(mockUsageData, 'display', fetcher);
 				expect(result).toBe(0.05);
 			});
@@ -3748,14 +4012,14 @@ invalid json line
 					},
 				};
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(testData, 'calculate', fetcher);
 
 				expect(result).toBeGreaterThan(0);
 			});
 
 			it('should ignore costUSD in calculate mode', async () => {
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const dataWithHighCost = { ...mockUsageData, costUSD: 99.99 };
 				const result = await calculateCostForEntry(
 					dataWithHighCost,
@@ -3771,7 +4035,7 @@ invalid json line
 				const dataWithoutModel = { ...mockUsageData };
 				dataWithoutModel.message.model = undefined;
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithoutModel, 'calculate', fetcher);
 				expect(result).toBe(0);
 			});
@@ -3782,7 +4046,7 @@ invalid json line
 					message: { ...mockUsageData.message, model: createModelName('unknown-model') },
 				};
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(
 					dataWithUnknownModel,
 					'calculate',
@@ -3803,7 +4067,7 @@ invalid json line
 					},
 				};
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(
 					dataWithoutCacheTokens,
 					'calculate',
@@ -3816,7 +4080,7 @@ invalid json line
 
 		describe('auto mode', () => {
 			it('should use costUSD when available', async () => {
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(mockUsageData, 'auto', fetcher);
 				expect(result).toBe(0.05);
 			});
@@ -3833,7 +4097,7 @@ invalid json line
 					},
 				};
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(
 					dataWithoutCost,
 					'auto',
@@ -3847,7 +4111,7 @@ invalid json line
 				dataWithoutCostOrModel.costUSD = undefined;
 				dataWithoutCostOrModel.message.model = undefined;
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithoutCostOrModel, 'auto', fetcher);
 				expect(result).toBe(0);
 			});
@@ -3856,14 +4120,14 @@ invalid json line
 				const dataWithoutCost = { ...mockUsageData };
 				dataWithoutCost.costUSD = undefined;
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithoutCost, 'auto', fetcher);
 				expect(result).toBe(0);
 			});
 
 			it('should prefer costUSD over calculation even when both available', async () => {
 			// Both costUSD and model pricing available, should use costUSD
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(mockUsageData, 'auto', fetcher);
 				expect(result).toBe(0.05);
 			});
@@ -3885,21 +4149,21 @@ invalid json line
 				};
 				dataWithZeroTokens.costUSD = undefined;
 
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithZeroTokens, 'calculate', fetcher);
 				expect(result).toBe(0);
 			});
 
 			it('should handle costUSD of 0', async () => {
 				const dataWithZeroCost = { ...mockUsageData, costUSD: 0 };
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithZeroCost, 'display', fetcher);
 				expect(result).toBe(0);
 			});
 
 			it('should handle negative costUSD', async () => {
 				const dataWithNegativeCost = { ...mockUsageData, costUSD: -0.01 };
-				using fetcher = new CcusagePricingFetcher();
+				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(dataWithNegativeCost, 'display', fetcher);
 				expect(result).toBe(-0.01);
 			});
@@ -3907,7 +4171,7 @@ invalid json line
 
 		describe('offline mode', () => {
 			it('should pass offline flag through loadDailyUsageData', async () => {
-				await using fixture = await createFixture({ projects: {} });
+				const fixture = await createFixture({ projects: {} });
 				// This test verifies that the offline flag is properly passed through
 				// We can't easily mock the internal behavior, but we can verify it doesn't throw
 				const result = await loadDailyUsageData({
@@ -3924,7 +4188,7 @@ invalid json line
 
 	describe('loadSessionBlockData', () => {
 		it('returns empty array when no files found', async () => {
-			await using fixture = await createFixture({ projects: {} });
+			const fixture = await createFixture({ projects: {} });
 			const result = await loadSessionBlockData({ claudePath: fixture.path });
 			expect(result).toEqual([]);
 		});
@@ -3934,7 +4198,7 @@ invalid json line
 			const laterTime = new Date(now.getTime() + 1 * 60 * 60 * 1000); // 1 hour later
 			const muchLaterTime = new Date(now.getTime() + 6 * 60 * 60 * 1000); // 6 hours later
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -3998,7 +4262,7 @@ invalid json line
 		it('handles cost calculation modes correctly', async () => {
 			const now = new Date('2024-01-01T10:00:00Z');
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -4043,7 +4307,7 @@ invalid json line
 			const date2 = new Date('2024-01-02T10:00:00Z');
 			const date3 = new Date('2024-01-03T10:00:00Z');
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -4112,7 +4376,7 @@ invalid json line
 			const date1 = new Date('2024-01-01T10:00:00Z');
 			const date2 = new Date('2024-01-02T10:00:00Z');
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -4163,7 +4427,7 @@ invalid json line
 		it('handles deduplication correctly', async () => {
 			const now = new Date('2024-01-01T10:00:00Z');
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -4205,7 +4469,7 @@ invalid json line
 		it('handles invalid JSON lines gracefully', async () => {
 			const now = new Date('2024-01-01T10:00:00Z');
 
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -4286,7 +4550,7 @@ if (import.meta.vitest != null) {
 				};
 
 				const hash = createUniqueHash(data);
-				expect(hash).toBeNull();
+				expect(hash).toBe('msg_123'); // Should return just message ID when requestId is missing
 			});
 		});
 
@@ -4298,7 +4562,7 @@ if (import.meta.vitest != null) {
 					JSON.stringify({ timestamp: '2025-01-12T11:00:00Z', message: { usage: {} } }),
 				].join('\n');
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					'test.jsonl': content,
 				});
 
@@ -4312,7 +4576,7 @@ if (import.meta.vitest != null) {
 					JSON.stringify({ data: 'no timestamp' }),
 				].join('\n');
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					'test.jsonl': content,
 				});
 
@@ -4327,7 +4591,7 @@ if (import.meta.vitest != null) {
 					'{ broken: json',
 				].join('\n');
 
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					'test.jsonl': content,
 				});
 
@@ -4338,7 +4602,7 @@ if (import.meta.vitest != null) {
 
 		describe('sortFilesByTimestamp', () => {
 			it('should sort files by earliest timestamp', async () => {
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					'file1.jsonl': JSON.stringify({ timestamp: '2025-01-15T10:00:00Z' }),
 					'file2.jsonl': JSON.stringify({ timestamp: '2025-01-10T10:00:00Z' }),
 					'file3.jsonl': JSON.stringify({ timestamp: '2025-01-12T10:00:00Z' }),
@@ -4354,7 +4618,7 @@ if (import.meta.vitest != null) {
 			});
 
 			it('should place files without timestamps at the end', async () => {
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					'file1.jsonl': JSON.stringify({ timestamp: '2025-01-15T10:00:00Z' }),
 					'file2.jsonl': JSON.stringify({ no_timestamp: true }),
 					'file3.jsonl': JSON.stringify({ timestamp: '2025-01-10T10:00:00Z' }),
@@ -4372,7 +4636,7 @@ if (import.meta.vitest != null) {
 
 		describe('loadDailyUsageData with deduplication', () => {
 			it('should deduplicate entries with same message and request IDs', async () => {
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						project1: {
 							session1: {
@@ -4420,7 +4684,7 @@ if (import.meta.vitest != null) {
 			});
 
 			it('should process files in chronological order', async () => {
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						'newer.jsonl': JSON.stringify({
 							timestamp: '2025-01-15T10:00:00Z',
@@ -4464,7 +4728,7 @@ if (import.meta.vitest != null) {
 
 		describe('loadSessionData with deduplication', () => {
 			it('should deduplicate entries across sessions', async () => {
-				await using fixture = await createFixture({
+				const fixture = await createFixture({
 					projects: {
 						project1: {
 							session1: {
@@ -4531,10 +4795,10 @@ if (import.meta.vitest != null) {
 		});
 
 		it('returns paths from environment variable when set', async () => {
-			await using fixture1 = await createFixture({
+			const fixture1 = await createFixture({
 				projects: {},
 			});
-			await using fixture2 = await createFixture({
+			const fixture2 = await createFixture({
 				projects: {},
 			});
 
@@ -4551,7 +4815,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('filters out non-existent paths from environment variable', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {},
 			});
 
@@ -4564,7 +4828,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('removes duplicates from combined paths', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				projects: {},
 			});
 
@@ -4590,7 +4854,7 @@ if (import.meta.vitest != null) {
 
 	describe('multiple paths integration', () => {
 		it('loadDailyUsageData aggregates data from multiple paths', async () => {
-			await using fixture1 = await createFixture({
+			const fixture1 = await createFixture({
 				projects: {
 					project1: {
 						session1: {
@@ -4604,7 +4868,7 @@ if (import.meta.vitest != null) {
 				},
 			});
 
-			await using fixture2 = await createFixture({
+			const fixture2 = await createFixture({
 				projects: {
 					project2: {
 						session2: {
@@ -4632,7 +4896,7 @@ if (import.meta.vitest != null) {
 
 	describe('globUsageFiles', () => {
 		it('should glob files from multiple paths in parallel with base directories', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'path1/projects/project1/session1/usage.jsonl': 'data1',
 				'path2/projects/project2/session2/usage.jsonl': 'data2',
 				'path3/projects/project3/session3/usage.jsonl': 'data3',
@@ -4657,7 +4921,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('should handle errors gracefully and return empty array for failed paths', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'valid/projects/project1/session1/usage.jsonl': 'data1',
 			});
 
@@ -4673,7 +4937,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('should return empty array when no files found', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'empty/projects': {}, // Empty directory
 			});
 
@@ -4684,7 +4948,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('should handle multiple files from same base directory', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'path1/projects/project1/session1/usage.jsonl': 'data1',
 				'path1/projects/project1/session2/usage.jsonl': 'data2',
 				'path1/projects/project2/session1/usage.jsonl': 'data3',
@@ -4706,7 +4970,7 @@ if (import.meta.vitest != null) {
 		});
 		const { createFixture } = await import('fs-fixture');
 		it('parses latest assistant line and excludes output tokens', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'transcript.jsonl': [
 					JSON.stringify({ type: 'user', message: {} }),
 					JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 1000, output_tokens: 999 } } }),
@@ -4721,7 +4985,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('handles missing cache fields gracefully', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'transcript.jsonl': [
 					JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 1000 } } }),
 				].join('\n'),
@@ -4733,7 +4997,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('clamps percentage to 0-100 range', async () => {
-			await using fixture = await createFixture({
+			const fixture = await createFixture({
 				'transcript.jsonl': [
 					JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 300_000 } } }),
 				].join('\n'),
@@ -4744,3 +5008,6 @@ if (import.meta.vitest != null) {
 		});
 	});
 }
+
+// Re-export droid functions for external use
+export { getDroidPath, processDroidSessions } from './droid-adapter.ts';

@@ -31,9 +31,9 @@ async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
 }
 
 export class CcusagePricingFetcher extends PricingFetcher {
-	constructor(offline = false) {
+	constructor(offline?: boolean) {
 		super({
-			offline,
+			offline: offline ?? true,
 			offlineLoader: async () => prefetchCcusagePricing(),
 			logger,
 			providerPrefixes: CCUSAGE_PROVIDER_PREFIXES,
