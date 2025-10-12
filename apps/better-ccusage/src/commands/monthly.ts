@@ -69,6 +69,7 @@ export const monthlyCommand = define({
 			const jsonOutput = {
 				monthly: monthlyData.map(data => ({
 					month: data.month,
+					source: data.source,
 					inputTokens: data.inputTokens,
 					outputTokens: data.outputTokens,
 					cacheCreationTokens: data.cacheCreationTokens,
@@ -110,6 +111,7 @@ export const monthlyCommand = define({
 			for (const data of monthlyData) {
 				// Main row
 				const row = formatUsageDataRow(data.month, {
+					source: data.source,
 					inputTokens: data.inputTokens,
 					outputTokens: data.outputTokens,
 					cacheCreationTokens: data.cacheCreationTokens,

@@ -143,48 +143,56 @@ export class PricingFetcher implements Disposable {
 		return Result.pipe(
 			this.cachedPricing != null ? Result.succeed(this.cachedPricing) : Result.fail(new Error('Cached pricing not available')),
 			Result.orElse(async () => {
-				if (this.offline) {
-					return this.loadOfflinePricing();
+				// Always try offline loader first (integrated pricing list)
+				const offlineResult = await this.loadOfflinePricing();
+				if (Result.isSuccess(offlineResult)) {
+					return offlineResult;
 				}
 
-				this.logger.warn('Fetching latest model pricing from external source...');
-				return Result.pipe(
-					Result.try({
-						try: fetch(this.url),
-						catch: error => new Error('Failed to fetch model pricing from external source', { cause: error }),
-					}),
-					Result.andThrough((response) => {
-						if (!response.ok) {
-							return Result.fail(new Error(`Failed to fetch pricing data: ${response.statusText}`));
-						}
-						return Result.succeed();
-					}),
-					Result.andThen(async response => Result.try({
-						try: response.json() as Promise<Record<string, unknown>>,
-						catch: error => new Error('Failed to parse pricing data', { cause: error }),
-					})),
-					Result.map((data) => {
-						const pricing = new Map<string, ModelPricing>();
-						for (const [modelName, modelData] of Object.entries(data)) {
-							if (typeof modelData !== 'object' || modelData == null) {
-								continue;
+				// Only try external fetch if offline failed AND we're not in offline mode
+				if (!this.offline) {
+					this.logger.warn('Fetching latest model pricing from external source...');
+					return Result.pipe(
+						Result.try({
+							try: fetch(this.url),
+							catch: error => new Error('Failed to fetch model pricing from external source', { cause: error }),
+						}),
+						Result.andThrough((response) => {
+							if (!response.ok) {
+								return Result.fail(new Error(`Failed to fetch pricing data: ${response.statusText}`));
 							}
+							return Result.succeed();
+						}),
+						Result.andThen(async response => Result.try({
+							try: response.json() as Promise<Record<string, unknown>>,
+							catch: error => new Error('Failed to parse pricing data', { cause: error }),
+						})),
+						Result.map((data) => {
+							const pricing = new Map<string, ModelPricing>();
+							for (const [modelName, modelData] of Object.entries(data)) {
+								if (typeof modelData !== 'object' || modelData == null) {
+									continue;
+								}
 
-							const parsed = v.safeParse(modelPricingSchema, modelData);
-							if (!parsed.success) {
-								continue;
+								const parsed = v.safeParse(modelPricingSchema, modelData);
+								if (!parsed.success) {
+									continue;
+								}
+
+								pricing.set(modelName, parsed.output);
 							}
+							return pricing;
+						}),
+						Result.inspect((pricing) => {
+							this.cachedPricing = pricing;
+							this.logger.info(`Loaded pricing for ${pricing.size} models`);
+						}),
+						Result.orElse(async error => this.handleFallbackToCachedPricing(error)),
+					);
+				}
 
-							pricing.set(modelName, parsed.output);
-						}
-						return pricing;
-					}),
-					Result.inspect((pricing) => {
-						this.cachedPricing = pricing;
-						this.logger.info(`Loaded pricing for ${pricing.size} models`);
-					}),
-					Result.orElse(async error => this.handleFallbackToCachedPricing(error)),
-				);
+				// In offline mode or if offline loader failed, return the error
+				return Result.fail(new Error('Offline pricing loader failed and external fetch disabled'));
 			}),
 		);
 	}

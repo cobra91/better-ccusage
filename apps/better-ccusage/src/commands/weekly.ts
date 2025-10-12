@@ -79,6 +79,7 @@ export const weeklyCommand = define({
 			const jsonOutput = {
 				weekly: weeklyData.map(data => ({
 					week: data.week,
+					source: data.source,
 					inputTokens: data.inputTokens,
 					outputTokens: data.outputTokens,
 					cacheCreationTokens: data.cacheCreationTokens,
@@ -120,6 +121,7 @@ export const weeklyCommand = define({
 			for (const data of weeklyData) {
 				// Main row
 				const row = formatUsageDataRow(data.week, {
+					source: data.source,
 					inputTokens: data.inputTokens,
 					outputTokens: data.outputTokens,
 					cacheCreationTokens: data.cacheCreationTokens,

@@ -78,6 +78,12 @@ export const projectPathSchema = v.pipe(
 	v.brand('ProjectPath'),
 );
 
+export const sourceSchema = v.pipe(
+	v.string(),
+	v.picklist(['claude/droid', 'claude', 'droid']),
+	v.brand('Source'),
+);
+
 const versionRegex = /^\d+\.\d+\.\d+/;
 export const versionSchema = v.pipe(
 	v.string(),
@@ -100,6 +106,7 @@ export type WeeklyDate = v.InferOutput<typeof weeklyDateSchema>;
 export type Bucket = MonthlyDate | WeeklyDate;
 export type FilterDate = v.InferOutput<typeof filterDateSchema>;
 export type ProjectPath = v.InferOutput<typeof projectPathSchema>;
+export type Source = v.InferOutput<typeof sourceSchema>;
 export type Version = v.InferOutput<typeof versionSchema>;
 
 /**
@@ -117,6 +124,7 @@ export const createMonthlyDate = (value: string): MonthlyDate => v.parse(monthly
 export const createWeeklyDate = (value: string): WeeklyDate => v.parse(weeklyDateSchema, value);
 export const createFilterDate = (value: string): FilterDate => v.parse(filterDateSchema, value);
 export const createProjectPath = (value: string): ProjectPath => v.parse(projectPathSchema, value);
+export const createSource = (value: string): Source => v.parse(sourceSchema, value);
 export const createVersion = (value: string): Version => v.parse(versionSchema, value);
 
 export function createBucket(value: string): Bucket {

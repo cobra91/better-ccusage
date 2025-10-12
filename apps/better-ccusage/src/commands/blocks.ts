@@ -144,6 +144,12 @@ export const blocksCommand = define({
 			description: `Refresh interval in seconds for live mode (default: ${DEFAULT_REFRESH_INTERVAL_SECONDS})`,
 			default: DEFAULT_REFRESH_INTERVAL_SECONDS,
 		},
+		prompts: {
+			type: 'boolean',
+			short: 'p',
+			description: 'Show number of prompts in each block',
+			default: true,
+		},
 	},
 	toKebab: true,
 	async run(ctx) {
@@ -272,7 +278,9 @@ export const blocksCommand = define({
 						actualEndTime: block.actualEndTime?.toISOString() ?? null,
 						isActive: block.isActive,
 						isGap: block.isGap ?? false,
+						source: block.source,
 						entries: block.entries.length,
+						userPromptCount: block.userPromptCount,
 						tokenCounts: block.tokenCounts,
 						totalTokens: getTotalTokens(block.tokenCounts),
 						costUSD: block.costUSD,
@@ -382,8 +390,12 @@ export const blocksCommand = define({
 				// Calculate token limit if "max" is specified
 				const actualTokenLimit = parseTokenLimit(ctx.values.tokenLimit, maxTokensFromAll);
 
-				const tableHeaders = ['Block Start', 'Duration/Status', 'Models', 'Tokens'];
-				const tableAligns: ('left' | 'right' | 'center')[] = ['left', 'left', 'left', 'right'];
+				const tableHeaders = ['Block Start', 'Source', 'Duration/Status', 'Models', 'Tokens'];
+				const tableAligns: ('left' | 'right' | 'center')[] = ['left', 'left', 'left', 'left', 'right'];
+
+				// Always add prompts column
+				tableHeaders.push('Prompts');
+				tableAligns.push('right');
 
 				// Add % column if token limit is set
 				if (actualTokenLimit != null && actualTokenLimit > 0) {
@@ -413,10 +425,12 @@ export const blocksCommand = define({
 						// Gap row
 						const gapRow = [
 							pc.gray(formatBlockTime(block, useCompactFormat, ctx.values.locale)),
+							pc.gray(block.source ?? '-'),
 							pc.gray('(inactive)'),
 							pc.gray('-'),
 							pc.gray('-'),
 						];
+						gapRow.push(pc.gray('-'));
 						if (actualTokenLimit != null && actualTokenLimit > 0) {
 							gapRow.push(pc.gray('-'));
 						}
@@ -430,10 +444,14 @@ export const blocksCommand = define({
 
 						const row = [
 							formatBlockTime(block, useCompactFormat, ctx.values.locale),
+							block.source ?? '-',
 							status,
 							formatModels(block.models),
 							formatNumber(totalTokens),
 						];
+
+						// Add prompts count
+						row.push(formatNumber(block.userPromptCount));
 
 						// Add percentage if token limit is set
 						if (actualTokenLimit != null && actualTokenLimit > 0) {
@@ -463,12 +481,16 @@ export const blocksCommand = define({
 
 								const remainingRow = [
 									{ content: pc.gray(`(assuming ${formatNumber(actualTokenLimit)} token limit)`), hAlign: 'right' as const },
+									'',
 									pc.blue('REMAINING'),
 									'',
 									remainingText,
-									remainingPercentText,
-									'', // No cost for remaining - it's about token limit, not cost
 								];
+
+								remainingRow.push('');
+
+								remainingRow.push(remainingPercentText);
+								remainingRow.push(''); // No cost for remaining - it's about token limit, not cost
 								table.push(remainingRow);
 							}
 
@@ -482,10 +504,13 @@ export const blocksCommand = define({
 
 								const projectedRow = [
 									{ content: pc.gray('(assuming current burn rate)'), hAlign: 'right' as const },
+									'',
 									pc.yellow('PROJECTED'),
 									'',
 									projectedText,
 								];
+
+								projectedRow.push('');
 
 								// Add percentage if token limit is set
 								if (actualTokenLimit != null && actualTokenLimit > 0) {

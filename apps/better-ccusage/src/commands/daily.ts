@@ -175,6 +175,7 @@ export const dailyCommand = define({
 							cacheReadTokens: data.cacheReadTokens,
 							totalCost: data.totalCost,
 							modelsUsed: data.modelsUsed,
+							source: data.source,
 						});
 						table.push(row);
 
@@ -198,6 +199,7 @@ export const dailyCommand = define({
 						cacheReadTokens: data.cacheReadTokens,
 						totalCost: data.totalCost,
 						modelsUsed: data.modelsUsed,
+						source: data.source,
 					});
 					table.push(row);
 

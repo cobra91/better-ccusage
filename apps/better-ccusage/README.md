@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.svg" alt="better-ccusage logo" width="256" height="256">
+    <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.png" alt="better-ccusage logo" width="256" height="256">
     <h1>better-ccusage</h1>
 </div>
 

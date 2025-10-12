@@ -433,6 +433,7 @@ export type UsageData = {
 	cacheReadTokens: number;
 	totalCost: number;
 	modelsUsed?: string[];
+	source?: string;
 };
 
 /**
@@ -443,6 +444,7 @@ export type UsageData = {
 export function createUsageReportTable(config: UsageReportConfig): ResponsiveTable {
 	const baseHeaders = [
 		config.firstColumnName,
+		'Source',
 		'Models',
 		'Input',
 		'Output',
@@ -455,6 +457,7 @@ export function createUsageReportTable(config: UsageReportConfig): ResponsiveTab
 	const baseAligns: TableCellAlign[] = [
 		'left',
 		'left',
+		'left',
 		'right',
 		'right',
 		'right',
@@ -465,6 +468,7 @@ export function createUsageReportTable(config: UsageReportConfig): ResponsiveTab
 
 	const compactHeaders = [
 		config.firstColumnName,
+		'Source',
 		'Models',
 		'Input',
 		'Output',
@@ -472,6 +476,7 @@ export function createUsageReportTable(config: UsageReportConfig): ResponsiveTab
 	];
 
 	const compactAligns: TableCellAlign[] = [
+		'left',
 		'left',
 		'left',
 		'right',
@@ -515,6 +520,7 @@ export function formatUsageDataRow(
 
 	const row: (string | number)[] = [
 		firstColumnValue,
+		data.source ?? 'claude', // Use source if provided, default to 'claude' only if null/undefined
 		data.modelsUsed != null ? formatModelsDisplayMultiline(data.modelsUsed) : '',
 		formatNumber(data.inputTokens),
 		formatNumber(data.outputTokens),
@@ -542,6 +548,7 @@ export function formatTotalsRow(totals: UsageData, includeLastActivity = false):
 
 	const row: (string | number)[] = [
 		pc.yellow('Total'),
+		'', // Empty for Source column in totals
 		'', // Empty for Models column in totals
 		pc.yellow(formatNumber(totals.inputTokens)),
 		pc.yellow(formatNumber(totals.outputTokens)),
