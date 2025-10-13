@@ -746,10 +746,14 @@ export type LoadOptions = {
 } & DateFilter;
 
 /**
- * Loads and aggregates Claude usage data by day
- * Processes all JSONL files in the Claude projects directory and groups usage by date
- * @param options - Optional configuration for loading and filtering data
- * @returns Array of daily usage summaries sorted by date
+ * Aggregate Claude (and optional droid) usage entries into per-day summaries.
+ *
+ * Reads usage JSONL files from configured Claude project paths (and optional droid sessions), deduplicates entries,
+ * computes costs according to the provided options, groups entries by date (optionally by project), and produces
+ * DailyUsage objects with token totals, total cost, models used, and per-model breakdowns.
+ *
+ * @param options - Loading and filtering options (paths, date range, project grouping/filtering, cost mode, ordering, timezone, locale, etc.)
+ * @returns Array of daily usage summaries, each containing totals, model breakdowns, models used, and optional project/source, sorted by date according to options
  */
 export async function loadDailyUsageData(
 	options?: LoadOptions,
@@ -975,11 +979,10 @@ export async function loadDailyUsageData(
 }
 
 /**
- * Loads and aggregates Claude usage data by session
- * Groups usage data by project path and session ID based on file structure
- * @param options - Optional configuration for loading and filtering data
- * @returns Array of session usage summaries sorted by last activity
- */
+ * Load and aggregate Claude and droid usage entries into per-session usage summaries.
+ *
+ * @param options - Loading and filtering options (e.g., `claudePath`, `mode` for cost calculation, `project` filter, `since`/`until` date filters, `timezone`, and `order`) that control which files are read, how costs are computed, and how results are filtered/sorted.
+ * @returns An array of session usage summaries (one per projectPath/sessionId) containing totals, model breakdowns, models used, versions, lastActivity, projectPath, sessionId, and source; results are sorted by `lastActivity`.
 export async function loadSessionData(
 	options?: LoadOptions,
 ): Promise<SessionUsage[]> {
@@ -1234,12 +1237,15 @@ export async function loadWeeklyUsageData(
 }
 
 /**
- * Load usage data for a specific session by sessionId
- * Searches for a JSONL file named {sessionId}.jsonl in all Claude project directories
- * @param sessionId - The session ID to load data for (matches the JSONL filename)
- * @param options - Options for loading data
- * @param options.mode - Cost calculation mode (auto, calculate, display)
- * @returns Usage data for the specific session or null if not found
+ * Load usage entries and aggregated cost for a single session identified by its JSONL filename.
+ *
+ * Searches Claude project directories for a file named `{sessionId}.jsonl`, parses valid usage lines,
+ * deduplicates invalid entries, and sums per-entry cost according to `options.mode`.
+ *
+ * @param sessionId - The session ID that matches the JSONL filename (without path)
+ * @param options - Loading options
+ * @param options.mode - Cost calculation mode: `"auto"`, `"calculate"`, or `"display"`
+ * @returns An object with `totalCost` and `entries` for the session, or `null` if no session file is found
  */
 export async function loadSessionUsageById(
 	sessionId: string,
@@ -1399,10 +1405,14 @@ export async function loadBucketUsageData(
 }
 
 /**
- * Calculate context tokens from transcript file using improved JSONL parsing
- * Based on the Python reference implementation for better accuracy
- * @param transcriptPath - Path to the transcript JSONL file
- * @returns Object with context tokens info or null if unavailable
+ * Determine the most recent assistant context token usage in a transcript and its relation to a model's context limit.
+ *
+ * Parses the transcript JSONL from the end to locate the latest assistant message that reports token usage, sums
+ * input tokens including cache creation/read tokens, and obtains a model context limit when a `modelId` is provided.
+ *
+ * @param transcriptPath - Path to the transcript JSONL file to inspect
+ * @param modelId - Optional model identifier used to look up the model's context limit; if omitted a conservative fallback limit is used
+ * @returns An object with `inputTokens`, `percentage` (0–100 rounded), and `contextLimit` when usage is found; `null` if the file cannot be read or contains no assistant usage information
  */
 export async function calculateContextTokens(transcriptPath: string, modelId?: string): Promise<{
 	inputTokens: number;
@@ -1483,10 +1493,12 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 }
 
 /**
- * Loads usage data and organizes it into session blocks (typically 5-hour billing periods)
- * Processes all usage data and groups it into time-based blocks for billing analysis
- * @param options - Optional configuration including session duration and filtering
- * @returns Array of session blocks with usage and cost information
+ * Load Claude (and optional droid) usage entries and group them into time-based session blocks for billing analysis.
+ *
+ * Parses usage and user-message JSONL files, deduplicates entries, computes costs according to the configured mode, and groups events into session blocks (default 5-hour blocks or as configured).
+ *
+ * @param options - LoadOptions controlling session block duration, date/project filters, cost mode, ordering, and other load-time behavior.
+ * @returns An array of SessionBlock objects containing block start/end times, aggregated usage and cost, and associated metadata.
  */
 export async function loadSessionBlockData(
 	options?: LoadOptions,
