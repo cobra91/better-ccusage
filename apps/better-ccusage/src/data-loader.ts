@@ -737,7 +737,6 @@ export type LoadOptions = {
 	claudePath?: string; // Custom path to Claude data directory
 	mode?: CostMode; // Cost calculation mode
 	order?: SortOrder; // Sort order for dates
-	offline?: boolean; // Use offline mode for pricing
 	sessionDurationHours?: number; // Session block duration in hours
 	groupByProject?: boolean; // Group data by project instead of aggregating
 	project?: string; // Filter to specific project name
@@ -798,7 +797,7 @@ export async function loadDailyUsageData(
 	const mode = options?.mode ?? 'auto';
 
 	// Use CcusagePricingFetcher with try/finally for cleanup
-	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher();
 
 	// Track processed message+request combinations for deduplication
 	const processedHashes = new Set<string>();
@@ -1035,7 +1034,7 @@ export async function loadSessionData(
 	const mode = options?.mode ?? 'auto';
 
 	// Use CcusagePricingFetcher with try/finally for cleanup
-	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher();
 
 	// Track processed message+request combinations for deduplication
 	const processedHashes = new Set<string>();
@@ -1240,12 +1239,11 @@ export async function loadWeeklyUsageData(
  * @param sessionId - The session ID to load data for (matches the JSONL filename)
  * @param options - Options for loading data
  * @param options.mode - Cost calculation mode (auto, calculate, display)
- * @param options.offline - Whether to use offline pricing data
  * @returns Usage data for the specific session or null if not found
  */
 export async function loadSessionUsageById(
 	sessionId: string,
-	options?: { mode?: CostMode; offline?: boolean },
+	options?: { mode?: CostMode },
 ): Promise<{ totalCost: number; entries: UsageData[] } | null> {
 	const claudePaths = getClaudePaths();
 
@@ -1266,7 +1264,7 @@ export async function loadSessionUsageById(
 	const lines = content.trim().split('\n').filter(line => line.length > 0);
 
 	const mode = options?.mode ?? 'auto';
-	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher();
 
 	const entries: UsageData[] = [];
 	let totalCost = 0;
@@ -1406,7 +1404,7 @@ export async function loadBucketUsageData(
  * @param transcriptPath - Path to the transcript JSONL file
  * @returns Object with context tokens info or null if unavailable
  */
-export async function calculateContextTokens(transcriptPath: string, modelId?: string, offline = false): Promise<{
+export async function calculateContextTokens(transcriptPath: string, modelId?: string): Promise<{
 	inputTokens: number;
 	percentage: number;
 	contextLimit: number;
@@ -1450,7 +1448,7 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 				// Get context limit from CcusagePricingFetcher
 				let contextLimit = 200_000; // Fallback for when modelId is not provided
 				if (modelId != null && modelId !== '') {
-					const fetcher = new CcusagePricingFetcher(offline);
+					const fetcher = new CcusagePricingFetcher();
 					const contextLimitResult = await fetcher.getModelContextLimit(modelId);
 					if (Result.isSuccess(contextLimitResult) && contextLimitResult.value != null) {
 						contextLimit = contextLimitResult.value;
@@ -1525,7 +1523,7 @@ export async function loadSessionBlockData(
 	const mode = options?.mode ?? 'auto';
 
 	// Use CcusagePricingFetcher with try/finally for cleanup
-	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher(options?.offline);
+	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher();
 
 	// Track processed message+request combinations for deduplication
 	const processedHashes = new Set<string>();
@@ -4169,14 +4167,12 @@ invalid json line
 			});
 		});
 
-		describe('offline mode', () => {
-			it('should pass offline flag through loadDailyUsageData', async () => {
+		describe('pricing data loading', () => {
+			it('should load pricing data successfully', async () => {
 				const fixture = await createFixture({ projects: {} });
-				// This test verifies that the offline flag is properly passed through
-				// We can't easily mock the internal behavior, but we can verify it doesn't throw
+				// Verify that pricing data loads correctly without offline flag
 				const result = await loadDailyUsageData({
 					claudePath: fixture.path,
-					offline: true,
 					mode: 'calculate',
 				});
 

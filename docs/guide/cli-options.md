@@ -65,16 +65,6 @@ better-ccusage daily --order desc
 better-ccusage daily --order asc
 ```
 
-### Offline Mode
-
-Run without network connectivity:
-
-```bash
-# Use cached pricing data
-better-ccusage daily --offline
-better-ccusage daily -O
-```
-
 ### Timezone
 
 Set the timezone for date calculations:
@@ -231,9 +221,6 @@ Options for statusline display:
 # Basic statusline
 better-ccusage statusline
 
-# Force offline mode
-better-ccusage statusline --offline
-
 # Enable caching
 better-ccusage statusline --cache
 
@@ -329,7 +316,6 @@ Many options have short aliases for convenience:
 | ------------- | ----- | ------------------- |
 | `--json`      | `-j`  | JSON output         |
 | `--breakdown` | `-b`  | Per-model breakdown |
-| `--offline`   | `-O`  | Offline mode        |
 | `--timezone`  | `-z`  | Set timezone        |
 | `--locale`    | `-l`  | Set locale          |
 | `--instances` | `-i`  | Group by project    |

@@ -102,7 +102,6 @@ Create a `better-ccusage.json` file with your preferred defaults:
 	"defaults": {
 		"json": false,
 		"mode": "auto",
-		"offline": false,
 		"timezone": "Asia/Tokyo",
 		"locale": "ja-JP",
 		"breakdown": true
@@ -146,7 +145,6 @@ The `defaults` section sets default values for all commands:
 		"debugSamples": 5,
 		"order": "asc",
 		"breakdown": false,
-		"offline": false,
 		"timezone": "UTC",
 		"locale": "en-CA",
 		"jq": ".data[]"
@@ -162,8 +160,7 @@ Override defaults for specific commands using the `commands` section:
 {
 	"$schema": "https://better-ccusage.com/config-schema.json",
 	"defaults": {
-		"mode": "auto",
-		"offline": false
+		"mode": "auto"
 	},
 	"commands": {
 		"daily": {
@@ -261,7 +258,6 @@ Override defaults for specific commands using the `commands` section:
 {
 	"commands": {
 		"statusline": {
-			"offline": true,
 			"cache": true,
 			"refreshInterval": 2
 		}
@@ -299,7 +295,7 @@ For a complete configuration example, see [`/better-ccusage.example.json`](/bett
 
 Settings are applied in this priority order (highest to lowest):
 
-1. **Command-line arguments** (e.g., `--json`, `--offline`)
+1. **Command-line arguments** (e.g., `--json`, `--mode`)
 2. **Custom config file** (specified with `--config /path/to/config.json`)
 3. **Local project config** (`.better-ccusage/better-ccusage.json`)
 4. **User config** (`~/.config/claude/better-ccusage.json`)
@@ -360,12 +356,11 @@ Example debug output:
   • Has command configs: yes (daily)
 
 [better-ccusage] ℹ Merging options for 'daily' command:
-  • From defaults: mode="auto", offline=false
+  • From defaults: mode="auto"
   • From command config: instances=true
   • From CLI args: debug=true
   • Final merged options: {
       mode: "auto" (from defaults),
-      offline: false (from defaults),
       instances: true (from command config),
       debug: true (from CLI)
     }

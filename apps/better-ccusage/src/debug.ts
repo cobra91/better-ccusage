@@ -92,7 +92,7 @@ export async function detectMismatches(
 	});
 
 	// Use CcusagePricingFetcher with using statement for automatic cleanup
-	using fetcher = new CcusagePricingFetcher(true);
+	using fetcher = new CcusagePricingFetcher();
 
 	const stats: MismatchStats = {
 		totalEntries: 0,

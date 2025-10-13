@@ -1,7 +1,7 @@
 {
 	"name": "better-ccusage-monorepo",
 	"type": "module",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"private": true,
 	"workspaces": [
 		"apps/*",
@@ -16,9 +16,9 @@
 		"format:submodules": "pnpm --parallel -r --aggregate-output /^format/",
 		"preinstall": "npx only-allow pnpm",
 		"lint": "pnpm --no-bail --aggregate-output /^lint:/",
+		"lint-staged": "lint-staged",
 		"lint:root": "eslint --cache eslint.config.js .",
 		"lint:submodules": "pnpm --parallel -r --no-bail /^lint/",
-		"lint-staged": "lint-staged",
 		"prepare": "pnpm run /^prepare:/",
 		"prepare:git": "git config --local core.hooksPath .githooks",
 		"prerelease": "pnpm run --filter '*' prerelease",

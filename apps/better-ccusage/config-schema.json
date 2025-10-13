@@ -67,12 +67,6 @@
 							"markdownDescription": "Show per-model cost breakdown",
 							"default": false
 						},
-						"offline": {
-							"type": "boolean",
-							"description": "Use cached pricing data for Claude models instead of fetching from API",
-							"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
-							"default": false
-						},
 						"color": {
 							"type": "boolean",
 							"description": "Enable colored output (default: auto). FORCE_COLOR=1 has the same effect.",
@@ -169,12 +163,6 @@
 									"type": "boolean",
 									"description": "Show per-model cost breakdown",
 									"markdownDescription": "Show per-model cost breakdown",
-									"default": false
-								},
-								"offline": {
-									"type": "boolean",
-									"description": "Use cached pricing data for Claude models instead of fetching from API",
-									"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
 									"default": false
 								},
 								"color": {
@@ -286,12 +274,6 @@
 									"markdownDescription": "Show per-model cost breakdown",
 									"default": false
 								},
-								"offline": {
-									"type": "boolean",
-									"description": "Use cached pricing data for Claude models instead of fetching from API",
-									"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
-									"default": false
-								},
 								"color": {
 									"type": "boolean",
 									"description": "Enable colored output (default: auto). FORCE_COLOR=1 has the same effect.",
@@ -383,12 +365,6 @@
 									"type": "boolean",
 									"description": "Show per-model cost breakdown",
 									"markdownDescription": "Show per-model cost breakdown",
-									"default": false
-								},
-								"offline": {
-									"type": "boolean",
-									"description": "Use cached pricing data for Claude models instead of fetching from API",
-									"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
 									"default": false
 								},
 								"color": {
@@ -489,12 +465,6 @@
 									"markdownDescription": "Show per-model cost breakdown",
 									"default": false
 								},
-								"offline": {
-									"type": "boolean",
-									"description": "Use cached pricing data for Claude models instead of fetching from API",
-									"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
-									"default": false
-								},
 								"color": {
 									"type": "boolean",
 									"description": "Enable colored output (default: auto). FORCE_COLOR=1 has the same effect.",
@@ -593,12 +563,6 @@
 									"markdownDescription": "Show per-model cost breakdown",
 									"default": false
 								},
-								"offline": {
-									"type": "boolean",
-									"description": "Use cached pricing data for Claude models instead of fetching from API",
-									"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
-									"default": false
-								},
 								"color": {
 									"type": "boolean",
 									"description": "Enable colored output (default: auto). FORCE_COLOR=1 has the same effect.",
@@ -666,12 +630,6 @@
 						"statusline": {
 							"type": "object",
 							"properties": {
-								"offline": {
-									"type": "boolean",
-									"description": "Use cached pricing data for Claude models instead of fetching from API",
-									"markdownDescription": "Use cached pricing data for Claude models instead of fetching from API",
-									"default": true
-								},
 								"visualBurnRate": {
 									"type": "string",
 									"enum": [

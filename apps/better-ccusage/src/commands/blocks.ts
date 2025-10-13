@@ -174,7 +174,6 @@ export const blocksCommand = define({
 			until: ctx.values.until,
 			mode: ctx.values.mode,
 			order: ctx.values.order,
-			offline: ctx.values.offline,
 			sessionDurationHours: ctx.values.sessionLength,
 			timezone: ctx.values.timezone,
 			locale: ctx.values.locale,

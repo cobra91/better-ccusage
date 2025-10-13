@@ -17,7 +17,6 @@ function toPerMillion(value: number | undefined, fallback?: number): number {
 }
 
 export type CodexPricingSourceOptions = {
-	offline?: boolean;
 	offlineLoader?: () => Promise<Record<string, InternalModelPricing>>;
 };
 
@@ -28,7 +27,6 @@ export class CodexPricingSource implements PricingSource, Disposable {
 
 	constructor(options: CodexPricingSourceOptions = {}) {
 		this.fetcher = new PricingFetcher({
-			offline: options.offline ?? false,
 			offlineLoader: options.offlineLoader ?? (async () => PREFETCHED_CODEX_PRICING),
 			logger,
 			providerPrefixes: CODEX_PROVIDER_PREFIXES,
@@ -73,7 +71,6 @@ if (import.meta.vitest != null) {
 	describe('CodexPricingSource', () => {
 		it('converts model pricing to per-million costs', async () => {
 			using source = new CodexPricingSource({
-				offline: true,
 				offlineLoader: async () => ({
 					'gpt-5': {
 						input_cost_per_token: 1.25e-6,

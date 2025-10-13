@@ -53,7 +53,7 @@ export const dailyCommand = define({
 		}
 
 		const pricingSource = new CodexPricingSource({
-			offline: ctx.values.offline,
+			offlineLoader: async () => import('../_macro.ts').then(async m => m.prefetchCodexPricing()),
 		});
 		try {
 			const rows = await buildDailyReport(events, {

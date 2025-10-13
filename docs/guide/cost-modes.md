@@ -283,14 +283,6 @@ better-ccusage monthly --mode auto --since 20240101 --order asc
 - **`auto` mode** - Moderate (conditional calculations)
 - **`calculate` mode** - Slowest (always calculates)
 
-### Offline Mode Compatibility
-
-```bash
-# All modes work with offline pricing data
-better-ccusage daily --mode calculate --offline
-better-ccusage monthly --mode auto --offline
-```
-
 ## Common Issues and Solutions
 
 ### Issue: Costs showing as $0.00

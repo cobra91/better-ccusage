@@ -103,10 +103,6 @@ export const statuslineCommand = define({
 	description: 'Display compact status line for Claude Code hooks with hybrid time+file caching (Beta)',
 	toKebab: true,
 	args: {
-		offline: {
-			...sharedArgs.offline,
-			default: true, // Default to offline mode for faster performance
-		},
 		visualBurnRate: {
 			type: 'enum',
 			choices: visualBurnRateChoices,
@@ -280,7 +276,6 @@ export const statuslineCommand = define({
 								Result.try({
 									try: async () => loadSessionUsageById(sessionId, {
 										mode: 'auto',
-										offline: mergedOptions.offline,
 									}),
 									catch: error => error,
 								})(),
@@ -331,7 +326,6 @@ export const statuslineCommand = define({
 								since: todayStr,
 								until: todayStr,
 								mode: 'auto',
-								offline: mergedOptions.offline,
 							}),
 							catch: error => error,
 						})(),
@@ -351,7 +345,6 @@ export const statuslineCommand = define({
 						Result.try({
 							try: async () => loadSessionBlockData({
 								mode: 'auto',
-								offline: mergedOptions.offline,
 							}),
 							catch: error => error,
 						})(),
@@ -433,7 +426,7 @@ export const statuslineCommand = define({
 					// Calculate context tokens from transcript with model-specific limits
 					const contextInfo = await Result.pipe(
 						Result.try({
-							try: calculateContextTokens(hookData.transcript_path, hookData.model.id, mergedOptions.offline),
+							try: calculateContextTokens(hookData.transcript_path, hookData.model.id),
 							catch: error => error,
 						}),
 						Result.inspectError(error => logger.debug(`Failed to calculate context tokens: ${error instanceof Error ? error.message : String(error)}`)),

@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url';
 import * as v from 'valibot';
 import {
 	modelPricingSchema,
-	PRICING_DATA_URL,
 } from './pricing.ts';
 
 export type PricingDataset = Record<string, ModelPricing>;
@@ -68,31 +67,6 @@ export function loadLocalPricingDataset(): PricingDataset {
 		console.warn('Failed to load local pricing data, returning empty dataset:', error);
 		return createPricingDataset();
 	}
-}
-
-export async function fetchPricingDataset(): Promise<PricingDataset> {
-	const response = await fetch(PRICING_DATA_URL);
-	if (!response.ok) {
-		throw new Error(`Failed to fetch pricing data: ${response.status} ${response.statusText}`);
-	}
-
-	const rawDataset = await response.json() as Record<string, unknown>;
-	const dataset = createPricingDataset();
-
-	for (const [modelName, modelData] of Object.entries(rawDataset)) {
-		if (modelData === null || modelData === undefined || typeof modelData !== 'object') {
-			continue;
-		}
-
-		const parsed = v.safeParse(modelPricingSchema, modelData);
-		if (!parsed.success) {
-			continue;
-		}
-
-		dataset[modelName] = parsed.output;
-	}
-
-	return dataset;
 }
 
 export function filterPricingDataset(

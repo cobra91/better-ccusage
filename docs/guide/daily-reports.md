@@ -142,16 +142,6 @@ better-ccusage daily --json
 }
 ```
 
-### Offline Mode
-
-Use cached pricing data without network access:
-
-```bash
-better-ccusage daily --offline
-# or short form:
-better-ccusage daily -O
-```
-
 ### Project Analysis
 
 Group usage by project instead of aggregating across all projects:

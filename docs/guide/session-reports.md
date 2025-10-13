@@ -202,16 +202,6 @@ better-ccusage session --json
 }
 ```
 
-### Offline Mode
-
-Use cached pricing data without network access:
-
-```bash
-better-ccusage session --offline
-# or short form:
-better-ccusage session -O
-```
-
 ## Analysis Use Cases
 
 ### Identify Expensive Conversations

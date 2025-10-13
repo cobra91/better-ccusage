@@ -6,7 +6,6 @@ const config = ryoppippi({
 	ignores: [
 		'packages',
 		'package.json',
-		'config-schema.json',
 	],
 }, {
 	rules: {

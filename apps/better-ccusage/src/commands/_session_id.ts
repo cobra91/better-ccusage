@@ -12,7 +12,6 @@ export type SessionIdContext = {
 	values: {
 		id: string;
 		mode: CostMode;
-		offline: boolean;
 		jq?: string;
 		timezone?: string;
 		locale: string; // normalized to non-optional to avoid touching data-loader
@@ -25,7 +24,6 @@ export type SessionIdContext = {
 export async function handleSessionIdLookup(ctx: SessionIdContext, useJson: boolean): Promise<void> {
 	const sessionUsage = await loadSessionUsageById(ctx.values.id, {
 		mode: ctx.values.mode,
-		offline: ctx.values.offline,
 	});
 
 	if (sessionUsage == null) {

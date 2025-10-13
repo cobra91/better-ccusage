@@ -206,16 +206,6 @@ better-ccusage blocks --json
 }
 ```
 
-### Offline Mode
-
-Use cached pricing data without network access:
-
-```bash
-better-ccusage blocks --offline
-# or short form:
-better-ccusage blocks -O
-```
-
 ## Analysis Use Cases
 
 ### Session Planning

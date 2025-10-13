@@ -133,12 +133,6 @@ better-ccusage monthly --json
 ]
 ```
 
-### Offline Mode
-
-```bash
-better-ccusage monthly --offline
-```
-
 ## Analysis Use Cases
 
 ### Budget Planning

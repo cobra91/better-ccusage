@@ -175,14 +175,6 @@ better-ccusage weekly --mode calculate
 better-ccusage weekly --mode display
 ```
 
-### Offline Mode
-
-Use cached pricing data:
-
-```bash
-better-ccusage weekly --offline
-```
-
 ## Common Use Cases
 
 ### Weekly Trends
