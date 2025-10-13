@@ -983,6 +983,7 @@ export async function loadDailyUsageData(
  *
  * @param options - Loading and filtering options (e.g., `claudePath`, `mode` for cost calculation, `project` filter, `since`/`until` date filters, `timezone`, and `order`) that control which files are read, how costs are computed, and how results are filtered/sorted.
  * @returns An array of session usage summaries (one per projectPath/sessionId) containing totals, model breakdowns, models used, versions, lastActivity, projectPath, sessionId, and source; results are sorted by `lastActivity`.
+ */
 export async function loadSessionData(
 	options?: LoadOptions,
 ): Promise<SessionUsage[]> {
