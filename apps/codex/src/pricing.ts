@@ -11,6 +11,15 @@ const CODEX_MODEL_ALIASES_MAP = new Map<string, string>([
 	['gpt-5-codex', 'gpt-5'],
 ]);
 
+/**
+ * Convert a per-token cost to its per-million (per M tokens) equivalent.
+ *
+ * If `value` is undefined, `fallback` is used; if both are undefined, zero is used.
+ *
+ * @param value - The per-token value to convert
+ * @param fallback - Fallback per-token value used when `value` is undefined
+ * @returns The per-million equivalent of the chosen per-token value
+ */
 function toPerMillion(value: number | undefined, fallback?: number): number {
 	const perToken = value ?? fallback ?? 0;
 	return perToken * MILLION;
