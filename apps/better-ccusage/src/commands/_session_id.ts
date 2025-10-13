@@ -19,7 +19,13 @@ export type SessionIdContext = {
 };
 
 /**
- * Handles the session ID lookup and displays usage data.
+ * Look up usage for a session ID and print either JSON output or a human-readable table.
+ *
+ * When no session is found this will print `null` (if `useJson`), or log a warning, and then exit the process with code 0.
+ * If a `jq` filter is provided in `ctx.values.jq`, the JSON output will be processed with `jq`; jq processing errors are logged and the process exits with code 1.
+ *
+ * @param ctx - Context containing the session `id`, `mode`, optional `jq`, `timezone`, and required `locale` used for loading and formatting the session usage
+ * @param useJson - If `true`, emit structured JSON (optionally filtered by `jq`); if `false`, emit a formatted human-readable table
  */
 export async function handleSessionIdLookup(ctx: SessionIdContext, useJson: boolean): Promise<void> {
 	const sessionUsage = await loadSessionUsageById(ctx.values.id, {
