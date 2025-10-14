@@ -9,6 +9,7 @@ import {
 import { define } from 'gunshi';
 import pc from 'picocolors';
 import { DEFAULT_TIMEZONE } from '../_consts.ts';
+import { prefetchCodexPricing } from '../_macro.ts';
 import { sharedArgs } from '../_shared-args.ts';
 import { formatModelsList, splitUsageTokens } from '../command-utils.ts';
 import { buildDailyReport } from '../daily-report.ts';
@@ -53,7 +54,7 @@ export const dailyCommand = define({
 		}
 
 		const pricingSource = new CodexPricingSource({
-			offline: ctx.values.offline,
+			offlineLoader: prefetchCodexPricing,
 		});
 		try {
 			const rows = await buildDailyReport(events, {

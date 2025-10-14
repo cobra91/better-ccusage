@@ -58,7 +58,6 @@ export const codexParametersShape = {
 	until: z.string().optional(),
 	timezone: z.string().optional(),
 	locale: z.string().optional(),
-	offline: z.boolean().optional(),
 } as const satisfies Record<string, z.ZodTypeAny>;
 
 export const codexParametersSchema = z.object(codexParametersShape);
@@ -75,6 +74,17 @@ function getCodexInvocation(): CliInvocation {
 	return cachedCodexInvocation;
 }
 
+/**
+ * Execute the codex CLI with the given command and parameters and return its JSON output.
+ *
+ * @param command - The codex subcommand to run; either 'daily' or 'monthly'.
+ * @param parameters - Parameters that, when present and non-empty, are appended as CLI flags:
+ *   - `since` -> `--since`
+ *   - `until` -> `--until`
+ *   - `timezone` -> `--timezone`
+ *   - `locale` -> `--locale`
+ * @returns The raw JSON output from the codex CLI as a string.
+ */
 async function runCodexCliJson(command: 'daily' | 'monthly', parameters: z.infer<typeof codexParametersSchema>): Promise<string> {
 	const { executable, prefixArgs } = getCodexInvocation();
 	const cliArgs: string[] = [...prefixArgs, command, '--json'];
@@ -94,12 +104,6 @@ async function runCodexCliJson(command: 'daily' | 'monthly', parameters: z.infer
 	const locale = parameters.locale;
 	if (locale != null && locale !== '') {
 		cliArgs.push('--locale', locale);
-	}
-	if (parameters.offline === true) {
-		cliArgs.push('--offline');
-	}
-	else if (parameters.offline === false) {
-		cliArgs.push('--no-offline');
 	}
 
 	return executeCliCommand(executable, cliArgs, {

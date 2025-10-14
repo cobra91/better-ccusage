@@ -1,9 +1,6 @@
 import { Result } from '@praha/byethrow';
 import * as v from 'valibot';
 
-export const PRICING_DATA_URL
-	= 'https://raw.githubusercontent.com/cobra91/better-ccusage/main/model_prices_and_context_window.json';
-
 /**
  * Default token threshold for tiered pricing in 1M context window models.
  * The pricing schema hard-codes this threshold in field names
@@ -57,9 +54,7 @@ export type PricingLogger = {
 
 export type PricingFetcherOptions = {
 	logger?: PricingLogger;
-	offline?: boolean;
-	offlineLoader?: () => Promise<Record<string, ModelPricing>>;
-	url?: string;
+	offlineLoader: () => Promise<Record<string, ModelPricing>>;
 	providerPrefixes?: string[];
 };
 
@@ -90,16 +85,12 @@ function createLogger(logger?: PricingLogger): PricingLogger {
 export class PricingFetcher implements Disposable {
 	private cachedPricing: Map<string, ModelPricing> | null = null;
 	private readonly logger: PricingLogger;
-	private readonly offline: boolean;
-	private readonly offlineLoader?: () => Promise<Record<string, ModelPricing>>;
-	private readonly url: string;
+	private readonly offlineLoader: () => Promise<Record<string, ModelPricing>>;
 	private readonly providerPrefixes: string[];
 
-	constructor(options: PricingFetcherOptions = {}) {
+	constructor(options: PricingFetcherOptions) {
 		this.logger = createLogger(options.logger);
-		this.offline = Boolean(options.offline);
 		this.offlineLoader = options.offlineLoader;
-		this.url = options.url ?? PRICING_DATA_URL;
 		this.providerPrefixes = options.providerPrefixes ?? DEFAULT_PROVIDER_PREFIXES;
 	}
 
@@ -111,88 +102,22 @@ export class PricingFetcher implements Disposable {
 		this.cachedPricing = null;
 	}
 
-	private readonly loadOfflinePricing = Result.try({
-		try: async () => {
-			if (this.offlineLoader == null) {
-				throw new Error('Offline loader was not provided');
-			}
-
-			const pricing = new Map(Object.entries(await this.offlineLoader()));
-			this.cachedPricing = pricing;
-			return pricing;
-		},
-		catch: error => new Error('Failed to load offline pricing data', { cause: error }),
-	});
-
-	private async handleFallbackToCachedPricing(originalError: unknown): Result.ResultAsync<Map<string, ModelPricing>, Error> {
-		this.logger.warn('Failed to fetch model pricing from external source, falling back to cached pricing data');
-		this.logger.debug('Fetch error details:', originalError);
-		return Result.pipe(
-			this.loadOfflinePricing(),
-			Result.inspect((pricing) => {
-				this.logger.info(`Using cached pricing data for ${pricing.size} models`);
-			}),
-			Result.inspectError((error) => {
-				this.logger.error('Failed to load cached pricing data as fallback:', error);
-				this.logger.error('Original fetch error:', originalError);
-			}),
-		);
-	}
-
 	private async ensurePricingLoaded(): Result.ResultAsync<Map<string, ModelPricing>, Error> {
+		if (this.cachedPricing != null) {
+			return Result.succeed(this.cachedPricing);
+		}
+
 		return Result.pipe(
-			this.cachedPricing != null ? Result.succeed(this.cachedPricing) : Result.fail(new Error('Cached pricing not available')),
-			Result.orElse(async () => {
-				// Always try offline loader first (integrated pricing list)
-				const offlineResult = await this.loadOfflinePricing();
-				if (Result.isSuccess(offlineResult)) {
-					return offlineResult;
-				}
-
-				// Only try external fetch if offline failed AND we're not in offline mode
-				if (!this.offline) {
-					this.logger.warn('Fetching latest model pricing from external source...');
-					return Result.pipe(
-						Result.try({
-							try: fetch(this.url),
-							catch: error => new Error('Failed to fetch model pricing from external source', { cause: error }),
-						}),
-						Result.andThrough((response) => {
-							if (!response.ok) {
-								return Result.fail(new Error(`Failed to fetch pricing data: ${response.statusText}`));
-							}
-							return Result.succeed();
-						}),
-						Result.andThen(async response => Result.try({
-							try: response.json() as Promise<Record<string, unknown>>,
-							catch: error => new Error('Failed to parse pricing data', { cause: error }),
-						})),
-						Result.map((data) => {
-							const pricing = new Map<string, ModelPricing>();
-							for (const [modelName, modelData] of Object.entries(data)) {
-								if (typeof modelData !== 'object' || modelData == null) {
-									continue;
-								}
-
-								const parsed = v.safeParse(modelPricingSchema, modelData);
-								if (!parsed.success) {
-									continue;
-								}
-
-								pricing.set(modelName, parsed.output);
-							}
-							return pricing;
-						}),
-						Result.inspect((pricing) => {
-							this.cachedPricing = pricing;
-							this.logger.info(`Loaded pricing for ${pricing.size} models`);
-						}),
-						Result.orElse(async error => this.handleFallbackToCachedPricing(error)),
-					);
-				}
-
-				// In offline mode or if offline loader failed, return the error
-				return Result.fail(new Error('Offline pricing loader failed and external fetch disabled'));
+			Result.try({
+				try: async () => {
+					const pricing = new Map(Object.entries(await this.offlineLoader()));
+					this.cachedPricing = pricing;
+					return pricing;
+				},
+				catch: error => new Error('Failed to load pricing data', { cause: error }),
+			})(),
+			Result.inspect((pricing) => {
+				this.logger.info(`Loaded pricing for ${pricing.size} models`);
 			}),
 		);
 	}
@@ -410,7 +335,6 @@ if (import.meta.vitest != null) {
 	describe('PricingFetcher', () => {
 		it('returns pricing data from model pricing dataset', async () => {
 			using fetcher = new PricingFetcher({
-				offline: true,
 				offlineLoader: async () => ({
 					'gpt-5': {
 						input_cost_per_token: 1.25e-6,
@@ -426,7 +350,6 @@ if (import.meta.vitest != null) {
 
 		it('calculates cost using pricing information', async () => {
 			using fetcher = new PricingFetcher({
-				offline: true,
 				offlineLoader: async () => ({
 					'gpt-5': {
 						input_cost_per_token: 1.25e-6,
@@ -447,7 +370,6 @@ if (import.meta.vitest != null) {
 
 		it('calculates tiered pricing for tokens exceeding 200k threshold (300k input, 250k output, 300k cache creation, 250k cache read)', async () => {
 			using fetcher = new PricingFetcher({
-				offline: true,
 				offlineLoader: async () => ({
 					'anthropic/claude-4-sonnet-20250514': {
 						input_cost_per_token: 3e-6,
@@ -480,7 +402,6 @@ if (import.meta.vitest != null) {
 
 		it('uses standard pricing for 300k/250k tokens when model lacks tiered pricing', async () => {
 			using fetcher = new PricingFetcher({
-				offline: true,
 				offlineLoader: async () => ({
 					'gpt-5': {
 						input_cost_per_token: 1e-6,
@@ -500,7 +421,6 @@ if (import.meta.vitest != null) {
 
 		it('correctly applies pricing at 200k boundary (200k uses base, 200,001 uses tiered, 0 returns 0)', async () => {
 			using fetcher = new PricingFetcher({
-				offline: true,
 				offlineLoader: async () => ({
 					'claude-4-sonnet-20250514': {
 						input_cost_per_token: 3e-6,
@@ -533,7 +453,6 @@ if (import.meta.vitest != null) {
 
 		it('charges only for tokens above 200k when base price is missing (300k→100k charged, 100k→0 charged)', async () => {
 			using fetcher = new PricingFetcher({
-				offline: true,
 				offlineLoader: async () => ({
 					'theoretical-model': {
 						// No base price, only tiered pricing

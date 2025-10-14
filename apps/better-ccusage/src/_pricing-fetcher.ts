@@ -18,6 +18,13 @@ const CCUSAGE_PROVIDER_PREFIXES = [
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 const PREFETCHED_GLM_PRICING = prefetchGLMPricing();
 
+/**
+ * Combine prefetched Claude and GLM model pricing into a single lookup object.
+ *
+ * Merges the two prefetched pricing maps into one Record keyed by model identifier.
+ *
+ * @returns A mapping from model identifier to `ModelPricing`; when the same key exists in both sources, the GLM entry overrides the Claude entry.
+ */
 async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
 	const [claudePricing, glmPricing] = await Promise.all([
 		PREFETCHED_CLAUDE_PRICING,
@@ -31,9 +38,8 @@ async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
 }
 
 export class CcusagePricingFetcher extends PricingFetcher {
-	constructor(offline?: boolean) {
+	constructor() {
 		super({
-			offline: offline ?? true,
 			offlineLoader: async () => prefetchCcusagePricing(),
 			logger,
 			providerPrefixes: CCUSAGE_PROVIDER_PREFIXES,
@@ -43,14 +49,14 @@ export class CcusagePricingFetcher extends PricingFetcher {
 
 if (import.meta.vitest != null) {
 	describe('PricingFetcher', () => {
-		it('loads offline pricing when offline flag is true', async () => {
-			using fetcher = new CcusagePricingFetcher(true);
+		it('loads pricing data successfully', async () => {
+			using fetcher = new CcusagePricingFetcher();
 			const pricing = await Result.unwrap(fetcher.fetchModelPricing());
 			expect(pricing.size).toBeGreaterThan(0);
 		});
 
 		it('calculates cost for Claude model tokens', async () => {
-			using fetcher = new CcusagePricingFetcher(true);
+			using fetcher = new CcusagePricingFetcher();
 			const pricing = await Result.unwrap(fetcher.getModelPricing('claude-sonnet-4-20250514'));
 			expect(pricing).not.toBeNull();
 			const cost = fetcher.calculateCostFromPricing({
@@ -63,7 +69,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('calculates cost for claude-sonnet-4-5-20250929 model tokens', async () => {
-			using fetcher = new CcusagePricingFetcher(true);
+			using fetcher = new CcusagePricingFetcher();
 			const pricing = await Result.unwrap(fetcher.getModelPricing('claude-sonnet-4-5-20250929'));
 			expect(pricing).not.toBeNull();
 			const cost = fetcher.calculateCostFromPricing({
@@ -76,7 +82,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('calculates cost for GLM-4.5 model tokens', async () => {
-			using fetcher = new CcusagePricingFetcher(true);
+			using fetcher = new CcusagePricingFetcher();
 			const pricing = await Result.unwrap(fetcher.getModelPricing('glm-4.5'));
 			expect(pricing).not.toBeNull();
 			const cost = fetcher.calculateCostFromPricing({
@@ -89,7 +95,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('calculates cost for GLM-4.5 model with provider prefix', async () => {
-			using fetcher = new CcusagePricingFetcher(true);
+			using fetcher = new CcusagePricingFetcher();
 			const pricing = await Result.unwrap(fetcher.getModelPricing('zai/glm-4.5'));
 			expect(pricing).not.toBeNull();
 			const cost = fetcher.calculateCostFromPricing({
@@ -102,7 +108,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('calculates cost for GLM-4.5-Air model', async () => {
-			using fetcher = new CcusagePricingFetcher(true);
+			using fetcher = new CcusagePricingFetcher();
 			const pricing = await Result.unwrap(fetcher.getModelPricing('glm-4.5-air'));
 			expect(pricing).not.toBeNull();
 			const cost = fetcher.calculateCostFromPricing({

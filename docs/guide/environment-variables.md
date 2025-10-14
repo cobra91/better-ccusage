@@ -133,15 +133,6 @@ LOG_LEVEL=0 ccusage monthly --json | python analyze.py
 
 ## Additional Environment Variables
 
-### CCUSAGE_OFFLINE
-
-Force offline mode by default:
-
-```bash
-export CCUSAGE_OFFLINE=1
-better-ccusage daily  # Runs in offline mode
-```
-
 ### NO_COLOR
 
 Disable colored output (standard CLI convention):
@@ -217,11 +208,11 @@ Environment variables have lower precedence than command-line arguments but high
 Example:
 
 ```bash
-# Environment variable sets offline mode
-export CCUSAGE_OFFLINE=1
+# Environment variable sets log level
+export LOG_LEVEL=1
 
 # But command-line argument overrides it
-better-ccusage daily --no-offline  # Runs in online mode
+better-ccusage daily --debug  # Shows debug output
 ```
 
 ## Debugging

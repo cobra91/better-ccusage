@@ -171,7 +171,6 @@ better-ccusage extends the original ccusage functionality with support for:
 - 📄 **JSON Output**: Export data in structured JSON format with `--json`
 - 💰 **Cost Tracking**: Shows costs in USD for each day/month/session
 - 🔄 **Cache Token Support**: Tracks and displays cache creation and cache read tokens separately
-- 🌐 **Offline Mode**: Use pre-cached pricing data without network connectivity with `--offline`
 - 🔌 **MCP Integration**: Built-in Model Context Protocol server for integration with other tools
 - 🏗️ **Multi-Instance Support**: Group usage by project with `--instances` flag and filter by specific projects
 - 🌍 **Timezone Support**: Configure timezone for date grouping with `--timezone` option

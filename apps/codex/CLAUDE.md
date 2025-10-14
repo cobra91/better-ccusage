@@ -28,7 +28,6 @@
   - Input: $0.00125 per 1K tokens (→ $1.25 per 1M).
   - Cached input: $0.000125 per 1K tokens (→ $0.125 per 1M).
   - Output: $0.01 per 1K tokens (→ $10 per 1M).
-- Command flag `--offline` forces use of the embedded pricing snapshot.
 
 ### Token mapping & reasoning notes
 

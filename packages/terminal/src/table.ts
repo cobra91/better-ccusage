@@ -326,7 +326,7 @@ function formatModelName(modelName: string): string {
 	// e.g., "claude-sonnet-4-5-20250929" -> "sonnet-4-5"
 	// e.g., "claude-sonnet-4-20250514" -> "sonnet-4"
 	// e.g., "claude-opus-4-20250514" -> "opus-4"
-	const match = /claude-(\w+)-([\d-]+)-\d{8}/.exec(modelName);
+	const match = /claude-(\w+)-([\d-]+)-(\d{8})/.exec(modelName);
 	if (match != null) {
 		return `${match[1]}-${match[2]}`;
 	}
@@ -981,6 +981,15 @@ if (import.meta.vitest != null) {
 		it('handles models that do not match pattern with bullet points', () => {
 			const models = ['custom-model', 'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929'];
 			expect(formatModelsDisplayMultiline(models)).toBe('- custom-model\n- sonnet-4\n- sonnet-4-5');
+		});
+
+		it('formats Claude 4.5 models correctly', () => {
+			expect(formatModelsDisplayMultiline(['claude-sonnet-4-5-20250929'])).toBe('- sonnet-4-5');
+		});
+
+		it('formats mixed model versions', () => {
+			const models = ['claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929', 'claude-opus-4-1-20250805'];
+			expect(formatModelsDisplayMultiline(models)).toBe('- opus-4-1\n- sonnet-4\n- sonnet-4-5');
 		});
 	});
 }

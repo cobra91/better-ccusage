@@ -146,16 +146,6 @@ deno run \
   npm:better-ccusage@latest
 ```
 
-Also you can use `offline` mode to run better-ccusage without network access:
-
-```bash
-deno run \
-  -E \
-  -R=$HOME/.claude/projects/ \
-  -S=homedir \
-  npm:better-ccusage@latest --offline
-```
-
 ## Verification
 
 After installation, verify better-ccusage is working:
@@ -261,7 +251,7 @@ If installation fails due to network issues:
 # Try with different registry
 npm install -g better-ccusage --registry https://registry.npmjs.org
 
-# Or use bunx for offline-capable runs
+# Or use bunx
 bunx better-ccusage
 ```
 

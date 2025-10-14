@@ -11,13 +11,21 @@ const CODEX_MODEL_ALIASES_MAP = new Map<string, string>([
 	['gpt-5-codex', 'gpt-5'],
 ]);
 
+/**
+ * Convert a per-token cost to its per-million (per M tokens) equivalent.
+ *
+ * If `value` is undefined, `fallback` is used; if both are undefined, zero is used.
+ *
+ * @param value - The per-token value to convert
+ * @param fallback - Fallback per-token value used when `value` is undefined
+ * @returns The per-million equivalent of the chosen per-token value
+ */
 function toPerMillion(value: number | undefined, fallback?: number): number {
 	const perToken = value ?? fallback ?? 0;
 	return perToken * MILLION;
 }
 
 export type CodexPricingSourceOptions = {
-	offline?: boolean;
 	offlineLoader?: () => Promise<Record<string, InternalModelPricing>>;
 };
 
@@ -28,7 +36,6 @@ export class CodexPricingSource implements PricingSource, Disposable {
 
 	constructor(options: CodexPricingSourceOptions = {}) {
 		this.fetcher = new PricingFetcher({
-			offline: options.offline ?? false,
 			offlineLoader: options.offlineLoader ?? (async () => PREFETCHED_CODEX_PRICING),
 			logger,
 			providerPrefixes: CODEX_PROVIDER_PREFIXES,
@@ -73,7 +80,6 @@ if (import.meta.vitest != null) {
 	describe('CodexPricingSource', () => {
 		it('converts model pricing to per-million costs', async () => {
 			using source = new CodexPricingSource({
-				offline: true,
 				offlineLoader: async () => ({
 					'gpt-5': {
 						input_cost_per_token: 1.25e-6,

@@ -68,13 +68,6 @@ export const sharedArgs = {
 		description: 'Show per-model cost breakdown',
 		default: false,
 	},
-	offline: {
-		type: 'boolean',
-		negatable: true,
-		short: 'O',
-		description: 'Use cached pricing data for Claude models instead of fetching from API',
-		default: false,
-	},
 	color: { // --color and FORCE_COLOR=1 is handled by picocolors
 		type: 'boolean',
 		description: 'Enable colored output (default: auto). FORCE_COLOR=1 has the same effect.',

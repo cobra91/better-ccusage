@@ -51,7 +51,6 @@ export const sessionCommand = define({
 				values: {
 					id: mergedOptions.id,
 					mode: mergedOptions.mode,
-					offline: mergedOptions.offline,
 					jq: mergedOptions.jq,
 					timezone: mergedOptions.timezone,
 					locale: mergedOptions.locale ?? DEFAULT_LOCALE,
@@ -64,7 +63,6 @@ export const sessionCommand = define({
 			since: ctx.values.since,
 			until: ctx.values.until,
 			mode: ctx.values.mode,
-			offline: ctx.values.offline,
 			timezone: ctx.values.timezone,
 			locale: ctx.values.locale,
 		});

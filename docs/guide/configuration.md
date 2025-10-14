@@ -15,7 +15,7 @@ better-ccusage supports four configuration methods, each with its own use case:
 
 Settings are applied in this priority order (highest to lowest):
 
-1. **Command-line arguments** (e.g., `--json`, `--offline`)
+1. **Command-line arguments** (e.g., `--json`, `--mode`)
 2. **Custom config file** (via `--config` flag)
 3. **Environment variables** (e.g., `CLAUDE_CONFIG_DIR`, `LOG_LEVEL`)
 4. **Local project config** (`.better-ccusage/better-ccusage.json`)
@@ -119,7 +119,7 @@ export CLAUDE_CONFIG_DIR="/ci/claude-data"
 export LOG_LEVEL=1  # Warnings only
 
 # Run with specific options
-better-ccusage daily --offline --json > report.json
+better-ccusage daily --json > report.json
 ```
 
 ### Multiple Claude Installations
@@ -139,11 +139,10 @@ better-ccusage daily
 Control how costs are calculated:
 
 - **Mode**: `auto` (default), `calculate`, or `display`
-- **Offline**: Use cached pricing data
 - **Breakdown**: Show per-model costs
 
 ```bash
-better-ccusage daily --mode calculate --breakdown --offline
+better-ccusage daily --mode calculate --breakdown
 ```
 
 ### Date and Time

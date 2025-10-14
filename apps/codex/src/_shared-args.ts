@@ -30,13 +30,6 @@ export const sharedArgs = {
 		description: 'Locale for formatting',
 		default: DEFAULT_LOCALE,
 	},
-	offline: {
-		type: 'boolean',
-		short: 'O',
-		description: 'Use cached pricing data instead of fetching from external source',
-		default: false,
-		negatable: true,
-	},
 	compact: {
 		type: 'boolean',
 		description: 'Force compact table layout for narrow terminals',

@@ -5,7 +5,6 @@
 		"mode": "auto",
 		"timezone": "Asia/Tokyo",
 		"locale": "ja-JP",
-		"offline": false,
 		"breakdown": false
 	},
 	"commands": {
@@ -25,8 +24,6 @@
 			"sessionLength": 5,
 			"active": false
 		},
-		"statusline": {
-			"offline": true
-		}
+		"statusline": {}
 	}
 }
