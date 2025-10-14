@@ -35,7 +35,7 @@ better-ccusage session --id session-abc123-def456 --json
 better-ccusage session --id session-abc123-def456 --json --jq '.totalCost'
 
 # Use in a custom statusline script
-COST=$(ccusage session --id "$SESSION_ID" --json --jq '.totalCost')
+COST=$(better-ccusage session --id "$SESSION_ID" --json --jq '.totalCost')
 echo "Current session: \$${COST}"
 ```
 
@@ -46,7 +46,7 @@ Session IDs are the actual filenames (without `.jsonl` extension) stored in Clau
 - `session-20250621-abc123-def456`
 - `project-conversation-xyz789`
 
-You can find session IDs by running `ccusage session` and looking for the files in your Claude data directory.
+You can find session IDs by running `better-ccusage session` and looking for the files in your Claude data directory.
 
 ## Example Output
 
@@ -293,7 +293,7 @@ Session reports adapt to your terminal width:
 - **Wide terminals (≥100 chars)**: Shows all columns including cache metrics
 - **Narrow terminals (<100 chars)**: Compact mode with essential columns (Session, Models, Input, Output, Cost, Last Activity)
 
-When in compact mode, ccusage displays a message explaining how to see the full data.
+When in compact mode, better-ccusage displays a message explaining how to see the full data.
 
 ## Related Commands
 
