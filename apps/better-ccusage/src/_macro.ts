@@ -31,7 +31,7 @@ const GLM_MODEL_PREFIXES = [
 	'glm-4-air',
 ];
 
-function isGLMModel(modelName: string): boolean {
+function isGLMModel(modelName: string, _pricing: ModelPricing): boolean {
 	const lowerModelName = modelName.toLowerCase();
 	return GLM_MODEL_PREFIXES.some(prefix =>
 		lowerModelName.includes(prefix.toLowerCase()),
@@ -42,7 +42,7 @@ export async function prefetchGLMPricing(): Promise<Record<string, ModelPricing>
 	try {
 		// Always use local pricing data
 		const dataset = loadLocalPricingDataset();
-		return filterPricingDataset(dataset);
+		return filterPricingDataset(dataset, isGLMModel);
 	}
 	catch (error) {
 		console.warn('Failed to load local GLM pricing data, proceeding with empty cache.', error);

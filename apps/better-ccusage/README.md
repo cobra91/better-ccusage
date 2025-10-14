@@ -181,16 +181,16 @@ better-ccusage extends the original ccusage functionality with support for:
 ## Comparison with ccusage
 
 | Feature                      | ccusage | better-ccusage |
-| ---------------------------- | --------| -------------- |
-| Anthropic Models             | ✅      | ✅            |
-| Zai Provider                 | ❌      | ✅            |
-| GLM-4.5 Models               | ❌      | ✅            |
-| GLM-4.6 Models               | ❌      | ✅            |
-| kat-coder                    | ❌      | ✅            |
-| Multi-Provider Support       | ❌      | ✅            |
-| Provider Detection           | ❌      | ✅            |
-| Cost Calculation by Provider | ❌      | ✅            |
-| Original ccusage Features    | ✅      | ✅            |
+| ---------------------------- | ------- | -------------- |
+| Anthropic Models             | ✅      | ✅             |
+| Zai Provider                 | ❌      | ✅             |
+| GLM-4.5 Models               | ❌      | ✅             |
+| GLM-4.6 Models               | ❌      | ✅             |
+| kat-coder                    | ❌      | ✅             |
+| Multi-Provider Support       | ❌      | ✅             |
+| Provider Detection           | ❌      | ✅             |
+| Cost Calculation by Provider | ❌      | ✅             |
+| Original ccusage Features    | ✅      | ✅             |
 
 ## Star History
 

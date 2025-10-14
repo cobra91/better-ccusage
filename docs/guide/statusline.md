@@ -20,11 +20,11 @@ Add this to your `~/.claude/settings.json` or `~/.config/claude/settings.json`:
 
 ```json
 {
- "statusLine": {
-  "type": "command",
-  "command": "bun x better-ccusage statusline", // Use "npx -y better-ccusage statusline" if you prefer npm
-  "padding": 0 // Optional: set to 0 to let status line go to edge
- }
+	"statusLine": {
+		"type": "command",
+		"command": "bun x better-ccusage statusline", // Use "npx -y better-ccusage statusline" if you prefer npm
+		"padding": 0 // Optional: set to 0 to let status line go to edge
+	}
 }
 ```
 
@@ -34,11 +34,11 @@ You can enhance the burn rate display with visual indicators:
 
 ```json
 {
- "statusLine": {
-  "type": "command",
-  "command": "bun x better-ccusage statusline --visual-burn-rate emoji", // Add emoji indicators
-  "padding": 0
- }
+	"statusLine": {
+		"type": "command",
+		"command": "bun x better-ccusage statusline --visual-burn-rate emoji", // Add emoji indicators
+		"padding": 0
+	}
 }
 ```
 
@@ -50,11 +50,11 @@ You can control how session costs are calculated and displayed:
 
 ```json
 {
- "statusLine": {
-  "type": "command",
-  "command": "bun x better-ccusage statusline --cost-source both", // Show both CC and better-ccusage costs
-  "padding": 0
- }
+	"statusLine": {
+		"type": "command",
+		"command": "bun x better-ccusage statusline --cost-source both", // Show both CC and better-ccusage costs
+		"padding": 0
+	}
 }
 ```
 
@@ -146,11 +146,11 @@ bun x better-ccusage statusline --cost-source both
 
 ```json
 {
- "statusLine": {
-  "type": "command",
-  "command": "bun x better-ccusage statusline --cost-source both",
-  "padding": 0
- }
+	"statusLine": {
+		"type": "command",
+		"command": "bun x better-ccusage statusline --cost-source both",
+		"padding": 0
+	}
 }
 ```
 
@@ -200,8 +200,8 @@ With these settings:
 
 ```json
 {
- "command": "bun x better-ccusage statusline --context-low-threshold 60 --context-medium-threshold 90",
- "timeout": 5000
+	"command": "bun x better-ccusage statusline --context-low-threshold 60 --context-medium-threshold 90",
+	"timeout": 5000
 }
 ```
 
