@@ -21,7 +21,7 @@ pnpm test
 
 ### Repository Structure Differences
 
-- **Your repo**: `apps/better-ccusage/` (with Zai/GLM-4.5 custom features)
+- **Your repo**: `apps/better-ccusage/` (with Zai/GLM-4.5, GLM-4.6 custom features)
 - **Upstream**: `apps/ccusage/` (original ccusage)
 
 This makes automated merging complex. Here's the safest manual approach:
@@ -85,7 +85,7 @@ git diff upstream/main:apps/ccusage/model_prices_and_context_window.json apps/be
 Copy improvements from upstream to your `apps/better-ccusage/` directory, preserving:
 
 - Your Zai provider support
-- GLM-4.5 model pricing
+- GLM-4.5, GLM-4.6, kat-coder model pricing
 - Multi-provider cost calculation
 - Your package structure
 
@@ -95,7 +95,7 @@ After applying upstream changes, verify:
 
 - [ ] All CLI commands still work: `pnpm run start daily`
 - [ ] Zai provider functionality preserved
-- [ ] GLM-4.5 models still recognized
+- [ ] GLM-4.5, GLM-4.6, kat-coder models still recognized
 - [ ] Custom pricing data intact
 - [ ] MCP server operational: `pnpm dlx @better-ccusage/mcp@latest -- --help`
 - [ ] Test suite passes: `pnpm test`

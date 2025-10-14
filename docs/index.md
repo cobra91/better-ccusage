@@ -3,10 +3,10 @@ layout: home
 
 hero:
   name: better-ccusage
-  text: Claude Code Usage Analysis
-  tagline: A powerful CLI tool for analyzing Claude Code usage from local JSONL files
+  text: Claude Code/Droid Usage Analysis
+  tagline: A powerful CLI tool for analyzing Claude Code/Droid Usage from local JSONL files
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: better-ccusage logo
   actions:
     - theme: brand

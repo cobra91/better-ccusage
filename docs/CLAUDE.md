@@ -1,11 +1,11 @@
 # CLAUDE.md - Documentation
 
-This directory contains the VitePress-based documentation website for ccusage.
+This directory contains the VitePress-based documentation website for better-ccusage.
 
 ## Package Overview
 
 **Name**: `@better-ccusage/docs`
-**Description**: Documentation for ccusage
+**Description**: Documentation for better-ccusage
 **Type**: VitePress documentation site (private package)
 
 ## Development Commands
@@ -37,7 +37,7 @@ This directory contains the VitePress-based documentation website for ccusage.
 
 - `update-api-index.ts` - Script to generate API documentation index
 - `typedoc.config.mjs` - TypeDoc configuration for API docs generation
-- `public/config-schema.json` - JSON schema copied from ccusage package during build
+- `public/config-schema.json` - JSON schema copied from better-ccusage package during build
 
 ## Documentation Guidelines
 
@@ -61,8 +61,8 @@ This directory contains the VitePress-based documentation website for ccusage.
 
 ## Build Process
 
-1. **API Documentation**: `./update-api-index.ts` generates API docs from ccusage TypeScript source
-2. **Schema Copy**: `config-schema.json` is copied from the ccusage package to public directory
+1. **API Documentation**: `./update-api-index.ts` generates API docs from better-ccusage TypeScript source
+2. **Schema Copy**: `config-schema.json` is copied from the better-ccusage package to public directory
 3. **VitePress Build**: Standard VitePress build process creates static site
 4. **Deployment**: Built site is deployed to Cloudflare using Wrangler
 
@@ -75,7 +75,7 @@ This directory contains the VitePress-based documentation website for ccusage.
 - `typedoc-plugin-markdown` - Markdown output for TypeDoc
 - `typedoc-vitepress-theme` - VitePress theme for TypeDoc
 - `wrangler` - Cloudflare deployment tool
-- `ccusage` - Main package (workspace dependency for API docs)
+- `better-ccusage` - Main package (workspace dependency for API docs)
 
 **VitePress Plugins:**
 

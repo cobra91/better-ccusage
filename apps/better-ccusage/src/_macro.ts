@@ -25,15 +25,13 @@ const GLM_MODEL_PREFIXES = [
 	'glm-4',
 	'glm-4.5',
 	'glm-4-5',
-	'deepinfra/zai-org/GLM',
-	'vercel_ai_gateway/zai/glm',
-	'deepinfra/glm',
-	'vercel_ai_gateway/glm',
+	'glm-4.6',
+	'glm-4-6',
 	'glm-4.5-air',
 	'glm-4-air',
 ];
 
-function isGLMModel(modelName: string, _pricing: ModelPricing): boolean {
+function isGLMModel(modelName: string): boolean {
 	const lowerModelName = modelName.toLowerCase();
 	return GLM_MODEL_PREFIXES.some(prefix =>
 		lowerModelName.includes(prefix.toLowerCase()),
@@ -44,7 +42,7 @@ export async function prefetchGLMPricing(): Promise<Record<string, ModelPricing>
 	try {
 		// Always use local pricing data
 		const dataset = loadLocalPricingDataset();
-		return filterPricingDataset(dataset, isGLMModel);
+		return filterPricingDataset(dataset);
 	}
 	catch (error) {
 		console.warn('Failed to load local GLM pricing data, proceeding with empty cache.', error);

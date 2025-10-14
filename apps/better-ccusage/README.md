@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.png" alt="better-ccusage logo" width="256" height="256">
+    <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.svg" alt="better-ccusage logo" width="256" height="256">
     <h1>better-ccusage</h1>
 </div>
 
@@ -16,27 +16,27 @@
     <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/screenshot.png">
 </div>
 
-> Analyze your Claude Code token usage and costs from local JSONL files with multi-provider support — incredibly fast and informative!
+> Analyze your Claude Code or Droid token usage and costs from local JSONL files with multi-provider support — incredibly fast and informative!
 
 ## About better-ccusage
 
-**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different models like Zai and GLM-4.5.
+**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashcope and many models like glm-4.5, glm-4.6, kat-coder, sonnet-4, sonnet-4.5 and Qwen-Max etc..
 
 ### Why the Fork?
 
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5** models from other AI providers
+- **GLM-4.5, GLM-4.6, kat-coder** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
 
 ## better-ccusage Family
 
-### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code Usage Analyzer with Multi-Provider Support
+### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and GLM-4.5 models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
+The main CLI tool for analyzing Claude Code/Droid Usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and GLM-4.5, GLM-4.6 models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
 
 ### 🤖 [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex) - OpenAI Codex Usage Analyzer
 
@@ -136,14 +136,14 @@ better-ccusage extends the original ccusage functionality with support for:
 
 ### 🔄 Zai Provider Integration
 
-- Track usage when using Zai's Claude Code integration
+- Track usage when using Zai's Claude Code/Droid integration
 - Support for Zai-specific model variants
 - Accurate cost calculation for Zai pricing
 
-### 🚀 GLM-4.5 Model Support
+### 🚀 GLM-4.5, GLM-4.6 Model Support
 
-- Full support for GLM-4.5 models from various providers
-- Token counting and cost calculation optimized for GLM-4.5
+- Full support for GLM-4.5, GLM-4.6 models from various providers
+- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6
 - Compatibility with existing Claude Code workflows
 
 ### 🌐 Provider Detection
@@ -160,7 +160,7 @@ better-ccusage extends the original ccusage functionality with support for:
 - ⏰ **5-Hour Blocks Report**: Track usage within Claude's billing windows with active block monitoring
 - 📈 **Live Monitoring**: Real-time dashboard showing active session progress, token burn rate, and cost projections with `blocks --live`
 - 🚀 **Statusline Integration**: Compact usage display for Claude Code status bar hooks (Beta)
-- 🤖 **Multi-Provider Model Tracking**: Track models from Anthropic, Zai, GLM-4.5, and other providers
+- 🤖 **Multi-Provider Model Tracking**: Track models from Anthropic, Zai, Dashcope and other providers
 - 📊 **Model Breakdown**: View per-model cost breakdown with `--breakdown` flag
 - 📅 **Date Filtering**: Filter reports by date range using `--since` and `--until`
 - 📁 **Custom Path**: Support for custom Claude data directory locations
@@ -181,14 +181,16 @@ better-ccusage extends the original ccusage functionality with support for:
 ## Comparison with ccusage
 
 | Feature                      | ccusage | better-ccusage |
-| ---------------------------- | ------- | -------------- |
-| Anthropic Models             | ✅      | ✅             |
-| Zai Provider                 | ❌      | ✅             |
-| GLM-4.5 Models               | ❌      | ✅             |
-| Multi-Provider Support       | ❌      | ✅             |
-| Provider Detection           | ❌      | ✅             |
-| Cost Calculation by Provider | ❌      | ✅             |
-| Original ccusage Features    | ✅      | ✅             |
+| ---------------------------- | --------| -------------- |
+| Anthropic Models             | ✅      | ✅            |
+| Zai Provider                 | ❌      | ✅            |
+| GLM-4.5 Models               | ❌      | ✅            |
+| GLM-4.6 Models               | ❌      | ✅            |
+| kat-coder                    | ❌      | ✅            |
+| Multi-Provider Support       | ❌      | ✅            |
+| Provider Detection           | ❌      | ✅            |
+| Cost Calculation by Provider | ❌      | ✅            |
+| Original ccusage Features    | ✅      | ✅            |
 
 ## Star History
 

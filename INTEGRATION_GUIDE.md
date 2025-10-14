@@ -9,7 +9,7 @@ This guide helps manage integrations from the upstream ccusage project while pre
 Your custom additions:
 
 - Zai provider support
-- GLM-4.5 model integration
+- GLM-4.5, GLM-4.6, kat-coder model integration
 - Multi-provider cost calculation
 
 **Conflict Risk:** HIGH - Upstream may add similar features or change pricing structure
@@ -118,7 +118,7 @@ git add package.json pnpm-lock.yaml
 After each integration, verify:
 
 - [ ] Zai provider support works
-- [ ] GLM-4.5 models are recognized
+- [ ] GLM-4.5, GLM-4.6, kat-coder models are recognized
 - [ ] Multi-provider cost calculation accurate
 - [ ] All CLI commands functional
 - [ ] JSON output formats preserved

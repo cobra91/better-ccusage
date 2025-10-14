@@ -4,7 +4,7 @@
  * @fileoverview Main entry point for better-ccusage CLI tool
  *
  * This is the main entry point for the better-ccusage command-line interface tool.
- * It provides analysis of Claude Code usage data from local JSONL files with multi-provider support.
+ * It provides analysis of Claude Code/Droid Usage data from local JSONL files with multi-provider support.
  *
  * @module index
  */

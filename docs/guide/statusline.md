@@ -20,11 +20,11 @@ Add this to your `~/.claude/settings.json` or `~/.config/claude/settings.json`:
 
 ```json
 {
-	"statusLine": {
-		"type": "command",
-		"command": "bun x ccusage statusline", // Use "npx -y ccusage statusline" if you prefer npm
-		"padding": 0 // Optional: set to 0 to let status line go to edge
-	}
+ "statusLine": {
+  "type": "command",
+  "command": "bun x better-ccusage statusline", // Use "npx -y better-ccusage statusline" if you prefer npm
+  "padding": 0 // Optional: set to 0 to let status line go to edge
+ }
 }
 ```
 
@@ -34,11 +34,11 @@ You can enhance the burn rate display with visual indicators:
 
 ```json
 {
-	"statusLine": {
-		"type": "command",
-		"command": "bun x ccusage statusline --visual-burn-rate emoji", // Add emoji indicators
-		"padding": 0
-	}
+ "statusLine": {
+  "type": "command",
+  "command": "bun x better-ccusage statusline --visual-burn-rate emoji", // Add emoji indicators
+  "padding": 0
+ }
 }
 ```
 
@@ -50,11 +50,11 @@ You can control how session costs are calculated and displayed:
 
 ```json
 {
-	"statusLine": {
-		"type": "command",
-		"command": "bun x ccusage statusline --cost-source both", // Show both CC and ccusage costs
-		"padding": 0
-	}
+ "statusLine": {
+  "type": "command",
+  "command": "bun x better-ccusage statusline --cost-source both", // Show both CC and better-ccusage costs
+  "padding": 0
+ }
 }
 ```
 
@@ -68,10 +68,10 @@ The statusline displays a compact, single-line summary:
 🤖 Opus | 💰 $0.23 session / $1.23 today / $0.45 block (2h 45m left) | 🔥 $0.12/hr | 🧠 25,000 (12%)
 ```
 
-When using `--cost-source both`, the session cost shows both Claude Code and ccusage calculations:
+When using `--cost-source both`, the session cost shows both Claude Code and better-ccusage calculations:
 
 ```
-🤖 Opus | 💰 ($0.25 cc / $0.23 ccusage) session / $1.23 today / $0.45 block (2h 45m left) | 🔥 $0.12/hr | 🧠 25,000 (12%)
+🤖 Opus | 💰 ($0.25 cc / $0.23 better-ccusage) session / $1.23 today / $0.45 block (2h 45m left) | 🔥 $0.12/hr | 🧠 25,000 (12%)
 ```
 
 ### Components Explained
@@ -121,50 +121,50 @@ The `--cost-source` option controls how session costs are calculated and display
 
 **Available modes:**
 
-- `auto` (default): Prefer Claude Code's pre-calculated cost when available, fallback to ccusage calculation
-- `ccusage`: Always calculate costs using ccusage's token-based calculation with local pricing data
+- `auto` (default): Prefer Claude Code's pre-calculated cost when available, fallback to better-ccusage calculation
+- `better-ccusage`: Always calculate costs using better-ccusage's token-based calculation with local pricing data
 - `cc`: Always use Claude Code's pre-calculated cost from session data
-- `both`: Display both Claude Code and ccusage costs side by side for comparison
+- `both`: Display both Claude Code and better-ccusage costs side by side for comparison
 
 **Command-line usage:**
 
 ```bash
 # Default auto mode
-bun x ccusage statusline
+bun x better-ccusage statusline
 
-# Always use ccusage calculation
-bun x ccusage statusline --cost-source ccusage
+# Always use better-ccusage calculation
+bun x better-ccusage statusline --cost-source better-ccusage
 
 # Always use Claude Code cost
-bun x ccusage statusline --cost-source cc
+bun x better-ccusage statusline --cost-source cc
 
 # Show both costs for comparison
-bun x ccusage statusline --cost-source both
+bun x better-ccusage statusline --cost-source both
 ```
 
 **Settings.json configuration:**
 
 ```json
 {
-	"statusLine": {
-		"type": "command",
-		"command": "bun x ccusage statusline --cost-source both",
-		"padding": 0
-	}
+ "statusLine": {
+  "type": "command",
+  "command": "bun x better-ccusage statusline --cost-source both",
+  "padding": 0
+ }
 }
 ```
 
 **When to use each mode:**
 
 - **`auto`**: Best for most users, provides accurate costs with fallback reliability
-- **`ccusage`**: When you want consistent calculation methods across all ccusage commands
+- **`better-ccusage`**: When you want consistent calculation methods across all better-ccusage commands
 - **`cc`**: When you trust Claude Code's cost calculations and want minimal processing
 - **`both`**: For debugging cost discrepancies or comparing calculation methods
 
 **Output differences:**
 
-- **Single cost modes** (`auto`, `ccusage`, `cc`): `💰 $0.23 session`
-- **Both mode**: `💰 ($0.25 cc / $0.23 ccusage) session`
+- **Single cost modes** (`auto`, `better-ccusage`, `cc`): `💰 $0.23 session`
+- **Both mode**: `💰 ($0.25 cc / $0.23 better-ccusage) session`
 
 ## Configuration
 
@@ -184,7 +184,7 @@ You can customize the context usage color thresholds using command-line options 
 **Command-line usage:**
 
 ```bash
-bun x ccusage statusline --context-low-threshold 60 --context-medium-threshold 90
+bun x better-ccusage statusline --context-low-threshold 60 --context-medium-threshold 90
 ```
 
 **Configuration file usage:**
@@ -200,8 +200,8 @@ With these settings:
 
 ```json
 {
-	"command": "bun x ccusage statusline --context-low-threshold 60 --context-medium-threshold 90",
-	"timeout": 5000
+ "command": "bun x better-ccusage statusline --context-low-threshold 60 --context-medium-threshold 90",
+ "timeout": 5000
 }
 ```
 
@@ -211,7 +211,7 @@ You can enhance the burn rate display with visual status indicators using the `-
 
 ```bash
 # Add to your settings.json command
-bun x ccusage statusline --visual-burn-rate emoji
+bun x better-ccusage statusline --visual-burn-rate emoji
 ```
 
 **Available options:**
@@ -249,7 +249,7 @@ bun x ccusage statusline --visual-burn-rate emoji
 
 If the statusline doesn't show:
 
-1. Verify `ccusage` is in your PATH
+1. Verify `better-ccusage` is in your PATH
 2. Check Claude Code logs for any errors
 3. Ensure you have valid usage data in your Claude data directory
 
@@ -257,8 +257,8 @@ If the statusline doesn't show:
 
 If costs seem incorrect:
 
-- The command uses the same cost calculation as other ccusage commands
-- Verify with `ccusage daily` or `ccusage blocks` for detailed breakdowns
+- The command uses the same cost calculation as other better-ccusage commands
+- Verify with `better-ccusage daily` or `better-ccusage blocks` for detailed breakdowns
 
 ## Related Commands
 

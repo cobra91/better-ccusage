@@ -1,6 +1,6 @@
 # Blocks Reports
 
-Blocks reports show your Claude Code usage grouped by 5-hour billing windows, helping you understand Claude's billing cycle and track active session progress.
+Blocks reports show your Claude Code/Droid Usage grouped by 5-hour billing windows, helping you understand Claude's billing cycle and track active session progress.
 
 ## Basic Usage
 

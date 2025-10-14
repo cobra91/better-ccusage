@@ -12,10 +12,10 @@ import process from 'node:process';
 const descriptions = {
 	'\\_consts': 'Internal constants (not exported in public API)',
 	'calculate-cost': 'Cost calculation utilities for usage data analysis',
-	'data-loader': 'Data loading utilities for Claude Code usage analysis',
+	'data-loader': 'Data loading utilities for Claude Code/Droid Usage analysis',
 	'debug': 'Debug utilities for cost calculation validation',
-	'index': 'Main entry point for ccusage CLI tool',
-	'logger': 'Logging utilities for the ccusage application',
+	'index': 'Main entry point for better-ccusage CLI tool',
+	'logger': 'Logging utilities for the better-ccusage application',
 	'pricing-fetcher': 'Model pricing data fetcher for cost calculations',
 } as const;
 

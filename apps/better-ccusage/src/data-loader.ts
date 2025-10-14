@@ -1,7 +1,7 @@
 /**
- * @fileoverview Data loading utilities for Claude Code usage analysis
+ * @fileoverview Data loading utilities for Claude Code/Droid Usage analysis
  *
- * This module provides functions for loading and parsing Claude Code usage data
+ * This module provides functions for loading and parsing Claude Code/Droid Usage data
  * from JSONL files stored in Claude data directories. It handles data aggregation
  * for daily, monthly, and session-based reporting.
  *
@@ -674,7 +674,7 @@ export async function calculateCostForEntry(
 }
 
 /**
- * Get Claude Code usage limit expiration date
+ * Get Claude Code/Droid Usage limit expiration date
  * @param data - Usage data entry
  * @returns Usage limit expiration date
  */
@@ -1575,7 +1575,7 @@ export async function loadSessionBlockData(
 						? await calculateCostForEntry(data, mode, fetcher)
 						: data.costUSD ?? 0;
 
-					// Get Claude Code usage limit expiration date
+					// Get Claude Code/Droid Usage limit expiration date
 					const usageLimitResetTime = getUsageLimitResetTime(data);
 
 					allEntries.push({

@@ -162,7 +162,7 @@ function createConfigSchemaJson() {
 		},
 		$schema: 'https://json-schema.org/draft-07/schema#',
 		title: 'better-ccusage Configuration',
-		description: 'Configuration file for better-ccusage - Claude Code usage analysis tool',
+		description: 'Configuration file for better-ccusage - Claude Code/Droid Usage analysis tool',
 		examples: [
 			{
 				$schema: 'https://better-ccusage.com/config-schema.json',

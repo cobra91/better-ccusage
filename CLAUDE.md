@@ -12,14 +12,14 @@ This is a monorepo containing multiple packages. For package-specific guidance, 
 
 ## About better-ccusage
 
-better-ccusage is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different models like Zai and GLM-4.5.
+better-ccusage is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers Anthropic, Zai, Dashcope and many models GLM-4.5, GLM-4.6, kat-coder.
 
 ### Why the Fork?
 
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5** models from other AI providers
+- **GLM-4.5, GLM-4.6, kat-coder** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -28,13 +28,15 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 | Feature                      | Original ccusage | better-ccusage |
 | ---------------------------- | ---------------- | -------------- |
-| Anthropic Models             | ✅               | ✅             |
-| Zai Provider                 | ❌               | ✅             |
-| GLM-4.5 Models               | ❌               | ✅             |
-| Multi-Provider Support       | ❌               | ✅             |
-| Provider Detection           | ❌               | ✅             |
-| Cost Calculation by Provider | ❌               | ✅             |
-| Original ccusage Features    | ✅               | ✅             |
+| Anthropic Models             | ✅               | ✅            |
+| Zai Provider                 | ❌               | ✅            |
+| GLM-4.5 Models               | ❌               | ✅            |
+| GLM-4.6 Models               | ❌               | ✅            |
+| kat-coder                    | ❌               | ✅            |
+| Multi-Provider Support       | ❌               | ✅            |
+| Provider Detection           | ❌               | ✅            |
+| Cost Calculation by Provider | ❌               | ✅            |
+| Original ccusage Features    | ✅               | ✅            |
 
 Each package has its own development commands, dependencies, and specific guidelines. Always check the relevant package's CLAUDE.md when working within that package directory.
 
@@ -151,7 +153,7 @@ This addresses the breaking change in Claude Code where logs moved from `~/.clau
 
 ## Architecture Overview
 
-This is a CLI tool that analyzes Claude Code usage data from local JSONL files stored in Claude data directories (supports both `~/.claude/projects/` and `~/.config/claude/projects/`). The architecture follows a clear separation of concerns:
+This is a CLI tool that analyzes Claude Code/Droid Usage data from local JSONL files stored in Claude data directories (supports both `~/.claude/projects/` and `~/.config/claude/projects/`). The architecture follows a clear separation of concerns:
 
 **Core Data Flow:**
 
@@ -205,7 +207,7 @@ This is a CLI tool that analyzes Claude Code usage data from local JSONL files s
 
 Follow the Conventional Commits specification with package/area prefixes:
 
-```
+```markdown
 <type>(<scope>): <subject>
 ```
 
@@ -248,8 +250,8 @@ Follow the Conventional Commits specification with package/area prefixes:
 
 **Examples:**
 
-```
-feat(better-ccusage): add support for GLM-4.5 models
+```markdown
+feat(better-ccusage): add support for GLM-4.5, GLM-4.6, kat-coder models
 fix(mcp): resolve connection timeout issues
 docs(guide): update installation instructions
 refactor(better-ccusage): extract cost calculation to separate module
@@ -262,7 +264,7 @@ chore: update dependencies
 
 PR titles should follow the same format as commit messages. When a PR contains multiple commits, the title should describe the main change:
 
-```
+```markdown
 feat(better-ccusage): implement session-based usage reports
 fix(mcp): handle edge cases in data aggregation
 docs: comprehensive API documentation update

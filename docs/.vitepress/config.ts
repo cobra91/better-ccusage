@@ -21,14 +21,14 @@ export default defineConfig({
 		['meta', { name: 'theme-color', content: '#646cff' }],
 		['meta', { property: 'og:type', content: 'website' }],
 		['meta', { property: 'og:locale', content: 'en' }],
-		['meta', { property: 'og:title', content: 'better-ccusage | Enhanced Claude Code Usage Analysis with Multi-Provider Support' }],
+		['meta', { property: 'og:title', content: 'better-ccusage | Enhanced Claude Code/Droid Usage Analysis with Multi-Provider Support' }],
 		['meta', { property: 'og:site_name', content: 'better-ccusage' }],
 		['meta', { property: 'og:image', content: 'https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.png' }],
 		['meta', { property: 'og:url', content: 'https://github.com/cobra91/better-ccusage' }],
 	],
 
 	themeConfig: {
-		logo: '/logo.png',
+		logo: '/logo.svg',
 
 		nav: [
 			{ text: 'Guide', link: '/guide/' },
@@ -100,7 +100,6 @@ export default defineConfig({
 				{
 					text: 'Community',
 					items: [
-						{ text: 'Related Projects', link: '/guide/related-projects' },
 						{ text: 'Sponsors', link: '/guide/sponsors' },
 					],
 				},
@@ -119,7 +118,7 @@ export default defineConfig({
 		socialLinks: [
 			{ icon: 'github', link: 'https://github.com/cobra91/better-ccusage' },
 			{ icon: 'npm', link: 'https://www.npmjs.com/package/better-ccusage' },
-			{ icon: 'twitter', link: 'https://x.com/cc_usage' },
+			{ icon: 'twitter', link: 'https://x.com/cobrax91310' },
 		],
 
 		footer: {
@@ -155,7 +154,6 @@ export default defineConfig({
 			cloudflareRedirect({
 				mode: 'generate',
 				entries: [
-					{ from: '/raycast', to: 'https://www.raycast.com/nyatinte/ccusage', status: 302 },
 					{ from: '/gh', to: 'https://github.com/cobra91/better-ccusage', status: 302 },
 					{ from: '/npm', to: 'https://www.npmjs.com/package/better-ccusage', status: 302 },
 					{ from: '/deepwiki', to: 'https://deepwiki.com/cobra91/better-ccusage', status: 302 },

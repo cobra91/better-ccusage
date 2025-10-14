@@ -2,7 +2,7 @@
 
 ![better-ccusage daily report showing token usage and costs by date](/screenshot.png)
 
-**better-ccusage** (better-claude-code-usage) is a powerful CLI tool that analyzes your Claude Code usage from local JSONL files to help you understand your token consumption patterns and estimated costs with multi-provider support.
+**better-ccusage** (better-claude-code-usage) is a powerful CLI tool that analyzes your Claude Code/Droid Usage from local JSONL files to help you understand your token consumption patterns and estimated costs with multi-provider support.
 
 ## The Problem
 
@@ -78,10 +78,10 @@ better-ccusage extends the original ccusage functionality with support for multi
 - Support for Zai-specific model variants
 - Accurate cost calculation for Zai pricing
 
-### 🚀 GLM-4.5 Model Support
+### 🚀 GLM-4.5, GLM-4.6, kat-coder Model Support
 
-- Full support for GLM-4.5 models from various providers
-- Token counting and cost calculation optimized for GLM-4.5
+- Full support for GLM-4.5, GLM-4.6, kat-coder models from various providers
+- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6, kat-coder (beta)
 - Compatibility with existing Claude Code workflows
 
 ### 🌐 Provider Detection
@@ -92,12 +92,12 @@ better-ccusage extends the original ccusage functionality with support for multi
 
 ## Why better-ccusage?
 
-better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different models like Zai and GLM-4.5.
+better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashcope and many models like GLM-4.5, GLM-4.6, kat-coder etc.
 
 The original ccusage project doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5** models from other AI providers
+- **GLM-4.5, GLM-4.6, kat-coder** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -115,7 +115,7 @@ The tool automatically detects and aggregates data from both locations for compa
 
 - **100% Local** - All analysis happens on your machine
 - **No Data Transmission** - Your usage data never leaves your computer
-- **Read-Only** - ccusage only reads files, never modifies them
+- **Read-Only** - better-ccusage only reads files, never modifies them
 - **Open Source** - Full transparency in how your data is processed
 
 ## Limitations
@@ -127,10 +127,6 @@ The tool automatically detects and aggregates data from both locations for compa
 - **Estimate Accuracy** - Costs are estimates and may not reflect actual billing
   :::
 
-## Acknowledgments
-
-Thanks to [@milliondev](https://note.com/milliondev) for the [original concept and approach](https://note.com/milliondev/n/n1d018da2d769) to Claude Code usage analysis.
-
 ## Getting Started
 
-Ready to analyze your Claude Code usage? Check out our [Getting Started Guide](/guide/getting-started) to begin exploring your data!
+Ready to analyze your Claude Code/Droid Usage? Check out our [Getting Started Guide](/guide/getting-started) to begin exploring your data!

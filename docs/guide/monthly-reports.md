@@ -1,6 +1,6 @@
 # Monthly Reports
 
-Monthly reports aggregate your Claude Code usage by calendar month, providing a high-level view of your usage patterns and costs over longer time periods.
+Monthly reports aggregate your Claude Code/Droid Usage by calendar month, providing a high-level view of your usage patterns and costs over longer time periods.
 
 ## Basic Usage
 

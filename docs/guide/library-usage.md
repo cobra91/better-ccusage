@@ -1,22 +1,22 @@
 # Library Usage
 
-While **ccusage** is primarily known as a CLI tool, it can also be used as a library in your JavaScript/TypeScript projects. This allows you to integrate Claude Code usage analysis directly into your applications.
+While **better-ccusage** is primarily known as a CLI tool, it can also be used as a library in your JavaScript/TypeScript projects. This allows you to integrate Claude Code/Droid usage analysis directly into your applications.
 
 ## Installation
 
 ```bash
-npm install ccusage
+npm install better-ccusage
 # or
-yarn add ccusage
+yarn add better-ccusage
 # or
-pnpm add ccusage
+pnpm add better-ccusage
 # or
-bun add ccusage
+bun add better-ccusage
 ```
 
 ## Basic Usage
 
-The library provides functions to load and analyze Claude Code usage data:
+The library provides functions to load and analyze Claude Code/Droid usage data:
 
 ```typescript
 import { loadDailyUsageData, loadMonthlyUsageData, loadSessionData } from 'better-ccusage/data-loader';
@@ -79,7 +79,7 @@ function processUsageData(data: UsageData[]): void {
 
 You can also create your own MCP server using the dedicated `@better-ccusage/mcp` package:
 
-> **Note**: Install `ccusage` and `@better-ccusage/mcp` together, for example with `pnpm add ccusage @better-ccusage/mcp`.
+> **Note**: Install `better-ccusage` and `@better-ccusage/mcp` together, for example with `pnpm add better-ccusage @better-ccusage/mcp`.
 
 ```typescript
 import { createMcpServer } from '@better-ccusage/mcp';

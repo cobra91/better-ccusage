@@ -9,15 +9,15 @@ better-ccusage automatically searches for Claude Code data in these locations:
 - **`~/.config/claude/projects/`** - New default location (Claude Code v1.0.30+)
 - **`~/.claude/projects/`** - Legacy location (pre-v1.0.30)
 
-When no custom directory is specified, ccusage searches both locations and aggregates data from all valid directories found.
+When no custom directory is specified, better-ccusage searches both locations and aggregates data from all valid directories found.
 
 ::: info Breaking Change
-The directory change from `~/.claude` to `~/.config/claude` in Claude Code v1.0.30 was an undocumented breaking change. ccusage handles both locations automatically to ensure backward compatibility.
+The directory change from `~/.claude` to `~/.config/claude` in Claude Code v1.0.30 was an undocumented breaking change. better-ccusage handles both locations automatically to ensure backward compatibility.
 :::
 
 ## Search Priority
 
-When `CLAUDE_CONFIG_DIR` environment variable is not set, ccusage searches in this order:
+When `CLAUDE_CONFIG_DIR` environment variable is not set, better-ccusage searches in this order:
 
 1. **Primary**: `~/.config/claude/projects/` (preferred for newer installations)
 2. **Fallback**: `~/.claude/projects/` (for legacy installations)
@@ -70,7 +70,7 @@ Each:
 
 ### No Data Found
 
-If ccusage reports no data found:
+If better-ccusage reports no data found:
 
 ```bash
 # Check if directories exist
@@ -105,7 +105,7 @@ export CLAUDE_CONFIG_DIR="/exact/path/to/claude"
 better-ccusage daily
 
 # Verify which directory is being used
-LOG_LEVEL=4 ccusage daily
+LOG_LEVEL=4 better-ccusage daily
 ```
 
 ## Related Documentation

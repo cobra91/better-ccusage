@@ -2,7 +2,7 @@
 
 ![Daily usage report showing token usage and costs by date with model breakdown](/screenshot.png)
 
-Daily reports show token usage and costs aggregated by calendar date, giving you a clear view of your Claude Code usage patterns over time.
+Daily reports show token usage and costs aggregated by calendar date, giving you a clear view of your Claude Code/Droid Usage patterns over time.
 
 ## Basic Usage
 

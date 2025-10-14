@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.png" alt="better-ccusage logo" width="256" height="256">
+    <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/logo.svg" alt="better-ccusage logo" width="256" height="256">
     <h1>@better-ccusage/mcp</h1>
 </div>
 
@@ -16,7 +16,7 @@
     <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/mcp-claude-desktop.avif" alt="Claude Desktop MCP integration screenshot" width="640">
 </div>
 
-> MCP (Model Context Protocol) server implementation for better-ccusage - provides Claude Code usage data through the MCP protocol.
+> MCP (Model Context Protocol) server implementation for better-ccusage - provides Claude Code/Droid Usage data through the MCP protocol.
 
 ## Quick Start
 
