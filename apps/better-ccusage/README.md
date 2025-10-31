@@ -191,6 +191,8 @@ better-ccusage extends the original ccusage functionality with support for:
 | Provider Detection           | ❌      | ✅             |
 | Cost Calculation by Provider | ❌      | ✅             |
 | Original ccusage Features    | ✅      | ✅             |
+| Show prompt usage for Coding | ❌      | ✅             |
+| Droid usage                  | ❌      | ✅             |
 
 ## Star History
 
