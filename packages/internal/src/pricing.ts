@@ -67,6 +67,7 @@ const DEFAULT_PROVIDER_PREFIXES = [
 	'azure/',
 	'openrouter/openai/',
 	'zai/',
+	'streamlake/',
 ];
 
 function createLogger(logger?: PricingLogger): PricingLogger {

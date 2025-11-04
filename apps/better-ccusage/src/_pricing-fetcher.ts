@@ -13,6 +13,7 @@ const CCUSAGE_PROVIDER_PREFIXES = [
 	'zai/',
 	'deepseek/',
 	'dashscope/',
+	'streamlake/',
 ];
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
