@@ -3,6 +3,9 @@ packages:
   - docs
   - packages/*
 
+catalog:
+  tsdown: 0.14.2
+
 catalogMode: strict
 
 catalogs:

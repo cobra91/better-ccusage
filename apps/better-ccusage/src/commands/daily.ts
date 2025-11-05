@@ -111,7 +111,7 @@ export const dailyCommand = define({
 							totalCost: data.totalCost,
 							modelsUsed: data.modelsUsed,
 							modelBreakdowns: data.modelBreakdowns,
-							...(data.project != null && { project: data.project }),
+							...(data.project !== null ? { project: data.project } : {}),
 						})),
 						totals: createTotalsObject(totals),
 					};

@@ -5,6 +5,7 @@
 	"private": true,
 	"workspaces": [
 		"apps/*",
+		"packages/*",
 		"docs"
 	],
 	"packageManager": "pnpm@10.16.1",
