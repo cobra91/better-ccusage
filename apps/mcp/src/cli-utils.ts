@@ -71,6 +71,7 @@ export async function executeCliCommand(
 	executable: string,
 	args: string[],
 	env?: Record<string, string>,
+	timeout?: number,
 ): Promise<string> {
 	try {
 		const result = await spawn(executable, args, {
@@ -81,6 +82,7 @@ export async function executeCliCommand(
 				// nano-spawn captures stdout, so it won't leak to terminal
 				...env,
 			},
+			timeout,
 		});
 		const output = (result.stdout ?? result.output ?? '').trim();
 		if (output === '') {

@@ -62,7 +62,7 @@ async function runCcusageCliJson(
 		CLAUDE_CONFIG_DIR: claudePath,
 		// Force offline mode to prevent network calls to external sources
 		OFFLINE: 'true',
-	});
+	}, 15000); // 15 second timeout
 }
 
 export async function getCcusageDaily(parameters: z.infer<typeof ccusageParametersSchema>, claudePath: string): Promise<unknown> {
@@ -75,9 +75,19 @@ export async function getCcusageDaily(parameters: z.infer<typeof ccusageParamete
 		}
 		return parsed;
 	}
-	catch {
-		// Return empty result on error
-		return { daily: [], totals: {} };
+	catch (error: unknown) {
+		// If the error is about empty output, directory not found, or pricing data loading, return empty result
+		if (error instanceof Error && (
+			error.message.includes('empty output')
+			|| error.message.includes('not found')
+			|| error.message.includes('ENOENT')
+			|| error.message.includes('EISDIR')
+			|| error.message.includes('Failed to load local pricing data')
+		)) {
+			return { daily: [], totals: {} };
+		}
+		// Re-throw other errors
+		throw error;
 	}
 }
 
@@ -91,9 +101,19 @@ export async function getCcusageMonthly(parameters: z.infer<typeof ccusageParame
 		}
 		return parsed;
 	}
-	catch {
-		// Return empty result on error
-		return { monthly: [], totals: {} };
+	catch (error: unknown) {
+		// If the error is about empty output, directory not found, or pricing data loading, return empty result
+		if (error instanceof Error && (
+			error.message.includes('empty output')
+			|| error.message.includes('not found')
+			|| error.message.includes('ENOENT')
+			|| error.message.includes('EISDIR')
+			|| error.message.includes('Failed to load local pricing data')
+		)) {
+			return { monthly: [], totals: {} };
+		}
+		// Re-throw other errors
+		throw error;
 	}
 }
 
@@ -107,9 +127,19 @@ export async function getCcusageSession(parameters: z.infer<typeof ccusageParame
 		}
 		return parsed;
 	}
-	catch {
-		// Return empty result on error
-		return { sessions: [], totals: {} };
+	catch (error: unknown) {
+		// If the error is about empty output, directory not found, or pricing data loading, return empty result
+		if (error instanceof Error && (
+			error.message.includes('empty output')
+			|| error.message.includes('not found')
+			|| error.message.includes('ENOENT')
+			|| error.message.includes('EISDIR')
+			|| error.message.includes('Failed to load local pricing data')
+		)) {
+			return { sessions: [], totals: {} };
+		}
+		// Re-throw other errors
+		throw error;
 	}
 }
 
@@ -123,8 +153,18 @@ export async function getCcusageBlocks(parameters: z.infer<typeof ccusageParamet
 		}
 		return parsed;
 	}
-	catch {
-		// Return empty result on error
-		return { blocks: [] };
+	catch (error: unknown) {
+		// If the error is about empty output, directory not found, or pricing data loading, return empty result
+		if (error instanceof Error && (
+			error.message.includes('empty output')
+			|| error.message.includes('not found')
+			|| error.message.includes('ENOENT')
+			|| error.message.includes('EISDIR')
+			|| error.message.includes('Failed to load local pricing data')
+		)) {
+			return { blocks: [] };
+		}
+		// Re-throw other errors
+		throw error;
 	}
 }

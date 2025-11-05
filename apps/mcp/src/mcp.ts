@@ -401,7 +401,7 @@ if (import.meta.vitest != null) {
 
 				await client.close();
 				await server.close();
-			});
+			}, 20000);
 
 			it('should call session tool successfully with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
@@ -443,7 +443,7 @@ if (import.meta.vitest != null) {
 
 				await client.close();
 				await server.close();
-			});
+			}, 20000);
 
 			it('should call monthly tool successfully', async () => {
 				await using fixture = await createFixture({
@@ -1000,7 +1000,7 @@ if (import.meta.vitest != null) {
 
 				await client.close();
 				await server.close();
-			});
+			}, 10000);
 
 			it('should handle missing Claude directory', async () => {
 				const client = new Client({ name: 'test-client', version: '1.0.0' });

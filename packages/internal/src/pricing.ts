@@ -296,7 +296,9 @@ export class PricingFetcher implements Disposable {
 		 * Calculate cost with input length-based tiered pricing
 		 * Supports multiple custom ranges as defined in tiered_pricing array
 		 *
-		 * @param totalInputTokens - Total number of input tokens
+		 * @param totalInputTokens - Total number of input tokens (used to determine tier)
+		 * @param outputTokens - Number of output tokens
+		 * @param cacheReadTokens - Number of cache read tokens
 		 * @param baseInputPrice - Base input price per token
 		 * @param baseOutputPrice - Base output price per token
 		 * @param tieredPricing - Array of tiered pricing configurations with ranges
@@ -304,6 +306,8 @@ export class PricingFetcher implements Disposable {
 		 */
 		const calculateInputLengthTieredCost = (
 			totalInputTokens: number,
+			outputTokens: number,
+			cacheReadTokens: number,
 			baseInputPrice: number | undefined,
 			baseOutputPrice: number | undefined,
 			tieredPricing?: Array<{
@@ -320,7 +324,7 @@ export class PricingFetcher implements Disposable {
 			// If no tiered pricing is defined, use base pricing
 			if (tieredPricing == null || tieredPricing.length === 0) {
 				const inputCost = baseInputPrice != null ? totalInputTokens * baseInputPrice : 0;
-				const outputCost = baseOutputPrice != null ? totalInputTokens * baseOutputPrice : 0;
+				const outputCost = baseOutputPrice != null ? outputTokens * baseOutputPrice : 0;
 				return { inputCost, outputCost, cacheReadCost: 0 };
 			}
 
@@ -345,8 +349,8 @@ export class PricingFetcher implements Disposable {
 
 			return {
 				inputCost: totalInputTokens * applicableTier.input_cost_per_token,
-				outputCost: totalInputTokens * applicableTier.output_cost_per_token,
-				cacheReadCost: 0,
+				outputCost: outputTokens * applicableTier.output_cost_per_token,
+				cacheReadCost: cacheReadTokens * (applicableTier.cache_read_input_token_cost ?? 0),
 			};
 		};
 
@@ -357,6 +361,8 @@ export class PricingFetcher implements Disposable {
 			// Use input length-based tiered pricing
 			const tieredResult = calculateInputLengthTieredCost(
 				tokens.input_tokens,
+				tokens.output_tokens,
+				tokens.cache_read_input_tokens ?? 0,
 				pricing.input_cost_per_token,
 				pricing.output_cost_per_token,
 				pricing.tiered_pricing,
@@ -620,7 +626,7 @@ if (import.meta.vitest != null) {
 				cache_read_input_tokens: 2000,
 			}, 'kat-coder-pro-v1'));
 
-			const expectedCost = (15000 * 6e-7) + (5000 * 2.4e-6) + (2000 * 1.2e-7);
+			const expectedCost = 0.02124;
 			expect(cost).toBeCloseTo(expectedCost);
 		});
 
@@ -662,7 +668,7 @@ if (import.meta.vitest != null) {
 				cache_read_input_tokens: 5000,
 			}, 'kat-coder-pro-v1'));
 
-			const expectedCost = (50000 * 9e-7) + (10000 * 3.6e-6) + (5000 * 1.8e-7);
+			const expectedCost = 0.08189999999999999;
 			expect(cost).toBeCloseTo(expectedCost);
 		});
 
@@ -704,7 +710,7 @@ if (import.meta.vitest != null) {
 				cache_read_input_tokens: 10000,
 			}, 'kat-coder-pro-v1'));
 
-			const expectedCost = (150000 * 1.5e-6) + (20000 * 6e-6) + (10000 * 3e-7);
+			const expectedCost = 0.34800000000000003;
 			expect(cost).toBeCloseTo(expectedCost);
 		});
 
@@ -744,28 +750,28 @@ if (import.meta.vitest != null) {
 				input_tokens: 32000,
 				output_tokens: 0,
 			}, 'kat-coder-pro-v1'));
-			expect(cost32k).toBeCloseTo(32000 * 6e-7);
+			expect(cost32k).toBeCloseTo(0.0192);
 
 			// Test boundary at 32,001 (should use tier 2)
 			const cost32k1 = await Result.unwrap(fetcher.calculateCostFromTokens({
 				input_tokens: 32001,
 				output_tokens: 0,
 			}, 'kat-coder-pro-v1'));
-			expect(cost32k1).toBeCloseTo(32001 * 9e-7);
+			expect(cost32k1).toBeCloseTo(0.0288009);
 
 			// Test boundary at 128,000 (should use tier 2)
 			const cost128k = await Result.unwrap(fetcher.calculateCostFromTokens({
 				input_tokens: 128000,
 				output_tokens: 0,
 			}, 'kat-coder-pro-v1'));
-			expect(cost128k).toBeCloseTo(128000 * 9e-7);
+			expect(cost128k).toBeCloseTo(0.1152);
 
 			// Test boundary at 128,001 (should use tier 3)
 			const cost128k1 = await Result.unwrap(fetcher.calculateCostFromTokens({
 				input_tokens: 128001,
 				output_tokens: 0,
 			}, 'kat-coder-pro-v1'));
-			expect(cost128k1).toBeCloseTo(128001 * 1.5e-6);
+			expect(cost128k1).toBeCloseTo(0.1920015);
 		});
 
 		it('handles free models with input length-based tiered pricing (KAT-Coder-Air V1)', async () => {
