@@ -6613,5 +6613,96 @@
 		"max_tokens": 256000,
 		"mode": "chat",
 		"output_cost_per_token": 0.000015
+	},
+	"kat-coder-pro-v1": {
+		"cache_read_input_token_cost": 1.2e-7,
+		"input_cost_per_token": 6e-7,
+		"output_cost_per_token": 2.4e-6,
+		"provider": "user-defined",
+		"max_input_tokens": 256000,
+		"max_output_tokens": 32000,
+		"max_tokens": 256000,
+		"mode": "chat",
+		"source": "user-defined tiered pricing",
+		"supports_function_calling": true,
+		"supports_prompt_caching": true,
+		"supports_tool_choice": true,
+		"tiered_pricing": [
+			{
+				"cache_read_input_token_cost": 1.2e-7,
+				"input_cost_per_token": 6e-7,
+				"output_cost_per_token": 2.4e-6,
+				"range": [
+					0,
+					32000
+				]
+			},
+			{
+				"cache_read_input_token_cost": 1.8e-7,
+				"input_cost_per_token": 9e-7,
+				"output_cost_per_token": 3.6e-6,
+				"range": [
+					32000,
+					128000
+				]
+			},
+			{
+				"cache_read_input_token_cost": 3e-7,
+				"input_cost_per_token": 1.5e-6,
+				"output_cost_per_token": 6e-6,
+				"range": [
+					128000,
+					256000
+				]
+			}
+		]
+	},
+	"kat-coder-air-v1": {
+		"input_cost_per_token": 0,
+		"output_cost_per_token": 0,
+		"provider": "user-defined",
+		"max_input_tokens": 128000,
+		"max_output_tokens": 16000,
+		"max_tokens": 128000,
+		"mode": "chat",
+		"source": "user-defined free pricing",
+		"supports_function_calling": true,
+		"supports_prompt_caching": true,
+		"supports_tool_choice": true,
+		"tiered_pricing": [
+			{
+				"cache_read_input_token_cost": 0,
+				"input_cost_per_token": 0,
+				"output_cost_per_token": 0,
+				"range": [
+					0,
+					128000
+				]
+			}
+		]
+	},
+	"kat-coder-exp-72b-1010": {
+		"input_cost_per_token": 0,
+		"output_cost_per_token": 0,
+		"provider": "user-defined",
+		"max_input_tokens": 128000,
+		"max_output_tokens": 16000,
+		"max_tokens": 128000,
+		"mode": "chat",
+		"source": "user-defined free pricing",
+		"supports_function_calling": true,
+		"supports_prompt_caching": true,
+		"supports_tool_choice": true,
+		"tiered_pricing": [
+			{
+				"cache_read_input_token_cost": 0,
+				"input_cost_per_token": 0,
+				"output_cost_per_token": 0,
+				"range": [
+					0,
+					128000
+				]
+			}
+		]
 	}
 }

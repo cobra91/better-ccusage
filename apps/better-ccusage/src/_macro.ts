@@ -49,3 +49,20 @@ export async function prefetchGLMPricing(): Promise<Record<string, ModelPricing>
 		return createPricingDataset();
 	}
 }
+
+function isKatModel(modelName: string, _pricing: ModelPricing): boolean {
+	const lowerModelName = modelName.toLowerCase();
+	return lowerModelName.includes('kat-');
+}
+
+export async function prefetchKatPricing(): Promise<Record<string, ModelPricing>> {
+	try {
+		// Always use local pricing data
+		const dataset = loadLocalPricingDataset();
+		return filterPricingDataset(dataset, isKatModel);
+	}
+	catch (error) {
+		console.warn('Failed to load local Kat pricing data, proceeding with empty cache.', error);
+		return createPricingDataset();
+	}
+}

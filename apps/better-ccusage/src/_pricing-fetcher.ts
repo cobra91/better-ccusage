@@ -1,7 +1,7 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
 import { Result } from '@praha/byethrow';
-import { prefetchClaudePricing, prefetchGLMPricing } from './_macro.ts' with { type: 'macro' };
+import { prefetchClaudePricing, prefetchGLMPricing, prefetchKatPricing } from './_macro.ts' with { type: 'macro' };
 import { logger } from './logger.ts';
 
 const CCUSAGE_PROVIDER_PREFIXES = [
@@ -18,23 +18,26 @@ const CCUSAGE_PROVIDER_PREFIXES = [
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 const PREFETCHED_GLM_PRICING = prefetchGLMPricing();
+const PREFETCHED_KAT_PRICING = prefetchKatPricing();
 
 /**
- * Combine prefetched Claude and GLM model pricing into a single lookup object.
+ * Combine prefetched Claude, GLM, and Kat model pricing into a single lookup object.
  *
  * Merges the two prefetched pricing maps into one Record keyed by model identifier.
  *
  * @returns A mapping from model identifier to `ModelPricing`; when the same key exists in both sources, the GLM entry overrides the Claude entry.
  */
 async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
-	const [claudePricing, glmPricing] = await Promise.all([
+	const [claudePricing, glmPricing, katPricing] = await Promise.all([
 		PREFETCHED_CLAUDE_PRICING,
 		PREFETCHED_GLM_PRICING,
+		PREFETCHED_KAT_PRICING,
 	]);
 
 	return {
 		...claudePricing,
 		...glmPricing,
+		...katPricing,
 	};
 }
 

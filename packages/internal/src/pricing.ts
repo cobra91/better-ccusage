@@ -25,6 +25,13 @@ const DEFAULT_TIERED_THRESHOLD = 200_000;
  * 3. Update calculateTieredCost logic if threshold differs from 200k
  * 4. Add tests for tiered pricing boundaries
  */
+export type TieredPricingConfig = {
+	input_cost_per_token: number;
+	output_cost_per_token: number;
+	range: [number, number];
+	cache_read_input_token_cost?: number;
+};
+
 export const modelPricingSchema = v.object({
 	input_cost_per_token: v.optional(v.number()),
 	output_cost_per_token: v.optional(v.number()),
@@ -41,6 +48,12 @@ export const modelPricingSchema = v.object({
 	// Gemini: Tiered pricing (128k threshold) - NOT implemented in calculations
 	input_cost_per_token_above_128k_tokens: v.optional(v.number()),
 	output_cost_per_token_above_128k_tokens: v.optional(v.number()),
+	tiered_pricing: v.optional(v.array(v.object({
+		input_cost_per_token: v.number(),
+		output_cost_per_token: v.number(),
+		range: v.tuple([v.number(), v.number()]),
+		cache_read_input_token_cost: v.optional(v.number()),
+	}))),
 });
 
 export type ModelPricing = v.InferOutput<typeof modelPricingSchema>;
@@ -217,6 +230,7 @@ export class PricingFetcher implements Disposable {
 	 *
 	 * Supports tiered pricing for 1M context window models where tokens
 	 * above a threshold (default 200k) are charged at a different rate.
+	 * Also supports input length-based tiered pricing with custom ranges.
 	 * Handles all token types: input, output, cache creation, and cache read.
 	 *
 	 * @param tokens - Token counts for different types
@@ -278,6 +292,92 @@ export class PricingFetcher implements Disposable {
 			return 0;
 		};
 
+		/**
+		 * Calculate cost with input length-based tiered pricing
+		 * Supports multiple custom ranges as defined in tiered_pricing array
+		 *
+		 * @param totalInputTokens - Total number of input tokens
+		 * @param baseInputPrice - Base input price per token
+		 * @param baseOutputPrice - Base output price per token
+		 * @param tieredPricing - Array of tiered pricing configurations with ranges
+		 * @returns Total cost applying input length-based tiered pricing
+		 */
+		const calculateInputLengthTieredCost = (
+			totalInputTokens: number,
+			baseInputPrice: number | undefined,
+			baseOutputPrice: number | undefined,
+			tieredPricing?: Array<{
+				input_cost_per_token: number;
+				output_cost_per_token: number;
+				range: [number, number];
+				cache_read_input_token_cost?: number;
+			}>,
+		): { inputCost: number; outputCost: number; cacheReadCost: number } => {
+			if (totalInputTokens <= 0) {
+				return { inputCost: 0, outputCost: 0, cacheReadCost: 0 };
+			}
+
+			// If no tiered pricing is defined, use base pricing
+			if (tieredPricing == null || tieredPricing.length === 0) {
+				const inputCost = baseInputPrice != null ? totalInputTokens * baseInputPrice : 0;
+				const outputCost = baseOutputPrice != null ? totalInputTokens * baseOutputPrice : 0;
+				return { inputCost, outputCost, cacheReadCost: 0 };
+			}
+
+			// Find the appropriate tier based on input token count
+			let applicableTier = tieredPricing[0]; // Default to first tier
+			for (const tier of tieredPricing) {
+				const [minRange, maxRange] = tier.range;
+				if (totalInputTokens >= minRange && totalInputTokens <= maxRange) {
+					applicableTier = tier;
+					break;
+				}
+			}
+
+			// Ensure applicableTier is never undefined
+			if (applicableTier == null) {
+				applicableTier = tieredPricing[0] ?? {
+					input_cost_per_token: baseInputPrice ?? 0,
+					output_cost_per_token: baseOutputPrice ?? 0,
+					range: [0, Infinity],
+				};
+			}
+
+			return {
+				inputCost: totalInputTokens * applicableTier.input_cost_per_token,
+				outputCost: totalInputTokens * applicableTier.output_cost_per_token,
+				cacheReadCost: 0,
+			};
+		};
+
+		// Check if we have tiered_pricing array in the pricing object
+		const hasTieredPricing = Array.isArray(pricing.tiered_pricing);
+
+		if (hasTieredPricing) {
+			// Use input length-based tiered pricing
+			const tieredResult = calculateInputLengthTieredCost(
+				tokens.input_tokens,
+				pricing.input_cost_per_token,
+				pricing.output_cost_per_token,
+				pricing.tiered_pricing,
+			);
+
+			const cacheCreationCost = calculateTieredCost(
+				tokens.cache_creation_input_tokens,
+				pricing.cache_creation_input_token_cost,
+				pricing.cache_creation_input_token_cost_above_200k_tokens,
+			);
+
+			const cacheReadCost = calculateTieredCost(
+				tokens.cache_read_input_tokens,
+				pricing.cache_read_input_token_cost,
+				pricing.cache_read_input_token_cost_above_200k_tokens,
+			);
+
+			return tieredResult.inputCost + tieredResult.outputCost + cacheCreationCost + cacheReadCost;
+		}
+
+		// Use existing tiered pricing logic for backward compatibility
 		const inputCost = calculateTieredCost(
 			tokens.input_tokens,
 			pricing.input_cost_per_token,
@@ -479,6 +579,243 @@ if (import.meta.vitest != null) {
 				output_tokens: 100_000,
 			}, 'theoretical-model'));
 			expect(costBelow).toBe(0);
+		});
+
+		// Tests for input length-based tiered pricing
+		it('calculates cost using input length-based tiered pricing for KAT-Coder-Pro V1 tier 1 (0-32K tokens)', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'kat-coder-pro-v1': {
+						input_cost_per_token: 6e-7,
+						output_cost_per_token: 2.4e-6,
+						cache_read_input_token_cost: 1.2e-7,
+						tiered_pricing: [
+							{
+								input_cost_per_token: 6e-7,
+								output_cost_per_token: 2.4e-6,
+								range: [0, 32000],
+								cache_read_input_token_cost: 1.2e-7,
+							},
+							{
+								input_cost_per_token: 9e-7,
+								output_cost_per_token: 3.6e-6,
+								range: [32000, 128000],
+								cache_read_input_token_cost: 1.8e-7,
+							},
+							{
+								input_cost_per_token: 1.5e-6,
+								output_cost_per_token: 6e-6,
+								range: [128000, 256000],
+								cache_read_input_token_cost: 3e-7,
+							},
+						],
+					},
+				}),
+			});
+
+			// Test with 15,000 tokens (should use tier 1)
+			const cost = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 15000,
+				output_tokens: 5000,
+				cache_read_input_tokens: 2000,
+			}, 'kat-coder-pro-v1'));
+
+			const expectedCost = (15000 * 6e-7) + (5000 * 2.4e-6) + (2000 * 1.2e-7);
+			expect(cost).toBeCloseTo(expectedCost);
+		});
+
+		it('calculates cost using input length-based tiered pricing for KAT-Coder-Pro V1 tier 2 (32-128K tokens)', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'kat-coder-pro-v1': {
+						input_cost_per_token: 6e-7,
+						output_cost_per_token: 2.4e-6,
+						cache_read_input_token_cost: 1.2e-7,
+						tiered_pricing: [
+							{
+								input_cost_per_token: 6e-7,
+								output_cost_per_token: 2.4e-6,
+								range: [0, 32000],
+								cache_read_input_token_cost: 1.2e-7,
+							},
+							{
+								input_cost_per_token: 9e-7,
+								output_cost_per_token: 3.6e-6,
+								range: [32000, 128000],
+								cache_read_input_token_cost: 1.8e-7,
+							},
+							{
+								input_cost_per_token: 1.5e-6,
+								output_cost_per_token: 6e-6,
+								range: [128000, 256000],
+								cache_read_input_token_cost: 3e-7,
+							},
+						],
+					},
+				}),
+			});
+
+			// Test with 50,000 tokens (should use tier 2)
+			const cost = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 50000,
+				output_tokens: 10000,
+				cache_read_input_tokens: 5000,
+			}, 'kat-coder-pro-v1'));
+
+			const expectedCost = (50000 * 9e-7) + (10000 * 3.6e-6) + (5000 * 1.8e-7);
+			expect(cost).toBeCloseTo(expectedCost);
+		});
+
+		it('calculates cost using input length-based tiered pricing for KAT-Coder-Pro V1 tier 3 (128-256K tokens)', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'kat-coder-pro-v1': {
+						input_cost_per_token: 6e-7,
+						output_cost_per_token: 2.4e-6,
+						cache_read_input_token_cost: 1.2e-7,
+						tiered_pricing: [
+							{
+								input_cost_per_token: 6e-7,
+								output_cost_per_token: 2.4e-6,
+								range: [0, 32000],
+								cache_read_input_token_cost: 1.2e-7,
+							},
+							{
+								input_cost_per_token: 9e-7,
+								output_cost_per_token: 3.6e-6,
+								range: [32000, 128000],
+								cache_read_input_token_cost: 1.8e-7,
+							},
+							{
+								input_cost_per_token: 1.5e-6,
+								output_cost_per_token: 6e-6,
+								range: [128000, 256000],
+								cache_read_input_token_cost: 3e-7,
+							},
+						],
+					},
+				}),
+			});
+
+			// Test with 150,000 tokens (should use tier 3)
+			const cost = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 150000,
+				output_tokens: 20000,
+				cache_read_input_tokens: 10000,
+			}, 'kat-coder-pro-v1'));
+
+			const expectedCost = (150000 * 1.5e-6) + (20000 * 6e-6) + (10000 * 3e-7);
+			expect(cost).toBeCloseTo(expectedCost);
+		});
+
+		it('correctly handles boundary cases for input length-based tiered pricing', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'kat-coder-pro-v1': {
+						input_cost_per_token: 6e-7,
+						output_cost_per_token: 2.4e-6,
+						cache_read_input_token_cost: 1.2e-7,
+						tiered_pricing: [
+							{
+								input_cost_per_token: 6e-7,
+								output_cost_per_token: 2.4e-6,
+								range: [0, 32000],
+								cache_read_input_token_cost: 1.2e-7,
+							},
+							{
+								input_cost_per_token: 9e-7,
+								output_cost_per_token: 3.6e-6,
+								range: [32000, 128000],
+								cache_read_input_token_cost: 1.8e-7,
+							},
+							{
+								input_cost_per_token: 1.5e-6,
+								output_cost_per_token: 6e-6,
+								range: [128000, 256000],
+								cache_read_input_token_cost: 3e-7,
+							},
+						],
+					},
+				}),
+			});
+
+			// Test boundary at 32,000 (should use tier 1)
+			const cost32k = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 32000,
+				output_tokens: 0,
+			}, 'kat-coder-pro-v1'));
+			expect(cost32k).toBeCloseTo(32000 * 6e-7);
+
+			// Test boundary at 32,001 (should use tier 2)
+			const cost32k1 = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 32001,
+				output_tokens: 0,
+			}, 'kat-coder-pro-v1'));
+			expect(cost32k1).toBeCloseTo(32001 * 9e-7);
+
+			// Test boundary at 128,000 (should use tier 2)
+			const cost128k = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 128000,
+				output_tokens: 0,
+			}, 'kat-coder-pro-v1'));
+			expect(cost128k).toBeCloseTo(128000 * 9e-7);
+
+			// Test boundary at 128,001 (should use tier 3)
+			const cost128k1 = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 128001,
+				output_tokens: 0,
+			}, 'kat-coder-pro-v1'));
+			expect(cost128k1).toBeCloseTo(128001 * 1.5e-6);
+		});
+
+		it('handles free models with input length-based tiered pricing (KAT-Coder-Air V1)', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'kat-coder-air-v1': {
+						input_cost_per_token: 0,
+						output_cost_per_token: 0,
+						tiered_pricing: [
+							{
+								input_cost_per_token: 0,
+								output_cost_per_token: 0,
+								range: [0, 128000],
+								cache_read_input_token_cost: 0,
+							},
+						],
+					},
+				}),
+			});
+
+			// Test with 50,000 tokens (should be free)
+			const cost = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 50000,
+				output_tokens: 10000,
+				cache_read_input_tokens: 5000,
+			}, 'kat-coder-air-v1'));
+
+			expect(cost).toBe(0);
+		});
+
+		it('falls back to base pricing when tiered_pricing is not defined', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'regular-model': {
+						input_cost_per_token: 1e-6,
+						output_cost_per_token: 2e-6,
+						cache_read_input_token_cost: 1e-7,
+						// No tiered_pricing array
+					},
+				}),
+			});
+
+			const cost = await Result.unwrap(fetcher.calculateCostFromTokens({
+				input_tokens: 50000,
+				output_tokens: 10000,
+				cache_read_input_tokens: 5000,
+			}, 'regular-model'));
+
+			const expectedCost = (50000 * 1e-6) + (10000 * 2e-6) + (5000 * 1e-7);
+			expect(cost).toBeCloseTo(expectedCost);
 		});
 	});
 }
