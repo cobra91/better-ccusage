@@ -13,6 +13,7 @@ export default defineConfig({
 	publint: true,
 	unused: true,
 	nodeProtocol: true,
+	fixedExtension: false,
 	plugins: [
 		Macros({
 			include: ['src/index.ts', 'src/pricing.ts'],

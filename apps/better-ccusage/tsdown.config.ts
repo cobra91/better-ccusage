@@ -21,6 +21,7 @@ export default defineConfig({
 	dts: true,
 	publint: true,
 	unused: true,
+	fixedExtension: false,
 	exports: {
 		devExports: true,
 	},
