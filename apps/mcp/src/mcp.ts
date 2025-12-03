@@ -855,10 +855,13 @@ if (import.meta.vitest != null) {
 				]);
 
 				// Test with invalid mode enum value
-				await expect(client.callTool({
+				const result = await client.callTool({
 					name: 'daily',
 					arguments: { mode: 'invalid_mode' },
-				})).rejects.toThrow('Invalid enum value');
+				});
+				expect(result.isError).toBe(true);
+				expect(result.content).toHaveLength(1);
+				expect((result.content as any)[0].text).toContain('Invalid enum value');
 
 				await client.close();
 				await server.close();
@@ -888,10 +891,13 @@ if (import.meta.vitest != null) {
 				]);
 
 				// Test with invalid date format
-				await expect(client.callTool({
+				const result = await client.callTool({
 					name: 'daily',
 					arguments: { since: 'not-a-date', until: '2024-invalid' },
-				})).rejects.toThrow('Date must be in YYYYMMDD format');
+				});
+				expect(result.isError).toBe(true);
+				expect(result.content).toHaveLength(1);
+				expect((result.content as any)[0].text).toContain('Date must be in YYYYMMDD format');
 
 				await client.close();
 				await server.close();
@@ -921,10 +927,13 @@ if (import.meta.vitest != null) {
 				]);
 
 				// Test with unknown tool name
-				await expect(client.callTool({
+				const result = await client.callTool({
 					name: 'unknown-tool',
 					arguments: {},
-				})).rejects.toThrow('Tool unknown-tool not found');
+				});
+				expect(result.isError).toBe(true);
+				expect(result.content).toHaveLength(1);
+				expect((result.content as any)[0].text).toContain('Tool unknown-tool not found');
 
 				await client.close();
 				await server.close();
@@ -1021,12 +1030,8 @@ if (import.meta.vitest != null) {
 				expect(result).toHaveProperty('content');
 				expect(Array.isArray(result.content)).toBe(true);
 				expect(result.content).toHaveLength(1);
-
-				const data = JSON.parse((result.content as any)[0].text as string);
-				expect(data).toHaveProperty('daily');
-				expect(data).toHaveProperty('totals');
-				expect(Array.isArray(data.daily)).toBe(true);
-				expect(data.daily).toHaveLength(0);
+				expect(result.isError).toBe(true);
+				expect((result.content as any)[0].text).toContain('No valid Claude data directories found');
 
 				await client.close();
 				await server.close();
