@@ -50,8 +50,21 @@
     }
   },
   "scripts": {
-    "generate:schema": "npx tsx scripts/generate-json-schema.ts",
-    "build": "pnpm run generate:schema && npx tsdown && cp model_prices_and_context_window.json dist/",
-    "prepack": "pnpm run build && npx clean-pkg-json"
+    "generate:schema": "pnpm tsx scripts/generate-json-schema.ts",
+    "build": "pnpm run generate:schema && pnpm tsdown && cp model_prices_and_context_window.json dist/",
+    "prepack": "pnpm run build && pnpm clean-pkg-json"
+  },
+  "devDependencies": {
+    "@better-ccusage/internal": "workspace:*",
+    "@praha/byethrow": "catalog:runtime",
+    "bun": "catalog:testing",
+    "clean-pkg-json": "catalog:release",
+    "cli-table3": "catalog:runtime",
+    "consola": "catalog:runtime",
+    "gunshi": "catalog:runtime",
+    "tsdown": "catalog:build",
+    "tsx": "^4.21.0",
+    "valibot": "catalog:runtime",
+    "vitest": "catalog:testing"
   }
 }
