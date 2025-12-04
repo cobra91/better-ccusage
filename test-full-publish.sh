@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔍 TEST DE PUBLICATION COMPLET - better-ccusage"
+echo "🔍 TEST DE PUBLICATION COMPLETE - better-ccusage"
 echo "================================================"
 echo ""
 
@@ -37,7 +37,7 @@ pnpm run generate:schema || exit 1
 echo "Build avec tsdown..."
 pnpm tsdown || exit 1
 
-echo "Copie du fichier de pricing..."
+echo "Copy pricing file..."
 cp model_prices_and_context_window.json dist/ || exit 1
 
 # 4. Test de pnpm pack
