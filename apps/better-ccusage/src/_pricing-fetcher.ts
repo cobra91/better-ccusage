@@ -1,3 +1,10 @@
+import { PricingFetcher } from '@better-ccusage/internal/pricing';
+import {
+	prefetchClaudePricing,
+	prefetchGLMPricing,
+	prefetchKatPricing,
+} from './_macro.ts';
+
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 const PREFETCHED_GLM_PRICING = prefetchGLMPricing();
 const PREFETCHED_KAT_PRICING = prefetchKatPricing();

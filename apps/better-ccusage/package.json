@@ -79,6 +79,8 @@
     "tinyglobby": "catalog:runtime",
     "tsdown": "catalog:build",
     "tsx": "^4.21.0",
+    "unplugin-macros": "catalog:build",
+    "unplugin-unused": "catalog:build",
     "type-fest": "catalog:runtime",
     "valibot": "catalog:runtime",
     "vitest": "catalog:testing",
