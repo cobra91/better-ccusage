@@ -58,6 +58,7 @@
     "@better-ccusage/internal": "workspace:*",
     "@better-ccusage/terminal": "workspace:*",
     "@praha/byethrow": "catalog:runtime",
+    "@ryoppippi/limo": "catalog:runtime",
     "clean-pkg-json": "catalog:release",
     "cli-table3": "catalog:runtime",
     "consola": "catalog:runtime",
