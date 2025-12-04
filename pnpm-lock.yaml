@@ -71,6 +71,9 @@ catalogs:
       specifier: ^3.5.0
       version: 3.5.0
   runtime:
+    '@antfu/utils':
+      specifier: ^9.2.1
+      version: 9.3.0
     '@hono/mcp':
       specifier: ^0.1.5
       version: 0.1.5
@@ -186,6 +189,9 @@ importers:
 
   apps/better-ccusage:
     devDependencies:
+      '@antfu/utils':
+        specifier: catalog:runtime
+        version: 9.3.0
       '@better-ccusage/internal':
         specifier: workspace:*
         version: link:../../packages/internal
@@ -518,6 +524,9 @@ packages:
 
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
+
+  '@antfu/utils@9.3.0':
+    resolution: {integrity: sha512-9hFT4RauhcUzqOE4f1+frMKLZrgNog5b06I7VmZQV1BkvwvqrbC8EBZf3L1eEL2AKb6rNKjER0sEvJiSP1FXEA==}
 
   '@babel/generator@7.28.5':
     resolution: {integrity: sha512-3EwLFhZ38J4VyIP6WNtt2kUdW9dokXA9Cr4IVIFHuCpZ3H8/YFOl5JjZHisrn1fATPBmKKqXzDFvh9fUwHz6CQ==}
@@ -4933,6 +4942,8 @@ snapshots:
     dependencies:
       package-manager-detector: 1.6.0
       tinyexec: 1.0.2
+
+  '@antfu/utils@9.3.0': {}
 
   '@babel/generator@7.28.5':
     dependencies:

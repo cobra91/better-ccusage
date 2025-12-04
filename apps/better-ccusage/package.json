@@ -55,6 +55,7 @@
     "prepack": "pnpm run build && pnpm clean-pkg-json"
   },
   "devDependencies": {
+    "@antfu/utils": "catalog:runtime",
     "@better-ccusage/internal": "workspace:*",
     "@better-ccusage/terminal": "workspace:*",
     "@praha/byethrow": "catalog:runtime",
