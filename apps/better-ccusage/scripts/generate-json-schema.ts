@@ -1,4 +1,4 @@
-#!/usr/bin/env node --loader tsx/esm
+#!/usr/bin/env tsx
 
 /**
  * @fileoverview Generate JSON Schema from args-tokens configuration schema
