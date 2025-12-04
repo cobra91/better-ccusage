@@ -1,77 +1,33 @@
 {
-	"name": "@better-ccusage/codex",
-	"version": "1.2.5",
-	"description": "Usage analysis tool for OpenAI Codex sessions",
-	"homepage": "https://github.com/cobra91/better-ccusage#readme",
-	"bugs": {
-		"url": "https://github.com/cobra91/better-ccusage/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/cobra91/better-ccusage.git"
-	},
-	"funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
-	"license": "MIT",
-	"author": "cobra91",
-	"type": "module",
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"bin": {
-		"better-ccusage-codex": "./src/index.ts"
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "tsdown",
-		"format": "pnpm run lint --fix",
-		"lint": "eslint --cache .",
-		"prepack": "pnpm run build && clean-pkg-json",
-		"prerelease": "pnpm run lint && pnpm run typecheck && pnpm run build",
-		"start": "bun ./src/index.ts",
-		"test": "TZ=UTC vitest",
-		"typecheck": "tsgo --noEmit"
-	},
-	"devDependencies": {
-		"@better-ccusage/internal": "workspace:*",
-		"@better-ccusage/terminal": "workspace:*",
-		"@praha/byethrow": "catalog:runtime",
-		"@ryoppippi/eslint-config": "catalog:lint",
-		"@typescript/native-preview": "catalog:types",
-		"clean-pkg-json": "catalog:release",
-		"eslint": "catalog:lint",
-		"fast-sort": "catalog:runtime",
-		"fs-fixture": "catalog:testing",
-		"gunshi": "catalog:runtime",
-		"picocolors": "catalog:runtime",
-		"sort-package-json": "catalog:release",
-		"tinyglobby": "catalog:runtime",
-		"tsdown": "catalog:build",
-		"unplugin-macros": "catalog:build",
-		"unplugin-unused": "catalog:build",
-		"valibot": "catalog:runtime",
-		"vitest": "catalog:testing"
-	},
-	"engines": {
-		"node": ">=20.19.4"
-	},
-	"publishConfig": {
-		"bin": {
-			"better-ccusage-codex": "./dist/index.js"
-		}
-	},
-	"devEngines": {
-		"runtime": [
-			{
-				"name": "node",
-				"version": "^24.11.0",
-				"onFail": "download"
-			},
-			{
-				"name": "bun",
-				"version": "^1.3.2",
-				"onFail": "download"
-			}
-		]
-	}
+  "name": "@better-ccusage/codex",
+  "version": "1.2.5",
+  "description": "Usage analysis tool for OpenAI Codex sessions",
+  "homepage": "https://github.com/cobra91/better-ccusage#readme",
+  "bugs": {
+    "url": "https://github.com/cobra91/better-ccusage/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cobra91/better-ccusage.git"
+  },
+  "funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
+  "license": "MIT",
+  "author": "cobra91",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "bin": {
+    "better-ccusage-codex": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "publishConfig": {
+    "bin": {
+      "better-ccusage-codex": "./dist/index.js"
+    }
+  }
 }

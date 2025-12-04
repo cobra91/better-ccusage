@@ -1,20 +1,3 @@
-/**
- * Provider prefixes configuration
- *
- * IMPORTANT: This array is intentionally kept empty. The PricingFetcher automatically
- * searches for models with and without provider prefixes, so manual prefix management
- * is no longer needed.
- *
- * The system will find models regardless of whether they're stored as:
- * - "kimi-for-coding" (bare model name)
- * - "moonshot/kimi-for-coding" (with provider prefix)
- * - Any other provider prefix
- *
- * This eliminates the need to manually add new provider prefixes when integrating
- * new AI providers and models.
- */
-const CCUSAGE_PROVIDER_PREFIXES: string[] = [];
-
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 const PREFETCHED_GLM_PRICING = prefetchGLMPricing();
 const PREFETCHED_KAT_PRICING = prefetchKatPricing();
@@ -45,7 +28,8 @@ export class CcusagePricingFetcher extends PricingFetcher {
 		super({
 			offlineLoader: async () => prefetchCcusagePricing(),
 			logger,
-			providerPrefixes: CCUSAGE_PROVIDER_PREFIXES,
+			// No provider prefixes needed - PricingFetcher automatically searches
+			// for models with and without prefixes via fallback logic
 		});
 	}
 }

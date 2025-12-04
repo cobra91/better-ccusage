@@ -1,89 +1,53 @@
 {
-	"name": "@better-ccusage/mcp",
-	"version": "1.2.5",
-	"description": "MCP server implementation for better-ccusage data with multi-provider support",
-	"homepage": "https://github.com/cobra91/better-ccusage#readme",
-	"bugs": {
-		"url": "https://github.com/cobra91/better-ccusage/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/cobra91/better-ccusage.git"
-	},
-	"funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
-	"license": "MIT",
-	"author": "cobra91",
-	"type": "module",
-	"exports": {
-		".": "./src/index.ts",
-		"./package.json": "./package.json"
-	},
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"bin": {
-		"better-ccusage-mcp": "./src/index.ts"
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "tsdown",
-		"dev": "bun -b --watch ./src/index.ts",
-		"format": "pnpm run lint --fix",
-		"lint": "eslint --cache .",
-		"prepack": "pnpm run build && clean-pkg-json",
-		"prerelease": "pnpm run lint && pnpm run typecheck && pnpm run build",
-		"start": "bun ./src/index.ts",
-		"test": "TZ=UTC vitest",
-		"typecheck": "tsgo --noEmit"
-	},
-	"dependencies": {
-		"@better-ccusage/codex": "workspace:*",
-		"@hono/mcp": "catalog:runtime",
-		"@hono/node-server": "catalog:runtime",
-		"@modelcontextprotocol/sdk": "catalog:runtime",
-		"better-ccusage": "workspace:*",
-		"gunshi": "catalog:runtime",
-		"hono": "catalog:runtime",
-		"nano-spawn": "catalog:runtime",
-		"zod": "catalog:runtime"
-	},
-	"devDependencies": {
-		"@better-ccusage/internal": "workspace:*",
-		"@ryoppippi/eslint-config": "catalog:lint",
-		"clean-pkg-json": "catalog:release",
-		"eslint": "catalog:lint",
-		"fs-fixture": "catalog:testing",
-		"publint": "catalog:lint",
-		"sort-package-json": "catalog:release",
-		"tsdown": "catalog:build",
-		"vitest": "catalog:testing"
-	},
-	"engines": {
-		"node": ">=20.19.4"
-	},
-	"publishConfig": {
-		"bin": {
-			"better-ccusage-mcp": "./dist/index.js"
-		},
-		"exports": {
-			".": "./dist/index.js",
-			"./package.json": "./package.json"
-		}
-	},
-	"devEngines": {
-		"runtime": [
-			{
-				"name": "node",
-				"onFail": "download",
-				"version": "^24.11.0"
-			},
-			{
-				"name": "bun",
-				"onFail": "download",
-				"version": "^1.3.2"
-			}
-		]
-	}
+  "name": "@better-ccusage/mcp",
+  "version": "1.2.5",
+  "description": "MCP server implementation for better-ccusage data with multi-provider support",
+  "homepage": "https://github.com/cobra91/better-ccusage#readme",
+  "bugs": {
+    "url": "https://github.com/cobra91/better-ccusage/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cobra91/better-ccusage.git"
+  },
+  "funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
+  "license": "MIT",
+  "author": "cobra91",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "better-ccusage-mcp": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@better-ccusage/codex": "workspace:*",
+    "@hono/mcp": "catalog:runtime",
+    "@hono/node-server": "catalog:runtime",
+    "@modelcontextprotocol/sdk": "catalog:runtime",
+    "better-ccusage": "workspace:*",
+    "gunshi": "catalog:runtime",
+    "hono": "catalog:runtime",
+    "nano-spawn": "catalog:runtime",
+    "zod": "catalog:runtime"
+  },
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "publishConfig": {
+    "bin": {
+      "better-ccusage-mcp": "./dist/index.js"
+    },
+    "exports": {
+      ".": "./dist/index.js",
+      "./package.json": "./package.json"
+    }
+  }
 }
