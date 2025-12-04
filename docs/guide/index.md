@@ -90,14 +90,30 @@ better-ccusage extends the original ccusage functionality with support for multi
 - Separate reporting and aggregation by provider
 - Unified interface for multi-provider environments
 
+### 🎯 Moonshot AI (kimi) Support
+
+- Full support for kimi models (kimi-for-coding, kimi-researcher, etc.)
+- Automatic model detection without manual configuration
+- Support for both `"kimi-..."` and `"moonshot/kimi-..."` naming
+- Estimated cost calculation for Moonshot AI pricing
+
+### 🤖 MiniMax Model Support
+
+- Support for MiniMax models like `MiniMax-M2`
+- Automatic provider detection and model matching
+- Token counting and cost calculation for MiniMax models
+- Compatible with existing Claude Code workflows
+
 ## Why better-ccusage?
 
-better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashcope and many models like GLM-4.5, GLM-4.6, kat-coder etc.
+better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashcope and many models like GLM-4.5, GLM-4.6, kat-coder, kimi, MiniMax etc.
 
 The original ccusage project doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
 - **GLM-4.5, GLM-4.6, kat-coder** models from other AI providers
+- **Moonshot AI** (kimi) models like kimi-for-coding, kimi-researcher
+- **MiniMax** models like MiniMax-M2
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
