@@ -9,16 +9,18 @@ echo "===================================="
 echo ""
 echo "1️⃣  Vérification erreurs TypeScript..."
 echo "===================================="
+cd apps/better-ccusage
 if pnpm typecheck 2>&1 | grep -q "error TS"; then
     echo "❌ Erreurs TypeScript trouvées!"
     pnpm typecheck 2>&1 | grep "error TS"
     exit 1
 else
-    echo "✅ Aucune erreur TypeScript"
+    echo "✅ Aucune erreur TypeScript dans better-ccusage"
 fi
+cd ../..
 
 echo ""
-echo "2️⃣  Exécution de pnpm pack sur better-ccusage..."
+echo "2️⃣  Exécution de pnpm pack sure better-ccusage..."
 echo "==============================================="
 cd apps/better-ccusage
 
