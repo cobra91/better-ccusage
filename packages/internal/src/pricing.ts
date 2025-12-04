@@ -71,17 +71,17 @@ export type PricingFetcherOptions = {
 	providerPrefixes?: string[];
 };
 
-const DEFAULT_PROVIDER_PREFIXES = [
-	'anthropic/',
-	'claude-3-5-',
-	'claude-3-',
-	'claude-',
-	'openai/',
-	'azure/',
-	'openrouter/openai/',
-	'zai/',
-	'streamlake/',
-];
+/**
+ * @deprecated Provider prefixes are no longer needed. The PricingFetcher automatically
+ * searches for models with and without provider prefixes via:
+ * 1. Direct lookup for exact model name
+ * 2. Suffix matching for "provider/model" patterns
+ * 3. Fuzzy matching with scoring for partial matches
+ *
+ * Keeping this empty intentionally to avoid manual prefix management.
+ * All provider prefix logic is now handled automatically by the fallback matching algorithm.
+ */
+const DEFAULT_PROVIDER_PREFIXES: string[] = [];
 
 function createLogger(logger?: PricingLogger): PricingLogger {
 	if (logger != null) {

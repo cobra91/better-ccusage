@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 
 /**
  * @fileoverview Generate JSON Schema from args-tokens configuration schema
@@ -11,13 +11,17 @@
  */
 
 import process from 'node:process';
+import { writeFile, readFile, copyFile } from 'node:fs/promises';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { Result } from '@praha/byethrow';
-import { $ } from 'bun';
 import { sharedArgs } from '../src/_shared-args.ts';
 // Import command definitions to access their args
 import { subCommandUnion } from '../src/commands/index.ts';
 
 import { logger } from '../src/logger.ts';
+
+const execAsync = promisify(exec);
 
 /**
  * The filename for the generated JSON Schema file.
@@ -186,38 +190,21 @@ function createConfigSchemaJson() {
 }
 
 /**
- * Generate JSON Schema and write to files
+ *
+ * Run lint on generated files
  */
 async function runLint(files: string[]) {
-	return Result.try({
-		try: $`bun run lint --fix ${files}`,
-		catch: error => error,
-	});
+	try {
+		await execAsync(`pnpm run lint --fix ${files.join(' ')}`);
+		return Result.success(undefined);
+	} catch (error) {
+		return Result.failure(error);
+	}
 }
 
-async function writeFile(path: string, content: string) {
-	const attempt = Result.try({
-		try: async () => Bun.write(path, content),
-		catch: error => error,
-	});
-	return attempt();
-}
-
-async function readFile(path: string): Promise<Result.Result<string, any>> {
-	return Result.try({
-		try: async () => {
-			const file = Bun.file(path);
-			return file.text();
-		},
-		catch: error => error,
-	})();
-}
-
-async function copySchemaToDocsPublic() {
-	const gitRoot = await $`git rev-parse --show-toplevel`.text().then(text => text.trim());
-	await $`cp ${SCHEMA_FILENAME} ${gitRoot}/docs/public/${SCHEMA_FILENAME}`;
-}
-
+/**
+ * Generate JSON Schema and write to files
+ */
 async function generateJsonSchema() {
 	logger.info('Generating JSON Schema from args-tokens configuration schema...');
 
@@ -236,12 +223,17 @@ async function generateJsonSchema() {
 
 	// Check if existing root schema is identical to avoid unnecessary writes
 	const existingRootSchema = await Result.pipe(
-		readFile(SCHEMA_FILENAME),
-		Result.map(content => JSON.parse(content) as unknown),
-		Result.unwrap(''),
+		Result.try({
+			try: async () => {
+				const content = await readFile(SCHEMA_FILENAME);
+				return JSON.parse(content) as unknown;
+			},
+			catch: () => null,
+		}),
+		Result.unwrap(null),
 	);
 
-	const isSchemaChanged = !Bun.deepEquals(existingRootSchema, schemaObject, true);
+	const isSchemaChanged = existingRootSchema === null || JSON.stringify(existingRootSchema) !== JSON.stringify(schemaObject);
 
 	if (!isSchemaChanged) {
 		logger.info('✓ Root schema is up to date, skipping generation');
@@ -257,8 +249,8 @@ async function generateJsonSchema() {
 
 	await Result.pipe(
 		Result.try({
-			try: writeFile(SCHEMA_FILENAME, schemaJson),
-			safe: true,
+			try: async () => writeFile(SCHEMA_FILENAME, schemaJson),
+			catch: error => error,
 		}),
 		Result.inspectError((error) => {
 			logger.error(`Failed to write ${SCHEMA_FILENAME}:`, error);
@@ -267,14 +259,14 @@ async function generateJsonSchema() {
 		Result.inspect(() => logger.info(`✓ Generated ${SCHEMA_FILENAME}`)),
 	);
 
-	// Copy to docs/public using Bun shell
+	// Copy to docs/public using Node.js APIs
 	await copySchemaToDocsPublic();
 
 	// Run lint on the root schema file that was changed
 	await Result.pipe(
 		Result.try({
-			try: runLint([SCHEMA_FILENAME]),
-			safe: true,
+			try: async () => runLint([SCHEMA_FILENAME]),
+			catch: error => error,
 		}),
 		Result.inspectError((error) => {
 			logger.error('Failed to lint generated files:', error);
@@ -284,6 +276,17 @@ async function generateJsonSchema() {
 	);
 
 	logger.info('JSON Schema generation completed successfully!');
+}
+
+async function copySchemaToDocsPublic() {
+	try {
+		const { stdout } = await execAsync('git rev-parse --show-toplevel');
+		const gitRoot = stdout.trim();
+		await copyFile(SCHEMA_FILENAME, `${gitRoot}/docs/public/${SCHEMA_FILENAME}`);
+	} catch (error) {
+		logger.error('Failed to copy schema to docs/public:', error);
+		process.exit(1);
+	}
 }
 
 // Run the generator

@@ -1,20 +1,9 @@
-import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
-import { Result } from '@praha/byethrow';
-import { prefetchClaudePricing, prefetchGLMPricing, prefetchKatPricing } from './_macro.ts' with { type: 'macro' };
-import { logger } from './logger.ts';
-
-const CCUSAGE_PROVIDER_PREFIXES = [
-	'anthropic/',
-	'claude-3-5-',
-	'claude-3-',
-	'claude-',
-	'openrouter/openai/',
-	'zai/',
-	'deepseek/',
-	'dashscope/',
-	'streamlake/',
-];
+import {
+	prefetchClaudePricing,
+	prefetchGLMPricing,
+	prefetchKatPricing,
+} from './_macro.ts';
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 const PREFETCHED_GLM_PRICING = prefetchGLMPricing();
@@ -46,7 +35,8 @@ export class CcusagePricingFetcher extends PricingFetcher {
 		super({
 			offlineLoader: async () => prefetchCcusagePricing(),
 			logger,
-			providerPrefixes: CCUSAGE_PROVIDER_PREFIXES,
+			// No provider prefixes needed - PricingFetcher automatically searches
+			// for models with and without prefixes via fallback logic
 		});
 	}
 }
