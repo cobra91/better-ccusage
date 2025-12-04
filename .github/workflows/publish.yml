@@ -1,1 +1,132 @@
 name: Build and Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pn
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+          cache: pnpm
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint 2>&1 | sed 's/Error: Process completed.*/\x1b[0;31mError: Check failed - see above\x1b[0m/' || exit 1
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build library and prepare for release
+        run: |
+          pnpm -r run build
+          pnpm -r run generate:schema || true
+
+      - name: Run tests
+        run: pnpm -r test --run --reporter=verbose
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: verify-and-build
+    environment: publish
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+          cache: pnpm
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build for production
+        run: pnpm -r run build
+
+      - name: Publish base packages to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish -r --no-git-checks --access public
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: tags } = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1
+            });
+
+            const latestTag = tags[0];
+            const tagName = latestTag.name;
+
+            // Get commits since last tag
+            const { data: commits } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'HEAD~1',
+              head: 'HEAD'
+            });
+
+            const commitMessages = commits.commits
+              .map(commit => commit.commit.message.split('\n')[0])
+              .filter(msg => !msg.startsWith('chore:'))
+              .slice(0, 10);
+
+            const releaseNotes = [
+              `## Release ${tagName}`,
+              '',
+              '### Changes',
+              ...commitMessages.map(msg => `- ${msg}`),
+              '',
+              'See full changelog for details.'
+            ].join('\n');
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tagName,
+              name: `Release ${tagName}`,
+              body: releaseNotes,
+              draft: false,
+              prerelease: false,
+              generate_release_notes: true
+            });
