@@ -48,5 +48,10 @@
       "./logger": "./dist/logger.js",
       "./package.json": "./package.json"
     }
+  },
+  "scripts": {
+    "generate:schema": "npx tsx scripts/generate-json-schema.ts",
+    "build": "pnpm run generate:schema && npx tsdown && cp model_prices_and_context_window.json dist/",
+    "prepack": "pnpm run build && npx clean-pkg-json"
   }
 }
