@@ -29,6 +29,18 @@ pnpm dlx better-ccusage
 
 This will show your daily usage report by default.
 
+## Multi-Provider Support
+
+better-ccusage automatically supports multiple AI providers without any configuration:
+
+- **Anthropic** (Claude models: sonnet-4, opus-4, etc.)
+- **Moonshot AI** (kimi-* models: kimi-for-coding, kimi-researcher, etc.)
+- **MiniMax** (MiniMax-M2)
+- **Zai** Provider (Zai-specific model variants)
+- **GLM** Models (glm-4.5, glm-4.6, kat-coder, etc.)
+
+The tool automatically detects the provider from your usage data and calculates costs accordingly. No manual configuration needed!
+
 ## Your First Report
 
 When you run better-ccusage for the first time, you'll see a table showing your Claude Code/Droid Usage by date:
