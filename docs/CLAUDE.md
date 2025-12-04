@@ -99,6 +99,11 @@ This directory contains the VitePress-based documentation website for better-ccu
 - **Consistency**: Follow established patterns for new documentation pages
 - **Cross-References**: Link between related guides and API documentation
 - **ESLint in Markdown**: For code blocks that should skip ESLint parsing (e.g., containing `...` syntax), add `<!-- eslint-skip -->` before the code block
+- **Document Model Support**: When adding guides for new AI providers/models:
+  - Document that models work automatically without configuration
+  - Explain that both `"model-name"` and `"provider/model-name"` formats are supported
+  - List any known limitations or special pricing considerations
+  - Update the feature comparison tables in root CLAUDE.md
 
 ## File Organization
 

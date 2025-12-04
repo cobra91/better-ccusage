@@ -82,18 +82,44 @@ The pricing data supports tiered pricing for large context window models. Not al
 - **GPT/OpenAI models**: Flat rate pricing (no token-based tiers)
   - Note: OpenAI has "tier levels" but these are for API rate limits, not pricing
 
+### Automatic Model Detection
+
+**No Manual Provider Prefix Management Required**
+
+The `PricingFetcher` automatically detects and resolves model names with intelligent fallback matching:
+
+1. **Exact Match**: Direct lookup for the model name as provided
+2. **Provider Prefix Match**: Suffix matching for qualified names (e.g., `"moonshot/kimi-for-coding"` ends with `"/kimi-for-coding"`)
+3. **Fuzzy Match**: Scored partial matching based on substring inclusion and provider priority
+
+**Benefits**:
+- Zero maintenance when adding new AI providers or models
+- Models work with or without provider prefixes
+- No `$0.00` costs from unfound models
+- Automatic support for any provider naming pattern
+
+**How It Works**:
+- When resolving `"kimi-for-coding"`, the system checks:
+  1. Direct match: `"kimi-for-coding"` in pricing data
+  2. Suffix match: Any key ending with `"/kimi-for-coding"` (e.g., `"moonshot/kimi-for-coding"`)
+  3. Fuzzy match: Keys containing `"kimi-for-coding"` with scoring
+
+This eliminates the need for provider prefix whitelists that previously required manual updates.
+
 ### ⚠️ IMPORTANT for Future Development
 
-When adding support for new models:
+When adding new models to the pricing database:
 
-1. **Check if the model has tiered pricing** in the pricing schema
-2. **Verify the threshold value** (200k for Claude, 128k for Gemini, etc.)
-3. **Update calculation logic** if threshold differs from currently implemented 200k
-4. **Add comprehensive tests** for boundary conditions at the threshold
-5. **Document the pricing structure** in relevant CLAUDE.md files
-6. **If cache-specific rates are missing**, fall back to the corresponding input rates (base and above-threshold) to avoid under-charging cached tokens
+1. **Add to pricing JSON**: Update `packages/internal/model_prices_and_context_window.json`
+2. **Check for tiered pricing**: Verify if model uses token threshold pricing (200k+ context)
+3. **Verify threshold value**: 200k for Claude, 128k for Gemini, may vary for other providers
+4. **Test model resolution**: Verify both `"model-name"` and `"provider/model-name"` work
+5. **Add tests**: Include model resolution tests in pricing test suite
+6. **Update docs**: Document any unique pricing characteristics
 
-The current implementation in `pricing.ts` only handles 200k threshold. Adding models with different thresholds would require refactoring the `calculateTieredCost` helper function.
+**Note**: No code changes needed for new providers - the automatic detection handles it!
+
+The current `calculateTieredCost` implementation handles 200k thresholds. Adding models with different thresholds would require extending the tiered pricing logic.
 
 ## Code Style
 

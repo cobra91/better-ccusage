@@ -52,6 +52,7 @@ This package contains the core better-ccusage functionality:
 - `src/index.ts` - CLI entry point with Gunshi-based command routing
 - `src/data-loader.ts` - Parses JSONL files from Claude data directories
 - `src/calculate-cost.ts` - Token aggregation and cost calculation utilities
+- `src/_pricing-fetcher.ts` - Extended PricingFetcher with automatic model detection
 - `src/commands/` - CLI subcommands (daily, monthly, session, blocks, statusline)
 - `src/logger.ts` - Logging utilities (use instead of console.log)
 
@@ -59,8 +60,19 @@ This package contains the core better-ccusage functionality:
 
 1. Loads JSONL files from `~/.claude/projects/` and `~/.config/claude/projects/`
 2. Aggregates usage data by time periods or sessions
-3. Calculates costs using local pricing database
-4. Outputs formatted tables or JSON
+3. **Resolves model names** using `CcusagePricingFetcher` with automatic detection
+4. **Calculates costs** using local pricing database with tiered pricing support
+5. Outputs formatted tables or JSON
+
+**Automatic Model Detection:**
+
+The `CcusagePricingFetcher` extends the base `PricingFetcher` with automatic model name resolution:
+
+- **Direct Match**: Looks up model name exactly as it appears in usage logs (e.g., `"kimi-for-coding"`)
+- **Provider Prefix Match**: Automatically finds models with provider prefixes (e.g., `"moonshot/kimi-for-coding"`)
+- **Fallback Matching**: Uses fuzzy scoring for partial matches when exact matches fail
+
+This eliminates the need for manual provider prefix configuration and ensures new AI providers work automatically without code changes.
 
 ## Testing Guidelines
 

@@ -140,10 +140,10 @@ better-ccusage extends the original ccusage functionality with support for:
 - Support for Zai-specific model variants
 - Accurate cost calculation for Zai pricing
 
-### 🚀 GLM-4.5, GLM-4.6 Model Support
+### 🚀 GLM-4.5, GLM-4.6, Moonshot (kimixxx), and Minimax Model Support
 
-- Full support for GLM-4.5, GLM-4.6 models from various providers
-- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6
+- Full support for GLM-4.5, GLM-4.6, Moonshot (kimixxx), and Minimax Model models from various providers
+- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6, Moonshot (kimixxx), and Minimax Model
 - Compatibility with existing Claude Code workflows
 
 ### 🌐 Provider Detection
@@ -184,8 +184,9 @@ better-ccusage extends the original ccusage functionality with support for:
 | ---------------------------- | ------- | -------------- |
 | Anthropic Models             | ✅      | ✅             |
 | Zai Provider                 | ❌      | ✅             |
-| GLM-4.5 Models               | ❌      | ✅             |
-| GLM-4.6 Models               | ❌      | ✅             |
+| GLM* Models                  | ❌      | ✅             |
+| kat-coder                    | ❌      | ✅             |
+| kimi*                        | ❌      | ✅             |
 | kat-coder                    | ❌      | ✅             |
 | Multi-Provider Support       | ❌      | ✅             |
 | Provider Detection           | ❌      | ✅             |

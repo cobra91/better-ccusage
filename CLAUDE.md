@@ -19,7 +19,7 @@ better-ccusage is a fork of the original ccusage project that addresses a critic
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5, GLM-4.6, kat-coder** models from other AI providers
+- **GLM-4.5, GLM-4.6, kat-coder, kimi and Minimax** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -28,15 +28,32 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 | Feature                      | Original ccusage | better-ccusage |
 | ---------------------------- | ---------------- | -------------- |
-| Anthropic Models             | ✅               | ✅             |
-| Zai Provider                 | ❌               | ✅             |
-| GLM-4.5 Models               | ❌               | ✅             |
-| GLM-4.6 Models               | ❌               | ✅             |
-| kat-coder                    | ❌               | ✅             |
-| Multi-Provider Support       | ❌               | ✅             |
-| Provider Detection           | ❌               | ✅             |
-| Cost Calculation by Provider | ❌               | ✅             |
-| Original ccusage Features    | ✅               | ✅             |
+| Anthropic Models             | ✅               | ✅            |
+| Zai Provider                 | ❌               | ✅            |
+| GLM* Models                  | ❌               | ✅            |
+| kat-coder                    | ❌               | ✅            |
+| kimi* Models                 | ❌               | ✅            |
+| MiniMax Models               | ❌               | ✅            |
+| Multi-Provider Support       | ❌               | ✅            |
+| Automatic Provider Detection | ❌         | ✅            |
+| Cost Calculation by Provider | ❌               | ✅            |
+| Original ccusage Features    | ✅               | ✅            |
+
+### Automatic Model Detection
+
+**No Manual Provider Prefix Management Required**
+
+better-ccusage automatically detects and supports new AI providers without code changes. The pricing system uses intelligent fallback matching:
+
+1. **Exact Match**: Direct lookup for model name (e.g., `"kimi-for-coding"`)
+2. **Provider Prefix Match**: Suffix matching for qualified names (e.g., `"moonshot/kimi-for-coding"`)
+3. **Fuzzy Match**: Scored partial matching for variations
+
+This eliminates the need to maintain provider prefix whitelists and ensures automatic support for:
+
+- Moonshot AI (`kimi-*` models)
+- MiniMax (`MiniMax-M2`)
+- Any future provider without code modifications
 
 Each package has its own development commands, dependencies, and specific guidelines. Always check the relevant package's CLAUDE.md when working within that package directory.
 
