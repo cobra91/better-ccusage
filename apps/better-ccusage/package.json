@@ -65,6 +65,7 @@
     "fast-sort": "catalog:runtime",
     "get-stdin": "catalog:runtime",
     "gunshi": "catalog:runtime",
+    "nano-spawn": "catalog:runtime",
     "picocolors": "catalog:runtime",
     "tsdown": "catalog:build",
     "tsx": "^4.21.0",
