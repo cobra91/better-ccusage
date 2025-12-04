@@ -273,6 +273,8 @@ npm install -g better-ccusage@latest
 
 After installation, check out:
 
-- [Getting Started Guide](/guide/getting-started) - Your first usage report
+- [Getting Started Guide](/guide/getting-started) - Your first usage report with multi-provider support
 - [Configuration](/guide/configuration) - Customize better-ccusage behavior
 - [Daily Reports](/guide/daily-reports) - Understand daily usage patterns
+
+**Note**: better-ccusage automatically detects and supports multiple AI providers including Anthropic (Claude), Moonshot AI (kimi), MiniMax, Zai, and GLM models. No configuration needed!
