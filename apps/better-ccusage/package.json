@@ -81,6 +81,7 @@
     "tsx": "^4.21.0",
     "unplugin-macros": "catalog:build",
     "unplugin-unused": "catalog:build",
+    "publint": "catalog:lint",
     "type-fest": "catalog:runtime",
     "valibot": "catalog:runtime",
     "vitest": "catalog:testing",
