@@ -1,3 +1,5 @@
+/// <reference types="vitest" />
+
 import { Result } from '@praha/byethrow';
 import * as v from 'valibot';
 
