@@ -57,7 +57,6 @@
   "devDependencies": {
     "@better-ccusage/internal": "workspace:*",
     "@praha/byethrow": "catalog:runtime",
-    "bun": "catalog:testing",
     "clean-pkg-json": "catalog:release",
     "cli-table3": "catalog:runtime",
     "consola": "catalog:runtime",
