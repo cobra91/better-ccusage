@@ -1,20 +1,19 @@
-import type { ModelPricing } from '@better-ccusage/internal/pricing';
-import { PricingFetcher } from '@better-ccusage/internal/pricing';
-import { Result } from '@praha/byethrow';
-import { prefetchClaudePricing, prefetchGLMPricing, prefetchKatPricing } from './_macro.ts' with { type: 'macro' };
-import { logger } from './logger.ts';
-
-const CCUSAGE_PROVIDER_PREFIXES = [
-	'anthropic/',
-	'claude-3-5-',
-	'claude-3-',
-	'claude-',
-	'openrouter/openai/',
-	'zai/',
-	'deepseek/',
-	'dashscope/',
-	'streamlake/',
-];
+/**
+ * Provider prefixes configuration
+ *
+ * IMPORTANT: This array is intentionally kept empty. The PricingFetcher automatically
+ * searches for models with and without provider prefixes, so manual prefix management
+ * is no longer needed.
+ *
+ * The system will find models regardless of whether they're stored as:
+ * - "kimi-for-coding" (bare model name)
+ * - "moonshot/kimi-for-coding" (with provider prefix)
+ * - Any other provider prefix
+ *
+ * This eliminates the need to manually add new provider prefixes when integrating
+ * new AI providers and models.
+ */
+const CCUSAGE_PROVIDER_PREFIXES: string[] = [];
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 const PREFETCHED_GLM_PRICING = prefetchGLMPricing();
