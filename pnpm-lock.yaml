@@ -116,6 +116,9 @@ catalogs:
     valibot:
       specifier: ^1.1.0
       version: 1.2.0
+    xdg-basedir:
+      specifier: ^5.1.0
+      version: 5.1.0
     zod:
       specifier: ^3.25.67
       version: 3.25.76
@@ -204,6 +207,9 @@ importers:
       vitest:
         specifier: catalog:testing
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.10.1)(happy-dom@16.8.1)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+      xdg-basedir:
+        specifier: catalog:runtime
+        version: 5.1.0
 
   apps/codex: {}
 
@@ -4656,6 +4662,10 @@ packages:
       utf-8-validate:
         optional: true
 
+  xdg-basedir@5.1.0:
+    resolution: {integrity: sha512-GCPAHLvrIH13+c0SuacwvRYj2SxJXQ4kaVTT5xgL3kPrz56XxkF21IGhjSE1+W0aw7gpBWRGXLCPnPby6lSpmQ==}
+    engines: {node: '>=12'}
+
   xml-name-validator@4.0.0:
     resolution: {integrity: sha512-ICP2e+jsHvAj2E2lIHxa5tjXRlKDJo4IdvPvCXbXQGdzSfmSpNVyIKMvoZHjDY9DP0zV17iI85o90vRFXNccRw==}
     engines: {node: '>=12'}
@@ -8989,6 +8999,8 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.18.0: {}
+
+  xdg-basedir@5.1.0: {}
 
   xml-name-validator@4.0.0: {}
 

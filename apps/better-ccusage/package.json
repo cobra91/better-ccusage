@@ -64,6 +64,7 @@
     "tsdown": "catalog:build",
     "tsx": "^4.21.0",
     "valibot": "catalog:runtime",
-    "vitest": "catalog:testing"
+    "vitest": "catalog:testing",
+    "xdg-basedir": "catalog:runtime"
   }
 }
