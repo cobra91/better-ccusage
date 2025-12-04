@@ -180,6 +180,9 @@ importers:
       '@better-ccusage/internal':
         specifier: workspace:*
         version: link:../../packages/internal
+      '@better-ccusage/terminal':
+        specifier: workspace:*
+        version: link:../../packages/terminal
       '@praha/byethrow':
         specifier: catalog:runtime
         version: 0.6.3
