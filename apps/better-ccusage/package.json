@@ -62,6 +62,7 @@
     "cli-table3": "catalog:runtime",
     "consola": "catalog:runtime",
     "gunshi": "catalog:runtime",
+    "picocolors": "catalog:runtime",
     "tsdown": "catalog:build",
     "tsx": "^4.21.0",
     "valibot": "catalog:runtime",
