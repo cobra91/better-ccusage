@@ -8,17 +8,19 @@ This guide helps manage integrations from the upstream ccusage project while pre
 
 Your custom additions:
 
-- Zai provider support
-- GLM-4.5, GLM-4.6, kat-coder model integration
-- Multi-provider cost calculation
+- **Automatic provider detection** - No manual prefix configuration needed
+- **GLM-4.5, GLM-4.6, kat-coder**, Moonshot (kimi-*), and Minimax model integration
+- **Multi-provider cost calculation** with intelligent fallback matching
+- **Zero-config model resolution** - Handles both `"model-name"` and `"provider/model-name"` formats
 
-**Conflict Risk:** HIGH - Upstream may add similar features or change pricing structure
+**Conflict Risk:** MEDIUM - Upstream may change pricing structure but automatic detection preserves model compatibility
 
 **Strategy:**
 
 - Backup your custom pricing configurations before integration
-- Compare `pricing-data.ts` files carefully
-- Test all your custom models after integration
+- Compare `model_prices_and_context_window.json` carefully
+- Verify automatic model detection still works for all providers
+- Test model resolution for both prefixed and non-prefixed names
 
 ### 2. **CLI Structure & Commands**
 
@@ -93,8 +95,11 @@ pnpm run start session --json
 
 ```bash
 # Your changes should take precedence
-git checkout --ours apps/better-ccusage/pricing-data.ts
-git add apps/better-ccusage/pricing-data.ts
+git checkout --ours packages/internal/model_prices_and_context_window.json
+git add packages/internal/model_prices_and_context_window.json
+
+# Test automatic model detection
+npx vitest --run --filter="internal" pricing
 ```
 
 ### 2. **CLI Command Conflicts**
@@ -102,7 +107,8 @@ git add apps/better-ccusage/pricing-data.ts
 ```bash
 # Preserve your custom flags and modes
 git checkout --ours apps/better-ccusage/src/commands/
-git add apps/better-ccusage/src/commands/
+git checkout --ours apps/better-ccusage/src/_pricing-fetcher.ts
+git add apps/better-ccusage/src/commands/ apps/better-ccusage/src/_pricing-fetcher.ts
 ```
 
 ### 3. **Dependency Conflicts**
@@ -117,8 +123,10 @@ git add package.json pnpm-lock.yaml
 
 After each integration, verify:
 
-- [ ] Zai provider support works
+- [ ] Automatic model detection works for all providers (no `$0.00` costs)
+- [ ] Both `"model-name"` and `"provider/model-name"` formats resolve correctly
 - [ ] GLM-4.5, GLM-4.6, kat-coder models are recognized
+- [ ] Moonshot (kimi-*) and MiniMax models resolve correctly
 - [ ] Multi-provider cost calculation accurate
 - [ ] All CLI commands functional
 - [ ] JSON output formats preserved

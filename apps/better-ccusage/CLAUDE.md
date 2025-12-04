@@ -5,8 +5,14 @@ This is the main better-ccusage CLI package that provides usage analysis for Cla
 ## Package Overview
 
 **Name**: `better-ccusage`
-**Description**: Usage analysis tool for Claude Code
+**Description**: Usage analysis tool for Claude Code with automatic multi-provider model detection
 **Type**: CLI tool and library with TypeScript exports
+
+**Key Features**:
+- Auto-detects models from any provider (Anthropic, Moonshot, MiniMax, Zai, GLM, kat-coder, etc.)
+- Intelligent model name resolution with exact/suffix/fuzzy matching
+- Zero configuration for new AI providers - just works out of the box
+- Eliminates `$0.00` cost issues from unfound models
 
 ## Development Commands
 

@@ -5,8 +5,14 @@ This package contains shared internal utilities for the better-ccusage monorepo.
 ## Package Overview
 
 **Name**: `@better-ccusage/internal`
-**Description**: Shared internal utilities for better-ccusage toolchain
+**Description**: Shared internal utilities for better-ccusage toolchain with automatic model detection
 **Type**: Internal library (private package)
+
+**Key Features**:
+- `PricingFetcher` with intelligent fallback matching (exact/suffix/fuzzy)
+- Automatic model name resolution - no provider prefix whitelist needed
+- Supports models with or without provider prefixes (e.g., `"kimi-for-coding"` or `"moonshot/kimi-for-coding"`)
+- Zero configuration required for new AI providers
 
 ## Important Notes
 

@@ -132,25 +132,46 @@ npx better-ccusage monthly --compact  # Compact monthly report
 
 ## Multi-Provider Support
 
-better-ccusage extends the original ccusage functionality with support for:
+better-ccusage extends the original ccusage functionality with automatic support for multiple AI providers:
 
-### 🔄 Zai Provider Integration
+### 🔄 Automatic Provider Detection
 
-- Track usage when using Zai's Claude Code/Droid integration
-- Support for Zai-specific model variants
-- Accurate cost calculation for Zai pricing
+- **Zero Configuration Required**: New providers work automatically without code changes
+- **Intelligent Model Resolution**: Finds models with or without provider prefixes
+- **Fallback Matching**: Three-tier matching (exact → suffix → fuzzy) ensures models are always found
 
-### 🚀 GLM-4.5, GLM-4.6, Moonshot (kimixxx), and Minimax Model Support
+**How It Works**:
+- Direct match: `"kimi-for-coding"` ✓
+- Provider prefix match: `"moonshot/kimi-for-coding"` ✓
+- Automatic fallback prevents `$0.00` costs from unfound models
 
-- Full support for GLM-4.5, GLM-4.6, Moonshot (kimixxx), and Minimax Model models from various providers
-- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6, Moonshot (kimixxx), and Minimax Model
-- Compatibility with existing Claude Code workflows
+### 🚀 Supported AI Providers & Models
 
-### 🌐 Provider Detection
+**Moonshot AI** (kimi-* models):
+- `kimi-k2-0905-preview`, `kimi-k2-0711-preview`, `kimi-k2-turbo-preview`
+- `kimi-k2-thinking`, `kimi-k2-thinking-turbo`, `kimi-for-coding`
 
-- Automatic detection of provider from usage data
+**MiniMax**:
+- `MiniMax-M2`
+
+**GLM Models**:
+- `glm-4.5`, `glm-4.6`, `glm-4`
+
+**Anthropic** (Claude models):
+- All Claude models including `claude-sonnet-4-20250514`, `claude-sonnet-4-5-20250929`, etc.
+
+**Zai Provider**:
+- All Zai-specific model variants
+
+**And More**:
+- kat-coder, deepseek, dashscope, streamlake, etc.
+
+### 🌐 Provider-Aware Analytics
+
+- Automatic provider detection from usage data
 - Separate reporting and aggregation by provider
 - Unified interface for multi-provider environments
+- Accurate cost calculation for each provider's pricing structure
 
 ## Features
 
@@ -183,13 +204,13 @@ better-ccusage extends the original ccusage functionality with support for:
 | Feature                      | ccusage | better-ccusage |
 | ---------------------------- | ------- | -------------- |
 | Anthropic Models             | ✅      | ✅             |
-| Zai Provider                 | ❌      | ✅             |
+| Moonshot (kimi) Models       | ❌      | ✅             |
+| MiniMax Models               | ❌      | ✅             |
 | GLM* Models                  | ❌      | ✅             |
+| Zai Provider                 | ❌      | ✅             |
 | kat-coder                    | ❌      | ✅             |
-| kimi*                        | ❌      | ✅             |
-| kat-coder                    | ❌      | ✅             |
+| **Automatic Provider Detection** | ❌  | ✅             |
 | Multi-Provider Support       | ❌      | ✅             |
-| Provider Detection           | ❌      | ✅             |
 | Cost Calculation by Provider | ❌      | ✅             |
 | Original ccusage Features    | ✅      | ✅             |
 | Show prompt usage for Coding | ❌      | ✅             |
