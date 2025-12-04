@@ -12,10 +12,6 @@ catalogs:
     tsdown:
       specifier: ^0.16.6
       version: 0.16.8
-  default:
-    tsx:
-      specifier: ^4.21.0
-      version: 4.21.0
   docs:
     '@ryoppippi/vite-plugin-cloudflare-redirect':
       specifier: ^1.1.2
@@ -156,10 +152,6 @@ catalogs:
 importers:
 
   .:
-    dependencies:
-      tsx:
-        specifier: 'catalog:'
-        version: 4.21.0
     devDependencies:
       '@mizchi/lsmcp':
         specifier: catalog:mcp
