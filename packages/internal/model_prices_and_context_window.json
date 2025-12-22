@@ -6594,6 +6594,17 @@
 		"cache_creation_input_token_cost": 0,
 		"cache_read_input_token_cost": 1.1e-7
 	},
+	"zai/glm-4.7": {
+		"input_cost_per_token": 6e-7,
+		"provider": "zai",
+		"max_input_tokens": 131072,
+		"max_output_tokens": 131072,
+		"max_tokens": 131072,
+		"mode": "chat",
+		"output_cost_per_token": 0.0000022,
+		"cache_creation_input_token_cost": 0,
+		"cache_read_input_token_cost": 1.1e-7
+	},
 	"zai/glm-4.5-air": {
 		"input_cost_per_token": 2e-7,
 		"provider": "zai",
