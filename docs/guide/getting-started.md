@@ -34,7 +34,7 @@ This will show your daily usage report by default.
 better-ccusage automatically supports multiple AI providers without any configuration:
 
 - **Anthropic** (Claude models: sonnet-4, opus-4, etc.)
-- **Moonshot AI** (kimi-* models: kimi-for-coding, kimi-researcher, etc.)
+- **Moonshot AI** (kimi-\* models: kimi-for-coding, kimi-researcher, etc.)
 - **MiniMax** (MiniMax-M2)
 - **Zai** Provider (Zai-specific model variants)
 - **GLM** Models (glm-4.5, glm-4.6, kat-coder, etc.)

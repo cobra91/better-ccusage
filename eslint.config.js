@@ -9,5 +9,6 @@ export default ryoppippi({
 		'.lsmcp',
 		'.claude/settings.local.json',
 		'scripts',
+		'.github',
 	],
 });

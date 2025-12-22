@@ -9,7 +9,7 @@ This guide helps manage integrations from the upstream ccusage project while pre
 Your custom additions:
 
 - **Automatic provider detection** - No manual prefix configuration needed
-- **GLM-4.5, GLM-4.6, kat-coder**, Moonshot (kimi-*), and Minimax model integration
+- **GLM-4.5, GLM-4.6, kat-coder**, Moonshot (kimi-\*), and Minimax model integration
 - **Multi-provider cost calculation** with intelligent fallback matching
 - **Zero-config model resolution** - Handles both `"model-name"` and `"provider/model-name"` formats
 
@@ -126,7 +126,7 @@ After each integration, verify:
 - [ ] Automatic model detection works for all providers (no `$0.00` costs)
 - [ ] Both `"model-name"` and `"provider/model-name"` formats resolve correctly
 - [ ] GLM-4.5, GLM-4.6, kat-coder models are recognized
-- [ ] Moonshot (kimi-*) and MiniMax models resolve correctly
+- [ ] Moonshot (kimi-\*) and MiniMax models resolve correctly
 - [ ] Multi-provider cost calculation accurate
 - [ ] All CLI commands functional
 - [ ] JSON output formats preserved

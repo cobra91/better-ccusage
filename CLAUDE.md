@@ -28,16 +28,16 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 | Feature                      | Original ccusage | better-ccusage |
 | ---------------------------- | ---------------- | -------------- |
-| Anthropic Models             | ✅               | ✅            |
-| Zai Provider                 | ❌               | ✅            |
-| GLM* Models                  | ❌               | ✅            |
-| kat-coder                    | ❌               | ✅            |
-| kimi* Models                 | ❌               | ✅            |
-| MiniMax Models               | ❌               | ✅            |
-| Multi-Provider Support       | ❌               | ✅            |
-| Automatic Provider Detection | ❌         | ✅            |
-| Cost Calculation by Provider | ❌               | ✅            |
-| Original ccusage Features    | ✅               | ✅            |
+| Anthropic Models             | ✅               | ✅             |
+| Zai Provider                 | ❌               | ✅             |
+| GLM\* Models                 | ❌               | ✅             |
+| kat-coder                    | ❌               | ✅             |
+| kimi\* Models                | ❌               | ✅             |
+| MiniMax Models               | ❌               | ✅             |
+| Multi-Provider Support       | ❌               | ✅             |
+| Automatic Provider Detection | ❌               | ✅             |
+| Cost Calculation by Provider | ❌               | ✅             |
+| Original ccusage Features    | ✅               | ✅             |
 
 ### Automatic Model Detection
 

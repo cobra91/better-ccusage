@@ -9,6 +9,7 @@ This package contains shared internal utilities for the better-ccusage monorepo.
 **Type**: Internal library (private package)
 
 **Key Features**:
+
 - `PricingFetcher` with intelligent fallback matching (exact/suffix/fuzzy)
 - Automatic model name resolution - no provider prefix whitelist needed
 - Supports models with or without provider prefixes (e.g., `"kimi-for-coding"` or `"moonshot/kimi-for-coding"`)
@@ -99,12 +100,14 @@ The `PricingFetcher` automatically detects and resolves model names with intelli
 3. **Fuzzy Match**: Scored partial matching based on substring inclusion and provider priority
 
 **Benefits**:
+
 - Zero maintenance when adding new AI providers or models
 - Models work with or without provider prefixes
 - No `$0.00` costs from unfound models
 - Automatic support for any provider naming pattern
 
 **How It Works**:
+
 - When resolving `"kimi-for-coding"`, the system checks:
   1. Direct match: `"kimi-for-coding"` in pricing data
   2. Suffix match: Any key ending with `"/kimi-for-coding"` (e.g., `"moonshot/kimi-for-coding"`)
