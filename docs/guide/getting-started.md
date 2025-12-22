@@ -37,7 +37,7 @@ better-ccusage automatically supports multiple AI providers without any configur
 - **Moonshot AI** (kimi-\* models: kimi-for-coding, kimi-researcher, etc.)
 - **MiniMax** (MiniMax-M2)
 - **Zai** Provider (Zai-specific model variants)
-- **GLM** Models (glm-4.5, glm-4.6, kat-coder, etc.)
+- **GLM** Models (glm-4.7, glm-4.6, glm-4.5, kat-coder, etc.)
 
 The tool automatically detects the provider from your usage data and calculates costs accordingly. No manual configuration needed!
 

@@ -28,6 +28,7 @@ const GLM_MODEL_PREFIXES = [
 	'glm-4.6',
 	'glm-4-6',
 	'glm-4.7',
+	'glm-4-7',
 	'glm-4.5-air',
 	'glm-4-air',
 ];

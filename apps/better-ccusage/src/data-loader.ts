@@ -1088,7 +1088,7 @@ export async function loadSessionData(
 				// Check for duplicate message + request ID combination
 				const uniqueHash = createUniqueHash(data);
 				if (isDuplicateEntry(uniqueHash, processedHashes)) {
-				// Skip duplicate message
+					// Skip duplicate message
 					continue;
 				}
 
@@ -1313,10 +1313,10 @@ export async function loadBucketUsageData(
 
 	const groupingKey = needsProjectGrouping
 		? (data: DailyUsage) => {
-				const bucketValue = groupingFn(data);
-				const projectSegment = data.project ?? 'unknown';
-				return `${bucketValue}\x00${projectSegment}`;
-			}
+			const bucketValue = groupingFn(data);
+			const projectSegment = data.project ?? 'unknown';
+			return `${bucketValue}\x00${projectSegment}`;
+		}
 		: (data: DailyUsage) => `${groupingFn(data)}`;
 
 	const grouped = groupBy(dailyData, groupingKey);
@@ -1453,8 +1453,8 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 				const usage = obj.message.usage;
 				const inputTokens
 					= usage.input_tokens!
-						+ (usage.cache_creation_input_tokens ?? 0)
-						+ (usage.cache_read_input_tokens ?? 0);
+					+ (usage.cache_creation_input_tokens ?? 0)
+					+ (usage.cache_read_input_tokens ?? 0);
 
 				// Get context limit from CcusagePricingFetcher
 				let contextLimit = 200_000; // Fallback for when modelId is not provided
@@ -1602,7 +1602,7 @@ export async function loadSessionBlockData(
 					allUserMessages.push(userMessage);
 					continue;
 				}
-			// Skip lines that don't match either schema
+				// Skip lines that don't match either schema
 			}
 			catch (error) {
 				// Skip invalid JSON lines but log for debugging purposes
@@ -1653,16 +1653,16 @@ export async function loadSessionBlockData(
 	// Filter by date range if specified
 	const dateFiltered = (options?.since != null && options.since !== '') || (options?.until != null && options.until !== '')
 		? blocks.filter((block) => {
-				// Always use DEFAULT_LOCALE for date comparison to ensure YYYY-MM-DD format
-				const blockDateStr = formatDate(block.startTime.toISOString(), options?.timezone, DEFAULT_LOCALE).replace(/-/g, '');
-				if (options.since != null && options.since !== '' && blockDateStr < options.since) {
-					return false;
-				}
-				if (options.until != null && options.until !== '' && blockDateStr > options.until) {
-					return false;
-				}
-				return true;
-			})
+			// Always use DEFAULT_LOCALE for date comparison to ensure YYYY-MM-DD format
+			const blockDateStr = formatDate(block.startTime.toISOString(), options?.timezone, DEFAULT_LOCALE).replace(/-/g, '');
+			if (options.since != null && options.since !== '' && blockDateStr < options.since) {
+				return false;
+			}
+			if (options.until != null && options.until !== '' && blockDateStr > options.until) {
+				return false;
+			}
+			return true;
+		})
 		: blocks;
 
 	// Sort by start time based on order option
@@ -1672,7 +1672,7 @@ export async function loadSessionBlockData(
 if (import.meta.vitest != null) {
 	describe('formatDate', () => {
 		it('formats UTC timestamp to local date', () => {
-		// Test with UTC timestamps - results depend on local timezone
+			// Test with UTC timestamps - results depend on local timezone
 			expect(formatDate('2024-01-01T00:00:00Z')).toBe('2024-01-01');
 			expect(formatDate('2024-12-31T23:59:59Z')).toBe('2024-12-31');
 		});
@@ -3274,7 +3274,7 @@ invalid json line
 			});
 
 			it('should calculate cost for new schema with claude-sonnet-4-20250514', async () => {
-			// Use a well-known Claude model
+				// Use a well-known Claude model
 				const modelName = createModelName('claude-sonnet-4-20250514');
 
 				const newData = {
@@ -3314,7 +3314,7 @@ invalid json line
 			});
 
 			it('should calculate cost for new schema with claude-sonnet-4-5-20250929', async () => {
-			// Use Claude 4.5 Sonnet model
+				// Use Claude 4.5 Sonnet model
 				const modelName = createModelName('claude-sonnet-4-5-20250929');
 
 				const newData = {
@@ -3354,7 +3354,7 @@ invalid json line
 			});
 
 			it('should calculate cost for new schema with claude-opus-4-20250514', async () => {
-			// Use Claude 4 Opus model
+				// Use Claude 4 Opus model
 				const modelName = createModelName('claude-opus-4-20250514');
 
 				const newData = {
@@ -3411,7 +3411,7 @@ invalid json line
 				const data3 = {
 					timestamp: '2024-01-17T12:00:00Z',
 					message: { usage: { input_tokens: 300, output_tokens: 150 } },
-				// No costUSD and no model - should be 0 cost
+					// No costUSD and no model - should be 0 cost
 				};
 
 				const fixture = await createFixture({
@@ -3439,7 +3439,7 @@ invalid json line
 				const data = {
 					timestamp: '2024-01-18T10:00:00Z',
 					message: { usage: { input_tokens: 500, output_tokens: 250 } },
-				// No costUSD and no model
+					// No costUSD and no model
 				};
 
 				const fixture = await createFixture({
@@ -3727,7 +3727,7 @@ invalid json line
 						usage: { input_tokens: 2000, output_tokens: 1000 },
 						model: createModelName('claude-4-sonnet-20250514'),
 					},
-				// No costUSD - should result in 0 cost
+					// No costUSD - should result in 0 cost
 				};
 
 				const fixture = await createFixture({
@@ -3854,7 +3854,7 @@ invalid json line
 						usage: { input_tokens: 1000, output_tokens: 500 },
 						model: createModelName('claude-4-sonnet-20250514'),
 					},
-				// No costUSD, so auto mode will need to calculate
+					// No costUSD, so auto mode will need to calculate
 				};
 
 				const fixture = await createFixture({
@@ -3965,6 +3965,9 @@ invalid json line
 			const glmCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-4.6'));
 			expect(glmCost).toBe(1.00);
 
+			const glm47Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-4.7'));
+			expect(glm47Cost).toBe(1.00);
+
 			const katCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'kat-coder'));
 			expect(katCost).toBe(1.00);
 
@@ -4005,7 +4008,7 @@ invalid json line
 			});
 
 			it('should not use model pricing in display mode', async () => {
-			// Even with model pricing available, should use costUSD
+				// Even with model pricing available, should use costUSD
 				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(mockUsageData, 'display', fetcher);
 				expect(result).toBe(0.05);
@@ -4014,7 +4017,7 @@ invalid json line
 
 		describe('calculate mode', () => {
 			it('should calculate cost from tokens when model pricing available', async () => {
-			// Use the exact same structure as working integration tests
+				// Use the exact same structure as working integration tests
 				const testData: UsageData = {
 					timestamp: createISOTimestamp('2024-01-01T10:00:00Z'),
 					message: {
@@ -4140,7 +4143,7 @@ invalid json line
 			});
 
 			it('should prefer costUSD over calculation even when both available', async () => {
-			// Both costUSD and model pricing available, should use costUSD
+				// Both costUSD and model pricing available, should use costUSD
 				const fetcher = new CcusagePricingFetcher();
 				const result = await calculateCostForEntry(mockUsageData, 'auto', fetcher);
 				expect(result).toBe(0.05);
@@ -4793,7 +4796,7 @@ if (import.meta.vitest != null) {
 					expect(session2.outputTokens).toBe(0);
 				}
 				else {
-				// It's also valid for session2 to not be included if it has no entries
+					// It's also valid for session2 to not be included if it has no entries
 					expect(sessions.length).toBe(1);
 				}
 			});

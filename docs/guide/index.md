@@ -78,10 +78,10 @@ better-ccusage extends the original ccusage functionality with support for multi
 - Support for Zai-specific model variants
 - Accurate cost calculation for Zai pricing
 
-### 🚀 GLM-4.5, GLM-4.6, kat-coder Model Support
+### 🚀 GLM-4.5, GLM-4.6, GLM-4.7, kat-coder Model Support
 
-- Full support for GLM-4.5, GLM-4.6, kat-coder models from various providers
-- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6, kat-coder (beta)
+- Full support for GLM-4.5, GLM-4.6, GLM-4.7, kat-coder models from various providers
+- Token counting and cost calculation optimized for GLM-4.5, GLM-4.6, GLM-4.7, kat-coder (beta)
 - Compatibility with existing Claude Code workflows
 
 ### 🌐 Provider Detection
@@ -106,12 +106,12 @@ better-ccusage extends the original ccusage functionality with support for multi
 
 ## Why better-ccusage?
 
-better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashcope and many models like GLM-4.5, GLM-4.6, kat-coder, kimi, MiniMax etc.
+better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashcope and many models like GLM-4.5, GLM-4.6, GLM-4.7, kat-coder, kimi, MiniMax etc.
 
 The original ccusage project doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5, GLM-4.6, kat-coder** models from other AI providers
+- **GLM-4.5, GLM-4.6, GLM-4.7, kat-coder** models from other AI providers
 - **Moonshot AI** (kimi) models like kimi-for-coding, kimi-researcher
 - **MiniMax** models like MiniMax-M2
 - Multi-provider environments where organizations use different AI services through Claude Code
