@@ -34,7 +34,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Lint
-        run: pnpm run lint 2>&1 | sed 's/Error: Process completed.*/Error: Check failed - see above/' || exit 1
+        run: pnpm run lint 2>&1 | sed 's/Error: Process completed.*/\x1b[0;31mError: Check failed - see above\x1b[0m/' || exit 1
 
       - name: Typecheck
         run: pnpm typecheck
