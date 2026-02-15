@@ -3968,6 +3968,9 @@ invalid json line
 			const glm47Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-4.7'));
 			expect(glm47Cost).toBe(1.00);
 
+			const glm5Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-5'));
+			expect(glm5Cost).toBe(1.00);
+
 			const katCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'kat-coder'));
 			expect(katCost).toBe(1.00);
 

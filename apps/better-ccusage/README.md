@@ -27,7 +27,7 @@
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5, GLM-4.6, GLM-4.7, kat-coder** models from other AI providers
+- **All GLM models, kat-coder** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -36,7 +36,7 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code/Droid Usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and GLM-4.5, GLM-4.6, GLM-4.7, kat-coder models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
+The main CLI tool for analyzing Claude Code/Droid Usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and All GLM models, kat-coder models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
 
 ### 🤖 [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex) - OpenAI Codex Usage Analyzer
 
@@ -141,6 +141,7 @@ better-ccusage extends the original ccusage functionality with automatic support
 - **Fallback Matching**: Three-tier matching (exact → suffix → fuzzy) ensures models are always found
 
 **How It Works**:
+
 - Direct match: `"kimi-for-coding"` ✓
 - Provider prefix match: `"moonshot/kimi-for-coding"` ✓
 - Automatic fallback prevents `$0.00` costs from unfound models
@@ -148,22 +149,26 @@ better-ccusage extends the original ccusage functionality with automatic support
 ### 🚀 Supported AI Providers & Models
 
 **Moonshot AI** (kimi-* models):
+
 - `kimi-k2-0905-preview`, `kimi-k2-0711-preview`, `kimi-k2-turbo-preview`
 - `kimi-k2-thinking`, `kimi-k2-thinking-turbo`, `kimi-for-coding`
 
 **MiniMax**:
+
 - `MiniMax-M2`
 
-**GLM Models**:
-- `glm-4.7`, `glm-4.6`, `glm-4.5`, `glm-4`
+**All GLM Models**
 
 **Anthropic** (Claude models):
+
 - All Claude models including `claude-sonnet-4-20250514`, `claude-sonnet-4-5-20250929`, etc.
 
 **Zai Provider**:
+
 - All Zai-specific model variants
 
 **And More**:
+
 - kat-coder, deepseek, dashscope, streamlake, etc.
 
 ### 🌐 Provider-Aware Analytics
