@@ -1,68 +1,47 @@
 {
-	"name": "@better-ccusage/opencode",
-	"version": "1.2.8",
-	"description": "Usage analysis tool for OpenCode AI assistant",
-	"homepage": "https://github.com/cobra91/better-ccusage#readme",
-	"bugs": {
-		"url": "https://github.com/cobra91/better-ccusage/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/cobra91/better-ccusage.git"
-	},
-	"funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
-	"license": "MIT",
-	"author": "cobra91",
-	"type": "module",
-	"exports": {
-		".": "./src/index.ts",
-		"./data-loader": "./src/data-loader.ts",
-		"./cost-utils": "./src/cost-utils.ts",
-		"./package.json": "./package.json"
-	},
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"bin": {
-		"better-ccusage-opencode": "./src/index.ts"
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "pnpm tsdown",
-		"prepack": "pnpm run build && pnpm clean-pkg-json",
-		"test": "TZ=UTC vitest",
-		"typecheck": "tsgo --noEmit"
-	},
-	"devDependencies": {
-		"@antfu/utils": "catalog:runtime",
-		"@better-ccusage/internal": "workspace:*",
-		"@better-ccusage/terminal": "workspace:*",
-		"@praha/byethrow": "catalog:runtime",
-		"clean-pkg-json": "catalog:release",
-		"es-toolkit": "catalog:runtime",
-		"gunshi": "catalog:runtime",
-		"path-type": "catalog:runtime",
-		"publint": "catalog:lint",
-		"tinyglobby": "catalog:runtime",
-		"tsdown": "catalog:build",
-		"tsx": "^4.21.0",
-		"valibot": "catalog:runtime",
-		"vitest": "catalog:testing"
-	},
-	"engines": {
-		"node": ">=20.19.4"
-	},
-	"publishConfig": {
-		"bin": {
-			"better-ccusage-opencode": "./dist/index.js"
-		},
-		"exports": {
-			".": "./dist/index.js",
-			"./data-loader": "./dist/data-loader.js",
-			"./cost-utils": "./dist/cost-utils.js",
-			"./package.json": "./package.json"
-		}
-	}
+  "name": "@better-ccusage/opencode",
+  "version": "1.2.8",
+  "description": "Usage analysis tool for OpenCode AI assistant",
+  "homepage": "https://github.com/cobra91/better-ccusage#readme",
+  "bugs": {
+    "url": "https://github.com/cobra91/better-ccusage/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cobra91/better-ccusage.git"
+  },
+  "funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
+  "license": "MIT",
+  "author": "cobra91",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./data-loader": "./dist/data-loader.js",
+    "./cost-utils": "./dist/cost-utils.js",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "better-ccusage-opencode": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "publishConfig": {
+    "access": "public",
+    "bin": {
+      "better-ccusage-opencode": "./dist/index.js"
+    },
+    "exports": {
+      ".": "./dist/index.js",
+      "./data-loader": "./dist/data-loader.js",
+      "./cost-utils": "./dist/cost-utils.js",
+      "./package.json": "./package.json"
+    }
+  }
 }
