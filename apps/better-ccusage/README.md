@@ -20,14 +20,14 @@
 
 ## About better-ccusage
 
-**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashcope and many models like glm-4.5, glm-4.6, kat-coder, sonnet-4, sonnet-4.5 and Qwen-Max etc..
+**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashcope and many models like glm series from Zai, kat-coder from Kwaipilot, kimi from Moonshot, Minimax, sonnet-4, sonnet-4.5 and Qwen-Max etc..
 
 ### Why the Fork?
 
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **All GLM models, kat-coder** models from other AI providers
+- **All GLM models, kat-coder, minimax, moonshot** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -165,7 +165,7 @@ better-ccusage extends the original ccusage functionality with automatic support
 
 **Zai Provider**:
 
-- All Zai-specific model variants
+- All Zai-specific model variants like glm-5
 
 **And More**:
 
