@@ -97,5 +97,17 @@ if (import.meta.vitest != null) {
 
 			expect(cost).toBeGreaterThan(0);
 		});
+		it('calculates cost for GLM-5-Turbo model', async () => {
+			using fetcher = new CcusagePricingFetcher();
+			const pricing = await Result.unwrap(fetcher.getModelPricing('glm-5-turbo'));
+			expect(pricing).not.toBeNull();
+			const cost = fetcher.calculateCostFromPricing({
+				input_tokens: 1000,
+				output_tokens: 500,
+				cache_read_input_tokens: 300,
+			}, pricing!);
+
+			expect(cost).toBeGreaterThan(0);
+		});
 	});
 }
