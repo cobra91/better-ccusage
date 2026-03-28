@@ -27,7 +27,7 @@
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **All GLM models, kat-coder, minimax, moonshot** models from other AI providers
+- **All GLM models (including GLM-5-Turbo), kat-coder, minimax, moonshot** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -36,7 +36,7 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code/Droid Usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and All GLM models, kat-coder models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
+The main CLI tool for analyzing Claude Code/Droid Usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and All GLM models (including GLM-5-Turbo), kat-coder models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
 
 ### 🤖 [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex) - OpenAI Codex Usage Analyzer
 
