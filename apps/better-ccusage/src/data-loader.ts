@@ -1050,16 +1050,10 @@ export async function loadSessionData(
 		model: string | undefined;
 	}> = [];
 
-	for (const { file, baseDir } of sortedFilesWithBase) {
-		// Extract session info from file path using its specific base directory
-		const relativePath = path.relative(baseDir, file);
-		const parts = relativePath.split(path.sep);
-
-		// Session ID is the directory name containing the JSONL file
-		const sessionId = parts[parts.length - 2] ?? 'unknown';
-		// Project path is everything before the session ID
-		const joinedPath = parts.slice(0, -2).join(path.sep);
-		const projectPath = joinedPath.length > 0 ? joinedPath : 'Unknown Project';
+	for (const { file } of sortedFilesWithBase) {
+		// The structure is `projects/project-name/sessionId.jsonl`.
+		const sessionId = path.basename(file, '.jsonl');
+		const projectPath = extractProjectFromPath(file);
 
 		const content = await readFile(file, 'utf-8');
 		const lines = content
