@@ -6699,6 +6699,32 @@
 		"supports_function_calling": true,
 		"supports_tool_choice": true
 	},
+	"glm-5-turbo": {
+		"input_cost_per_token": 1.2e-6,
+		"provider": "zai",
+		"max_input_tokens": 200000,
+		"max_output_tokens": 128304,
+		"max_tokens": 200000,
+		"mode": "chat",
+		"output_cost_per_token": 4e-6,
+		"cache_creation_input_token_cost": 0,
+		"cache_read_input_token_cost": 0.24e-6,
+		"supports_function_calling": true,
+		"supports_tool_choice": true
+	},
+	"glm-5.1": {
+		"input_cost_per_token": 1e-6,
+		"provider": "zai",
+		"max_input_tokens": 200000,
+		"max_output_tokens": 128304,
+		"max_tokens": 200000,
+		"mode": "chat",
+		"output_cost_per_token": 3.2e-6,
+		"cache_creation_input_token_cost": 0,
+		"cache_read_input_token_cost": 0.2e-6,
+		"supports_function_calling": true,
+		"supports_tool_choice": true
+	},
 	"zai/glm-x-preview": {
 		"input_cost_per_token": 6e-7,
 		"provider": "zai",
