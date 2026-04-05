@@ -1,12 +1,13 @@
 import process from 'node:process';
 import { cli } from 'gunshi';
-import { description, name, version } from '../../package.json';
+import packageJson from '../../package.json' with { type: 'json' };
 import { blocksCommand } from './blocks.ts';
 import { dailyCommand } from './daily.ts';
 import { monthlyCommand } from './monthly.ts';
 import { sessionCommand } from './session.ts';
 import { statuslineCommand } from './statusline.ts';
 import { weeklyCommand } from './weekly.ts';
+const { description, name, version } = packageJson;
 
 // Re-export all commands for easy importing
 export { blocksCommand, dailyCommand, monthlyCommand, sessionCommand, statuslineCommand, weeklyCommand };
