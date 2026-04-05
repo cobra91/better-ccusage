@@ -13,5 +13,6 @@ color = "color"
 [files]
 extend-exclude = [
   "node_modules",
-  "biome.json"
+  "biome.json",
+  "test-publish-locally.sh"
 ]

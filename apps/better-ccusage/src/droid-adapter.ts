@@ -230,55 +230,63 @@ export function getDroidPath(): string {
 }
 
 /**
- * Find all droid session directories
+ * Find all droid sessions, scanning both flat files and nested project folders
  * @param droidPath - Path to droid sessions directory
- * @returns Array of session directory paths
+ * @returns Array of { dirPath, sessionId } pairs
  */
-export function findDroidSessions(droidPath: string): string[] {
+type DroidSessionEntry = { dirPath: string; sessionId: string };
+
+function findDroidSessions(droidPath: string): DroidSessionEntry[] {
 	logger.debug(`Finding droid sessions in ${droidPath}`);
 	if (!isDirectorySync(droidPath)) {
 		logger.debug(`Droid path ${droidPath} is not a directory`);
 		return [];
 	}
 
-	// Look for both subdirectories (old structure) and flat files (current structure)
-	const sessionDirs = globSync(['*/'], {
-		cwd: droidPath,
-		onlyDirectories: true,
-		absolute: false,
-	}).map((dir: string) => path.join(droidPath, dir));
+	const results: DroidSessionEntry[] = [];
 
-	// Also look for flat .jsonl files to handle current droid structure
-	const jsonlFiles = globSync(['*.jsonl'], {
+	// Scan flat .jsonl files at the root of the sessions directory
+	const rootJsonlFiles = globSync(['*.jsonl'], {
 		cwd: droidPath,
 		onlyFiles: true,
 		absolute: false,
 	});
 
-	logger.debug(`Found ${sessionDirs.length} subdirectories and ${jsonlFiles.length} JSONL files`);
+	for (const file of rootJsonlFiles) {
+		const sessionId = file.replace('.jsonl', '');
+		const settingsFile = `${sessionId}.settings.json`;
+		if (globSync([settingsFile], { cwd: droidPath, onlyFiles: true }).length > 0) {
+			results.push({ dirPath: droidPath, sessionId });
+		}
+	}
 
-	// Convert flat files to pseudo-directories for the session ID
-	const flatSessions = jsonlFiles
-		.map((file: string) => {
+	// Scan subdirectories (project folders like -C-Dev-chats-llm-v2/, -mnt/)
+	// Each subdirectory contains {uuid}.jsonl + {uuid}.settings.json pairs
+	const subDirs = globSync(['*/'], {
+		cwd: droidPath,
+		onlyDirectories: true,
+		absolute: false,
+	});
+
+	for (const subDir of subDirs) {
+		const subDirPath = path.join(droidPath, subDir);
+		const subJsonlFiles = globSync(['*.jsonl'], {
+			cwd: subDirPath,
+			onlyFiles: true,
+			absolute: false,
+		});
+
+		for (const file of subJsonlFiles) {
 			const sessionId = file.replace('.jsonl', '');
 			const settingsFile = `${sessionId}.settings.json`;
-
-			logger.debug(`Processing JSONL file ${file}, checking for settings file ${settingsFile}`);
-
-			// Check if corresponding settings file exists
-			if (globSync([settingsFile], { cwd: droidPath, onlyFiles: true }).length > 0) {
-				logger.debug(`Found matching settings file for session ${sessionId}`);
-				return droidPath; // Return the base path for flat structure
+			if (globSync([settingsFile], { cwd: subDirPath, onlyFiles: true }).length > 0) {
+				results.push({ dirPath: subDirPath, sessionId });
 			}
-			logger.debug(`No settings file found for session ${sessionId}`);
-			return null;
-		})
-		.filter((path: string | null): path is string => path !== null);
+		}
+	}
 
-	// Remove duplicates and combine both structures
-	const allSessions = [...new Set([...sessionDirs, ...flatSessions])];
-	logger.debug(`Found ${allSessions.length} total sessions: ${allSessions.slice(0, 3).join(', ')}${allSessions.length > 3 ? '...' : ''}`);
-	return allSessions;
+	logger.debug(`Found ${results.length} total sessions: ${results.slice(0, 3).map(r => r.sessionId).join(', ')}${results.length > 3 ? '...' : ''}`);
+	return results;
 }
 
 /**
@@ -292,41 +300,17 @@ export async function processDroidSessions(
 	options: LoadOptions = {},
 ): Promise<UsageData[]> {
 	logger.debug(`Processing droid sessions from ${droidPath}`);
-	const sessionDirs = findDroidSessions(droidPath);
-	logger.debug(`Found ${sessionDirs.length} session directories: ${sessionDirs.slice(0, 3).join(', ')}${sessionDirs.length > 3 ? '...' : ''}`);
+	const sessions = findDroidSessions(droidPath);
+	logger.debug(`Found ${sessions.length} session entries: ${sessions.slice(0, 3).map(s => s.sessionId).join(', ')}${sessions.length > 3 ? '...' : ''}`);
 	const results: UsageData[] = [];
 	const processedSessionIds = new Set<string>();
 
-	for (const sessionDir of sessionDirs) {
-		// Check if this is a subdirectory (old structure) or flat file (new structure)
-		if (sessionDir === droidPath) {
-			// Flat file structure - find all .jsonl files and extract session IDs
-			const jsonlFiles = globSync(['*.jsonl'], {
-				cwd: droidPath,
-				onlyFiles: true,
-				absolute: false,
-			});
-
-			for (const jsonlFile of jsonlFiles) {
-				const sessionId = jsonlFile.replace('.jsonl', '');
-				if (!processedSessionIds.has(sessionId)) {
-					const entry = await parseDroidSession(droidPath, sessionId, options);
-					if (entry != null) {
-						results.push(entry);
-						processedSessionIds.add(sessionId);
-					}
-				}
-			}
-		}
-		else {
-			// Subdirectory structure (old format)
-			const sessionId = path.basename(sessionDir);
-			if (!processedSessionIds.has(sessionId)) {
-				const entry = await parseDroidSession(sessionDir, sessionId, options);
-				if (entry != null) {
-					results.push(entry);
-					processedSessionIds.add(sessionId);
-				}
+	for (const { dirPath, sessionId } of sessions) {
+		if (!processedSessionIds.has(sessionId)) {
+			const entry = await parseDroidSession(dirPath, sessionId, options);
+			if (entry != null) {
+				results.push(entry);
+				processedSessionIds.add(sessionId);
 			}
 		}
 	}

@@ -85,7 +85,7 @@ git diff upstream/main:apps/ccusage/model_prices_and_context_window.json apps/be
 Copy improvements from upstream to your `apps/better-ccusage/` directory, preserving:
 
 - Your Zai provider support
-- GLM-4.5, GLM-4.6, GLM-4.7, GLM-5, kat-coder model pricing
+- GLM-xx, kat-coder model pricing
 - Multi-provider cost calculation
 - Your package structure
 
@@ -95,7 +95,7 @@ After applying upstream changes, verify:
 
 - [ ] All CLI commands still work: `pnpm run start daily`
 - [ ] Zai provider functionality preserved
-- [ ] GLM-4.5, GLM-4.6, GLM-4.7, GLM-5, kat-coder models still recognized
+- [ ] GLM-xx, kat-coder models still recognized
 - [ ] Custom pricing data intact
 - [ ] MCP server operational: `pnpm dlx @better-ccusage/mcp@latest -- --help`
 - [ ] Test suite passes: `pnpm test`

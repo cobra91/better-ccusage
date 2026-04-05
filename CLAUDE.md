@@ -12,14 +12,14 @@ This is a monorepo containing multiple packages. For package-specific guidance, 
 
 ## About better-ccusage
 
-better-ccusage is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers Anthropic, Zai, Dashcope and many models GLM-4.5, GLM-4.6, kat-coder.
+better-ccusage is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashscope, and many models like GLM-xx, kat-coder.
 
 ### Why the Fork?
 
 The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
 
 - **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-4.5, GLM-4.6, kat-coder, kimi and Minimax** models from other AI providers
+- **GLM-xx, kat-coder, kimi and Minimax** models from other AI providers
 - Multi-provider environments where organizations use different AI services through Claude Code
 
 better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
@@ -268,7 +268,7 @@ Follow the Conventional Commits specification with package/area prefixes:
 **Examples:**
 
 ```markdown
-feat(better-ccusage): add support for GLM-4.5, GLM-4.6, kat-coder models
+feat(better-ccusage): add support for GLM-xx, kat-coder models
 fix(mcp): resolve connection timeout issues
 docs(guide): update installation instructions
 refactor(better-ccusage): extract cost calculation to separate module
