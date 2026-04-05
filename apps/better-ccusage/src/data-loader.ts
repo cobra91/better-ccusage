@@ -2106,9 +2106,7 @@ if (import.meta.vitest != null) {
 			const fixture = await createFixture({
 				projects: {
 					project1: {
-						session1: {
-							'usage.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
-						},
+						'session1.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
 					},
 				},
 			});
@@ -2146,9 +2144,7 @@ if (import.meta.vitest != null) {
 			const fixture = await createFixture({
 				projects: {
 					project1: {
-						session1: {
-							'usage.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
-						},
+						'session1.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
 					},
 				},
 			});
@@ -2934,15 +2930,11 @@ invalid json line
 
 			const fixture = await createFixture({
 				projects: {
-					'project1/subfolder': {
-						session123: {
-							'chat.jsonl': JSON.stringify(mockData),
-						},
+					'project1': {
+						'session123.jsonl': JSON.stringify(mockData),
 					},
 					'project2': {
-						session456: {
-							'chat.jsonl': JSON.stringify(mockData),
-						},
+						'session456.jsonl': JSON.stringify(mockData),
 					},
 				},
 			});
@@ -2952,7 +2944,7 @@ invalid json line
 			expect(result).toHaveLength(2);
 			expect(result.find(s => s.sessionId === 'session123')).toBeTruthy();
 			expect(
-				result.find(s => s.projectPath === path.join('project1', 'subfolder')),
+				result.find(s => s.projectPath === 'project1'),
 			).toBeTruthy();
 			expect(result.find(s => s.sessionId === 'session456')).toBeTruthy();
 			expect(result.find(s => s.projectPath === 'project2')).toBeTruthy();
@@ -2989,9 +2981,7 @@ invalid json line
 			const fixture = await createFixture({
 				projects: {
 					project1: {
-						session1: {
-							'chat.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
-						},
+						'session1.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
 					},
 				},
 			});
@@ -3035,9 +3025,7 @@ invalid json line
 			const fixture = await createFixture({
 				projects: {
 					project1: {
-						session1: {
-							'chat.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
-						},
+						'session1.jsonl': mockData.map(d => JSON.stringify(d)).join('\n'),
 					},
 				},
 			});
@@ -3080,8 +3068,8 @@ invalid json line
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
-							s.sessionId,
-							{ 'chat.jsonl': JSON.stringify(s.data) },
+							`${s.sessionId}.jsonl`,
+							JSON.stringify(s.data),
 						]),
 					),
 				},
@@ -3126,8 +3114,8 @@ invalid json line
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
-							s.sessionId,
-							{ 'chat.jsonl': JSON.stringify(s.data) },
+							`${s.sessionId}.jsonl`,
+							JSON.stringify(s.data),
 						]),
 					),
 				},
@@ -3175,8 +3163,8 @@ invalid json line
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
-							s.sessionId,
-							{ 'chat.jsonl': JSON.stringify(s.data) },
+							`${s.sessionId}.jsonl`,
+							JSON.stringify(s.data),
 						]),
 					),
 				},
@@ -3224,8 +3212,8 @@ invalid json line
 				projects: {
 					project1: Object.fromEntries(
 						sessions.map(s => [
-							s.sessionId,
-							{ 'chat.jsonl': JSON.stringify(s.data) },
+							`${s.sessionId}.jsonl`,
+							JSON.stringify(s.data),
 						]),
 					),
 				},
@@ -3259,9 +3247,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-old': {
-							'session-old': {
-								'usage.jsonl': `${JSON.stringify(oldData)}\n`,
-							},
+							'session-old.jsonl': `${JSON.stringify(oldData)}\n`,
 						},
 					},
 				});
@@ -3295,9 +3281,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-new': {
-							'session-new': {
-								'usage.jsonl': `${JSON.stringify(newData)}\n`,
-							},
+							'session-new.jsonl': `${JSON.stringify(newData)}\n`,
 						},
 					},
 				});
@@ -3335,9 +3319,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-sonnet45': {
-							'session-sonnet45': {
-								'usage.jsonl': `${JSON.stringify(newData)}\n`,
-							},
+							'session-sonnet45.jsonl': `${JSON.stringify(newData)}\n`,
 						},
 					},
 				});
@@ -3375,9 +3357,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-opus': {
-							'session-opus': {
-								'usage.jsonl': `${JSON.stringify(newData)}\n`,
-							},
+							'session-opus.jsonl': `${JSON.stringify(newData)}\n`,
 						},
 					},
 				});
@@ -3419,9 +3399,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-mixed': {
-							'session-mixed': {
-								'usage.jsonl': `${JSON.stringify(data1)}\n${JSON.stringify(data2)}\n${JSON.stringify(data3)}\n`,
-							},
+							'session-mixed.jsonl': `${JSON.stringify(data1)}\n${JSON.stringify(data2)}\n${JSON.stringify(data3)}\n`,
 						},
 					},
 				});
@@ -3447,9 +3425,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-no-cost': {
-							'session-no-cost': {
-								'usage.jsonl': `${JSON.stringify(data)}\n`,
-							},
+							'session-no-cost.jsonl': `${JSON.stringify(data)}\n`,
 						},
 					},
 				});
@@ -3482,12 +3458,8 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session1: {
-								'usage.jsonl': JSON.stringify(session1Data),
-							},
-							session2: {
-								'usage.jsonl': JSON.stringify(session2Data),
-							},
+							'session1.jsonl': JSON.stringify(session1Data),
+							'session2.jsonl': JSON.stringify(session2Data),
 						},
 					},
 				});
@@ -3519,9 +3491,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-unknown': {
-							'session-unknown': {
-								'usage.jsonl': `${JSON.stringify(data)}\n`,
-							},
+							'session-unknown.jsonl': `${JSON.stringify(data)}\n`,
 						},
 					},
 				});
@@ -3553,9 +3523,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-cache': {
-							'session-cache': {
-								'usage.jsonl': `${JSON.stringify(data)}\n`,
-							},
+							'session-cache.jsonl': `${JSON.stringify(data)}\n`,
 						},
 					},
 				});
@@ -3590,9 +3558,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-cache-sonnet45': {
-							'session-cache-sonnet45': {
-								'usage.jsonl': `${JSON.stringify(data)}\n`,
-							},
+							'session-cache-sonnet45.jsonl': `${JSON.stringify(data)}\n`,
 						},
 					},
 				});
@@ -3627,9 +3593,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project-opus-cache': {
-							'session-opus-cache': {
-								'usage.jsonl': `${JSON.stringify(data)}\n`,
-							},
+							'session-opus-cache.jsonl': `${JSON.stringify(data)}\n`,
 						},
 					},
 				});
@@ -3667,9 +3631,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': `${JSON.stringify(data1)}\n${JSON.stringify(data2)}\n`,
-							},
+							'session.jsonl': `${JSON.stringify(data1)}\n${JSON.stringify(data2)}\n`,
 						},
 					},
 				});
@@ -3696,9 +3658,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': JSON.stringify(data),
-							},
+							'session.jsonl': JSON.stringify(data),
 						},
 					},
 				});
@@ -3735,9 +3695,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': `${JSON.stringify(data1)}\n${JSON.stringify(data2)}\n`,
-							},
+							'session.jsonl': `${JSON.stringify(data1)}\n${JSON.stringify(data2)}\n`,
 						},
 					},
 				});
@@ -3764,9 +3722,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session1: {
-								'usage.jsonl': JSON.stringify(sessionData),
-							},
+							'session1.jsonl': JSON.stringify(sessionData),
 						},
 					},
 				});
@@ -3801,9 +3757,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': JSON.stringify(data),
-							},
+							'session.jsonl': JSON.stringify(data),
 						},
 					},
 				});
@@ -3831,9 +3785,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': JSON.stringify(data),
-							},
+							'session.jsonl': JSON.stringify(data),
 						},
 					},
 				});
@@ -3862,9 +3814,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': JSON.stringify(data),
-							},
+							'session.jsonl': JSON.stringify(data),
 						},
 					},
 				});
@@ -3892,9 +3842,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': JSON.stringify(data),
-							},
+							'session.jsonl': JSON.stringify(data),
 						},
 					},
 				});
@@ -3922,9 +3870,7 @@ invalid json line
 				const fixture = await createFixture({
 					projects: {
 						'test-project': {
-							session: {
-								'usage.jsonl': JSON.stringify(data),
-							},
+							'session.jsonl': JSON.stringify(data),
 						},
 					},
 				});
@@ -4751,34 +4697,30 @@ if (import.meta.vitest != null) {
 				const fixture = await createFixture({
 					projects: {
 						project1: {
-							session1: {
-								'file1.jsonl': JSON.stringify({
-									timestamp: '2025-01-10T10:00:00Z',
-									message: {
-										id: 'msg_123',
-										usage: {
-											input_tokens: 100,
-											output_tokens: 50,
-										},
+							'session1.jsonl': JSON.stringify({
+								timestamp: '2025-01-10T10:00:00Z',
+								message: {
+									id: 'msg_123',
+									usage: {
+										input_tokens: 100,
+										output_tokens: 50,
 									},
-									requestId: 'req_456',
-									costUSD: 0.001,
-								}),
-							},
-							session2: {
-								'file2.jsonl': JSON.stringify({
-									timestamp: '2025-01-15T10:00:00Z',
-									message: {
-										id: 'msg_123',
-										usage: {
-											input_tokens: 100,
-											output_tokens: 50,
-										},
+								},
+								requestId: 'req_456',
+								costUSD: 0.001,
+							}),
+							'session2.jsonl': JSON.stringify({
+								timestamp: '2025-01-15T10:00:00Z',
+								message: {
+									id: 'msg_123',
+									usage: {
+										input_tokens: 100,
+										output_tokens: 50,
 									},
-									requestId: 'req_456',
-									costUSD: 0.001,
-								}),
-							},
+								},
+								requestId: 'req_456',
+								costUSD: 0.001,
+							}),
 						},
 					},
 				});
@@ -4877,13 +4819,11 @@ if (import.meta.vitest != null) {
 			const fixture1 = await createFixture({
 				projects: {
 					project1: {
-						session1: {
-							'usage.jsonl': JSON.stringify({
-								timestamp: '2024-01-01T12:00:00Z',
-								message: { usage: { input_tokens: 100, output_tokens: 50 } },
-								costUSD: 0.01,
-							}),
-						},
+						'session1.jsonl': JSON.stringify({
+							timestamp: '2024-01-01T12:00:00Z',
+							message: { usage: { input_tokens: 100, output_tokens: 50 } },
+							costUSD: 0.01,
+						}),
 					},
 				},
 			});
@@ -4891,13 +4831,11 @@ if (import.meta.vitest != null) {
 			const fixture2 = await createFixture({
 				projects: {
 					project2: {
-						session2: {
-							'usage.jsonl': JSON.stringify({
-								timestamp: '2024-01-01T13:00:00Z',
-								message: { usage: { input_tokens: 200, output_tokens: 100 } },
-								costUSD: 0.02,
-							}),
-						},
+						'session2.jsonl': JSON.stringify({
+							timestamp: '2024-01-01T13:00:00Z',
+							message: { usage: { input_tokens: 200, output_tokens: 100 } },
+							costUSD: 0.02,
+						}),
 					},
 				},
 			});
@@ -4917,9 +4855,9 @@ if (import.meta.vitest != null) {
 	describe('globUsageFiles', () => {
 		it('should glob files from multiple paths in parallel with base directories', async () => {
 			const fixture = await createFixture({
-				'path1/projects/project1/session1/usage.jsonl': 'data1',
-				'path2/projects/project2/session2/usage.jsonl': 'data2',
-				'path3/projects/project3/session3/usage.jsonl': 'data3',
+				'path1/projects/project1/session1.jsonl': 'data1',
+				'path2/projects/project2/session2.jsonl': 'data2',
+				'path3/projects/project3/session3.jsonl': 'data3',
 			});
 
 			const paths = [
@@ -4942,7 +4880,7 @@ if (import.meta.vitest != null) {
 
 		it('should handle errors gracefully and return empty array for failed paths', async () => {
 			const fixture = await createFixture({
-				'valid/projects/project1/session1/usage.jsonl': 'data1',
+				'valid/projects/project1/session1.jsonl': 'data1',
 			});
 
 			const paths = [
@@ -4969,9 +4907,9 @@ if (import.meta.vitest != null) {
 
 		it('should handle multiple files from same base directory', async () => {
 			const fixture = await createFixture({
-				'path1/projects/project1/session1/usage.jsonl': 'data1',
-				'path1/projects/project1/session2/usage.jsonl': 'data2',
-				'path1/projects/project2/session1/usage.jsonl': 'data3',
+				'path1/projects/project1/session1.jsonl': 'data1',
+				'path1/projects/project1/session2.jsonl': 'data2',
+				'path1/projects/project2/session1.jsonl': 'data3',
 			});
 
 			const paths = [fixture.getPath('path1')];
