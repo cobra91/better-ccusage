@@ -234,9 +234,9 @@ export function getDroidPath(): string {
  * @param droidPath - Path to droid sessions directory
  * @returns Array of { dirPath, sessionId } pairs
  */
-export type DroidSessionEntry = { dirPath: string; sessionId: string };
+type DroidSessionEntry = { dirPath: string; sessionId: string };
 
-export function findDroidSessions(droidPath: string): DroidSessionEntry[] {
+function findDroidSessions(droidPath: string): DroidSessionEntry[] {
 	logger.debug(`Finding droid sessions in ${droidPath}`);
 	if (!isDirectorySync(droidPath)) {
 		logger.debug(`Droid path ${droidPath} is not a directory`);
