@@ -12,7 +12,7 @@ This is a monorepo containing multiple packages. For package-specific guidance, 
 
 ## About better-ccusage
 
-better-ccusage is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers Anthropic, Zai, Dashcope and many models GLM-4.5, GLM-4.6, GLM-4.7, GLM-5, GLM-5-Turbo, kat-coder.
+better-ccusage is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashscope, and many models like GLM-4.5, GLM-4.6, GLM-4.7, GLM-5, GLM-5-Turbo, kat-coder.
 
 ### Why the Fork?
 

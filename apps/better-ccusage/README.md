@@ -20,7 +20,7 @@
 
 ## About better-ccusage
 
-**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashcope and many models like glm series from Zai, kat-coder from Kwaipilot, kimi from Moonshot, Minimax, sonnet-4, sonnet-4.5 and Qwen-Max etc..
+**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashscope and many models like glm series from Zai, kat-coder from Kwaipilot, kimi from Moonshot, Minimax, sonnet-4, sonnet-4.5 and Qwen-Max etc..
 
 ### Why the Fork?
 
@@ -186,7 +186,7 @@ better-ccusage extends the original ccusage functionality with automatic support
 - ⏰ **5-Hour Blocks Report**: Track usage within Claude's billing windows with active block monitoring
 - 📈 **Live Monitoring**: Real-time dashboard showing active session progress, token burn rate, and cost projections with `blocks --live`
 - 🚀 **Statusline Integration**: Compact usage display for Claude Code status bar hooks (Beta)
-- 🤖 **Multi-Provider Model Tracking**: Track models from Anthropic, Zai, Dashcope and other providers
+- 🤖 **Multi-Provider Model Tracking**: Track models from Anthropic, Zai, Dashscope and other providers
 - 📊 **Model Breakdown**: View per-model cost breakdown with `--breakdown` flag
 - 📅 **Date Filtering**: Filter reports by date range using `--since` and `--until`
 - 📁 **Custom Path**: Support for custom Claude data directory locations

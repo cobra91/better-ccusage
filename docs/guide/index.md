@@ -106,7 +106,7 @@ better-ccusage extends the original ccusage functionality with support for multi
 
 ## Why better-ccusage?
 
-better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashcope and many models like GLM-4.5, GLM-4.6, GLM-4.7, GLM-5, GLM-5-Turbo kat-coder, kimi, MiniMax etc.
+better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashscope and many models like GLM-4.5, GLM-4.6, GLM-4.7, GLM-5, GLM-5-Turbo kat-coder, kimi, MiniMax etc.
 
 The original ccusage project doesn't account for:
 
