@@ -50,12 +50,12 @@ Override with `OPENCODE_DATA_DIR` or `XDG_DATA_HOME` environment variables.
 
 ## Key Differences from Claude Code
 
-| Aspect | Claude Code | OpenCode |
-| -------- | ------------- | ---------- |
-| **Format** | JSONL | JSON files |
-| **Location** | `~/.claude/projects/` | `~/.local/share/opencode/storage/` |
-| **Cost** | Pre-calculated `costUSD` | Often `cost: 0` (calculated from tokens) |
-| **Subagents** | Via `parentID` in entries | Via `parentID` in session metadata |
+| Aspect        | Claude Code               | OpenCode                                 |
+| ------------- | ------------------------- | ---------------------------------------- |
+| **Format**    | JSONL                     | JSON files                               |
+| **Location**  | `~/.claude/projects/`     | `~/.local/share/opencode/storage/`       |
+| **Cost**      | Pre-calculated `costUSD`  | Often `cost: 0` (calculated from tokens) |
+| **Subagents** | Via `parentID` in entries | Via `parentID` in session metadata       |
 
 ## Code Style
 

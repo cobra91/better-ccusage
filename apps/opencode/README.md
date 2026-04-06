@@ -97,6 +97,10 @@ OpenCode stores usage data in:
 
 Each message file contains token counts (`input`, `output`, `cache.read`, `cache.write`) and model information.
 
+## Documentation
+
+For detailed guides and examples, visit **[better-ccusage.com/guide/opencode](https://better-ccusage.com/guide/opencode/)**.
+
 ## Sponsors
 
 ### Featured Sponsor

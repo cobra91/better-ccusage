@@ -1,6 +1,7 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
-import { createRequire } from 'node:module';
+import type { LoadedUsageEntry } from './cost-utils.ts';
 import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
@@ -8,7 +9,7 @@ import { Result } from '@praha/byethrow';
 import { groupBy, sortBy } from 'es-toolkit';
 import { glob } from 'tinyglobby';
 import * as v from 'valibot';
-import { calculateCostForEntry, type LoadedUsageEntry } from './cost-utils.ts';
+import { calculateCostForEntry } from './cost-utils.ts';
 import { logger } from './logger.ts';
 
 const require = createRequire(import.meta.url);
@@ -171,10 +172,10 @@ export async function loadOpenCodeMessages(): Promise<LoadedUsageEntry[]> {
 		const result = await Result.try({
 			try: async () => {
 				const content = await readFile(file, 'utf-8');
-				const parsed = JSON.parse(content);
+				const parsed = JSON.parse(content) as unknown;
 				return v.parse(openCodeMessageSchema, parsed);
 			},
-			catch: (error) => new Error(`Failed to parse ${file}: ${error}`),
+			catch: error => new Error(`Failed to parse ${file}: ${String(error)}`),
 		})();
 
 		if (Result.isFailure(result)) {
@@ -210,7 +211,7 @@ export async function loadOpenCodeMessages(): Promise<LoadedUsageEntry[]> {
 	}
 
 	// Sort by timestamp
-	return sortBy(entries, [(e) => e.timestamp.getTime()]);
+	return sortBy(entries, [e => e.timestamp.getTime()]);
 }
 
 /**
@@ -230,10 +231,10 @@ export async function loadOpenCodeSessions(): Promise<LoadedSessionMetadata[]> {
 		const result = await Result.try({
 			try: async () => {
 				const content = await readFile(file, 'utf-8');
-				const parsed = JSON.parse(content);
+				const parsed = JSON.parse(content) as unknown;
 				return v.parse(openCodeSessionSchema, parsed);
 			},
-			catch: (error) => new Error(`Failed to parse ${file}: ${error}`),
+			catch: error => new Error(`Failed to parse ${file}: ${String(error)}`),
 		})();
 
 		if (Result.isFailure(result)) {
@@ -268,7 +269,9 @@ function buildSessionHierarchy(sessions: OpenCodeSession[]): LoadedSessionMetada
 	// Second pass: build hierarchy
 	for (const session of sessions) {
 		const metadata = sessionMap.get(session.id);
-		if (metadata == null) continue;
+		if (metadata == null) {
+			continue;
+		}
 
 		if (session.parentID != null) {
 			const parent = sessionMap.get(session.parentID);
@@ -307,7 +310,9 @@ export async function loadDailyUsageData(): Promise<AggregatedUsageData[]> {
 	const results: AggregatedUsageData[] = [];
 
 	for (const [date, dayEntries] of Object.entries(grouped)) {
-		if (dayEntries == null || dayEntries.length === 0) continue;
+		if (dayEntries == null || dayEntries.length === 0) {
+			continue;
+		}
 
 		const modelBreakdowns = createModelBreakdowns(dayEntries);
 		const modelsUsed = [...new Set(dayEntries.map(e => e.model))];
@@ -326,7 +331,7 @@ export async function loadDailyUsageData(): Promise<AggregatedUsageData[]> {
 		});
 	}
 
-	return sortBy(results, [(r) => r.period]);
+	return sortBy(results, [r => r.period]);
 }
 
 /**
@@ -347,7 +352,9 @@ export async function loadWeeklyUsageData(): Promise<AggregatedUsageData[]> {
 	const results: AggregatedUsageData[] = [];
 
 	for (const [week, weekEntries] of Object.entries(grouped)) {
-		if (weekEntries == null || weekEntries.length === 0) continue;
+		if (weekEntries == null || weekEntries.length === 0) {
+			continue;
+		}
 
 		const modelBreakdowns = createModelBreakdowns(weekEntries);
 		const modelsUsed = [...new Set(weekEntries.map(e => e.model))];
@@ -366,7 +373,7 @@ export async function loadWeeklyUsageData(): Promise<AggregatedUsageData[]> {
 		});
 	}
 
-	return sortBy(results, [(r) => r.period]);
+	return sortBy(results, [r => r.period]);
 }
 
 /**
@@ -387,7 +394,9 @@ export async function loadMonthlyUsageData(): Promise<AggregatedUsageData[]> {
 	const results: AggregatedUsageData[] = [];
 
 	for (const [month, monthEntries] of Object.entries(grouped)) {
-		if (monthEntries == null || monthEntries.length === 0) continue;
+		if (monthEntries == null || monthEntries.length === 0) {
+			continue;
+		}
 
 		const modelBreakdowns = createModelBreakdowns(monthEntries);
 		const modelsUsed = [...new Set(monthEntries.map(e => e.model))];
@@ -406,7 +415,7 @@ export async function loadMonthlyUsageData(): Promise<AggregatedUsageData[]> {
 		});
 	}
 
-	return sortBy(results, [(r) => r.period]);
+	return sortBy(results, [r => r.period]);
 }
 
 /**
@@ -433,7 +442,9 @@ function createModelBreakdowns(entries: LoadedUsageEntry[]): ModelBreakdown[] {
 	const breakdowns: ModelBreakdown[] = [];
 
 	for (const [model, modelEntries] of Object.entries(grouped)) {
-		if (modelEntries == null || modelEntries.length === 0) continue;
+		if (modelEntries == null || modelEntries.length === 0) {
+			continue;
+		}
 
 		breakdowns.push({
 			modelName: model,
@@ -445,7 +456,7 @@ function createModelBreakdowns(entries: LoadedUsageEntry[]): ModelBreakdown[] {
 		});
 	}
 
-	return sortBy(breakdowns, [(b) => b.modelName]);
+	return sortBy(breakdowns, [b => b.modelName]);
 }
 
 if (import.meta.vitest != null) {
