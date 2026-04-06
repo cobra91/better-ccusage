@@ -118,6 +118,30 @@ Always prefer indexed searches (tools with `_from_index` suffix) over reading en
 - `pnpm run build` - Build distribution files with tsdown
 - `pnpm run release` - Full release workflow (lint + typecheck + test + build + version bump)
 
+**Publishing to npm:**
+
+> **IMPORTANT**: Publishing has several gotchas. Follow this exact workflow to avoid issues.
+
+1. Bump ALL `package.json` versions consistently (apps + packages)
+2. Delete all dist directories: `rm -rf apps/*/dist`
+3. Rebuild each app: `cd apps/<app> && pnpm tsdown`
+4. Copy pricing JSON to each app's dist:
+   ```bash
+   node -e "require('fs').copyFileSync('packages/internal/model_prices_and_context_window.json','apps/<app>/dist/model_prices_and_context_window.json')"
+   ```
+5. Verify versions: `node apps/<app>/dist/index.js -v` (or `index.mjs` for opencode)
+6. Publish each: `cd apps/<app> && pnpm publish --no-git-checks --access public`
+
+**Publishing gotchas:**
+
+- `better-ccusage` has no build script — run `pnpm tsdown` directly
+- `consola` embeds the version at build time in a hashed chunk — must rebuild AFTER bumping version
+- npm forbids overwriting published versions — always bump to a new version
+- `prepack` script rebuilds on publish — verify the prepack build produces correct output
+- `npx` is broken on Windows for `.mjs`/`.js` bins — always test with `pnpm dlx` or `bunx`
+- `gh release create` requires `--repo cobra91/better-ccusage` (upstream remote exists)
+- Git tag signing fails locally — use `git -c tag.gpgSign=false tag -a ...`
+
 **Development Usage:**
 
 - `pnpm run start daily` - Show daily usage report
