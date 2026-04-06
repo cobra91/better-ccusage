@@ -10,6 +10,11 @@ import {
 
 export type PricingDataset = Record<string, ModelPricing>;
 
+/**
+ * Create a new empty pricing dataset using a null-prototype object
+ * to avoid inherited property collisions with model names.
+ * @returns Empty pricing dataset
+ */
 export function createPricingDataset(): PricingDataset {
 	return Object.create(null) as PricingDataset;
 }

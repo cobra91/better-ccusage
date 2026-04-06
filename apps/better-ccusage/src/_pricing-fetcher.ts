@@ -40,6 +40,11 @@ export function createSharedPricingFetcher(): CcusagePricingFetcher {
 	});
 }
 
+/**
+ * Extended PricingFetcher pre-configured with offline pricing data from the
+ * local pricing database. Uses the shared pre-fetched pricing macro for
+ * efficient singleton loading across all instances.
+ */
 export class CcusagePricingFetcher extends PricingFetcher {
 	constructor(options?: ConstructorParameters<typeof PricingFetcher>[0]) {
 		super({

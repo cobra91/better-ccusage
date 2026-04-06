@@ -41,6 +41,17 @@ async function getFileMtime(filePath: string): Promise<number> {
 	}
 }
 
+/**
+ * Performs a single pass over JSONL files to compute session cost, daily cost,
+ * and active block info for the statusline display.
+ *
+ * @param options - Statusline data loading configuration
+ * @param options.sessionId - Current Claude Code session ID
+ * @param options.todayStr - Today's date string (YYYYMMDD)
+ * @param options.mode - Cost calculation mode
+ * @param fetcher - Shared pricing fetcher instance
+ * @returns Session cost, today's cost, and the active billing block (if any)
+ */
 export async function loadStatuslineData(
 	options: StatuslineDataOptions,
 	fetcher: CcusagePricingFetcher,

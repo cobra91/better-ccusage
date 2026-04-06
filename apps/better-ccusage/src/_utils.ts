@@ -4,6 +4,10 @@ import path from 'node:path';
 import { Result } from '@praha/byethrow';
 import { createFixture } from 'fs-fixture';
 
+/**
+ * Asserts that a code path is unreachable. Throws at runtime if called.
+ * @param value - The value that should never exist (use `never` type)
+ */
 export function unreachable(value: never): never {
 	throw new Error(`Unreachable code reached with value: ${value as any}`);
 }

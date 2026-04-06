@@ -1218,6 +1218,13 @@ export async function loadMonthlyUsageData(
 		})));
 }
 
+/**
+ * Load usage data aggregated by week. Each week starts on the configured day
+ * (defaults to Sunday).
+ *
+ * @param options - Loading options including start-of-week configuration
+ * @returns Array of weekly usage summaries
+ */
 export async function loadWeeklyUsageData(
 	options?: LoadOptions,
 ): Promise<WeeklyUsage[]> {
@@ -1294,6 +1301,15 @@ export async function loadSessionUsageById(
 	return { totalCost, entries };
 }
 
+/**
+ * Generic bucket-based usage data loader. Groups daily usage entries into
+ * arbitrary time buckets (weeks, months, etc.) using the provided grouping
+ * function.
+ *
+ * @param groupingFn - Maps a DailyUsage entry to its bucket key
+ * @param options - Loading options including project filtering
+ * @returns Array of usage summaries grouped by bucket
+ */
 export async function loadBucketUsageData(
 	groupingFn: (data: DailyUsage) => Bucket,
 	options?: LoadOptions,

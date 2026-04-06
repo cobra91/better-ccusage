@@ -65,6 +65,14 @@ async function runCcusageCliJson(
 	}, 15000); // 15 second timeout
 }
 
+/**
+ * Retrieve daily usage data by invoking the better-ccusage CLI.
+ * Returns an empty result structure on expected errors (missing data, empty directory).
+ *
+ * @param parameters - Query parameters (since, until, mode, timezone, locale)
+ * @param claudePath - Path to the Claude data directory
+ * @returns Parsed daily usage data
+ */
 export async function getCcusageDaily(parameters: z.infer<typeof ccusageParametersSchema>, claudePath: string): Promise<unknown> {
 	try {
 		const raw = await runCcusageCliJson('daily', parameters, claudePath);
@@ -91,6 +99,14 @@ export async function getCcusageDaily(parameters: z.infer<typeof ccusageParamete
 	}
 }
 
+/**
+ * Retrieve monthly usage data by invoking the better-ccusage CLI.
+ * Returns an empty result structure on expected errors (missing data, empty directory).
+ *
+ * @param parameters - Query parameters (since, until, mode, timezone, locale)
+ * @param claudePath - Path to the Claude data directory
+ * @returns Parsed monthly usage data
+ */
 export async function getCcusageMonthly(parameters: z.infer<typeof ccusageParametersSchema>, claudePath: string): Promise<unknown> {
 	try {
 		const raw = await runCcusageCliJson('monthly', parameters, claudePath);
@@ -117,6 +133,14 @@ export async function getCcusageMonthly(parameters: z.infer<typeof ccusageParame
 	}
 }
 
+/**
+ * Retrieve session-based usage data by invoking the better-ccusage CLI.
+ * Returns an empty result structure on expected errors (missing data, empty directory).
+ *
+ * @param parameters - Query parameters (since, until, mode, timezone, locale)
+ * @param claudePath - Path to the Claude data directory
+ * @returns Parsed session usage data
+ */
 export async function getCcusageSession(parameters: z.infer<typeof ccusageParametersSchema>, claudePath: string): Promise<unknown> {
 	try {
 		const raw = await runCcusageCliJson('session', parameters, claudePath);
@@ -143,6 +167,14 @@ export async function getCcusageSession(parameters: z.infer<typeof ccusageParame
 	}
 }
 
+/**
+ * Retrieve 5-hour billing block usage data by invoking the better-ccusage CLI.
+ * Returns an empty result structure on expected errors (missing data, empty directory).
+ *
+ * @param parameters - Query parameters (since, until, mode, timezone, locale)
+ * @param claudePath - Path to the Claude data directory
+ * @returns Parsed billing block usage data
+ */
 export async function getCcusageBlocks(parameters: z.infer<typeof ccusageParametersSchema>, claudePath: string): Promise<unknown> {
 	try {
 		const raw = await runCcusageCliJson('blocks', parameters, claudePath);

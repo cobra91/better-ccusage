@@ -99,6 +99,16 @@ function createLogger(logger?: PricingLogger): PricingLogger {
 	};
 }
 
+/**
+ * Fetches and resolves model pricing from a configurable data source.
+ * Supports automatic model name resolution with three matching strategies:
+ * 1. Direct lookup for exact model name
+ * 2. Suffix matching for "provider/model" patterns
+ * 3. Fuzzy scoring for partial matches
+ *
+ * Implements {@link Disposable} — call `[Symbol.dispose]()` or use `using`
+ * to clear the internal pricing cache.
+ */
 export class PricingFetcher implements Disposable {
 	private cachedPricing: Map<string, ModelPricing> | null = null;
 	private readonly logger: PricingLogger;
@@ -163,6 +173,11 @@ export class PricingFetcher implements Disposable {
 		return Result.fail(new Error('No pricing data source configured'));
 	}
 
+	/**
+	 * Fetch the complete pricing map for all models. Results are cached
+	 * after the first successful load.
+	 * @returns Map of model name to pricing data
+	 */
 	async fetchModelPricing(): Result.ResultAsync<Map<string, ModelPricing>, Error> {
 		return this.ensurePricingLoaded();
 	}
@@ -178,6 +193,11 @@ export class PricingFetcher implements Disposable {
 		return Array.from(candidates);
 	}
 
+	/**
+	 * Resolve pricing for a single model using exact, suffix, and fuzzy matching.
+	 * @param modelName - The model name to look up (with or without provider prefix)
+	 * @returns The model's pricing data, or `null` if no match is found
+	 */
 	async getModelPricing(modelName: string): Result.ResultAsync<ModelPricing | null, Error> {
 		return Result.pipe(
 			this.ensurePricingLoaded(),
@@ -245,6 +265,11 @@ export class PricingFetcher implements Disposable {
 		);
 	}
 
+	/**
+	 * Get the maximum input token context window for a model.
+	 * @param modelName - The model name to look up
+	 * @returns Context limit in tokens, or `null` if unknown
+	 */
 	async getModelContextLimit(modelName: string): Result.ResultAsync<number | null, Error> {
 		return Result.pipe(
 			this.getModelPricing(modelName),
@@ -438,6 +463,17 @@ export class PricingFetcher implements Disposable {
 		return inputCost + outputCost + cacheCreationCost + cacheReadCost;
 	}
 
+	/**
+	 * Calculate total cost for given token counts by resolving model pricing
+	 * first, then delegating to {@link calculateCostFromPricing}.
+	 * @param tokens - Token counts
+	 * @param tokens.input_tokens - Number of input tokens
+	 * @param tokens.output_tokens - Number of output tokens
+	 * @param tokens.cache_creation_input_tokens - Number of cache creation input tokens
+	 * @param tokens.cache_read_input_tokens - Number of cache read input tokens
+	 * @param modelName - Model name to resolve pricing for
+	 * @returns Total cost in USD
+	 */
 	async calculateCostFromTokens(
 		tokens: {
 			input_tokens: number;

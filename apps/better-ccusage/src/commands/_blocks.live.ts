@@ -24,6 +24,12 @@ import {
 } from '../_live-rendering.ts';
 import { logger } from '../logger.ts';
 
+/**
+ * Start the live monitoring loop that periodically refreshes the active
+ * billing block display in the terminal until the user aborts.
+ *
+ * @param config - Live monitoring configuration including Claude paths and session duration
+ */
 export async function startLiveMonitoring(config: LiveMonitoringConfig): Promise<void> {
 	const terminal = new TerminalManager();
 	const abortController = new AbortController();

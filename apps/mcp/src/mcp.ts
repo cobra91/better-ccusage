@@ -19,6 +19,8 @@ import { createFixture } from 'fs-fixture';
 import { Hono } from 'hono/tiny';
 import packageJson from '../package.json' with { type: 'json' };
 
+const { name, version } = packageJson;
+
 import {
 	ccusageParametersSchema,
 	ccusageParametersShape,
