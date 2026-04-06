@@ -111,11 +111,23 @@ async function runCodexCliJson(command: 'daily' | 'monthly', parameters: z.infer
 	});
 }
 
+/**
+ * Retrieve daily Codex usage data by invoking the codex CLI.
+ *
+ * @param parameters - Query parameters (since, until, timezone, locale)
+ * @returns Validated daily usage data
+ */
 export async function getCodexDaily(parameters: z.infer<typeof codexParametersSchema>) {
 	const raw = await runCodexCliJson('daily', parameters);
 	return codexDailyResponseSchema.parse(JSON.parse(raw));
 }
 
+/**
+ * Retrieve monthly Codex usage data by invoking the codex CLI.
+ *
+ * @param parameters - Query parameters (since, until, timezone, locale)
+ * @returns Validated monthly usage data
+ */
 export async function getCodexMonthly(parameters: z.infer<typeof codexParametersSchema>) {
 	const raw = await runCodexCliJson('monthly', parameters);
 	return codexMonthlyResponseSchema.parse(JSON.parse(raw));

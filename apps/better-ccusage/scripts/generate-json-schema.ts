@@ -11,6 +11,7 @@
  */
 
 import process from 'node:process';
+import path from 'node:path';
 import { writeFile, readFile, copyFile } from 'node:fs/promises';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -271,7 +272,7 @@ async function copySchemaToDocsPublic() {
 	try {
 		const { stdout } = await execAsync('git rev-parse --show-toplevel');
 		const gitRoot = stdout.trim();
-		await copyFile(SCHEMA_FILENAME, `${gitRoot}/docs/public/${SCHEMA_FILENAME}`);
+		await copyFile(SCHEMA_FILENAME, path.join(gitRoot, 'docs', 'public', SCHEMA_FILENAME));
 	} catch (error) {
 		logger.error('Failed to copy schema to docs/public:', error);
 		process.exit(1);

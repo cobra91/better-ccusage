@@ -42,6 +42,10 @@ for (const [name, command] of subCommandUnion) {
  */
 const mainCommand = dailyCommand;
 
+/**
+ * Entry point for the CLI. Parses process arguments and delegates to Gunshi's
+ * CLI runner with the configured subcommands.
+ */
 export async function run(): Promise<void> {
 	// When invoked through npx, the binary name might be passed as the first argument
 	// Filter it out if it matches the expected binary name

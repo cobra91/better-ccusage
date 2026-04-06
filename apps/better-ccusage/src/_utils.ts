@@ -1,7 +1,13 @@
+import os from 'node:os';
 import { stat, utimes, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { Result } from '@praha/byethrow';
 import { createFixture } from 'fs-fixture';
 
+/**
+ * Asserts that a code path is unreachable. Throws at runtime if called.
+ * @param value - The value that should never exist (use `never` type)
+ */
 export function unreachable(value: never): never {
 	throw new Error(`Unreachable code reached with value: ${value as any}`);
 }
@@ -39,7 +45,7 @@ if (import.meta.vitest != null) {
 
 			// Set specific time (2024-01-01 12:00:00 UTC)
 			const specificTime = new Date('2024-01-01T12:00:00.000Z');
-			await utimes(`${fixture.path}/test.txt`, specificTime, specificTime);
+			await utimes(fixture.getPath('test.txt'), specificTime, specificTime);
 
 			const mtime = await getFileModifiedTime(fixture.getPath('test.txt'));
 			expect(mtime).toBe(specificTime.getTime());
@@ -47,7 +53,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('returns 0 for non-existent file', async () => {
-			const mtime = await getFileModifiedTime('/non/existent/file.txt');
+			const mtime = await getFileModifiedTime(path.join(os.tmpdir(), 'non-existent-file-test.txt'));
 			expect(mtime).toBe(0);
 		});
 
@@ -58,9 +64,9 @@ if (import.meta.vitest != null) {
 
 			// Set first time
 			const firstTime = new Date('2024-01-01T10:00:00.000Z');
-			await utimes(`${fixture.path}/test.txt`, firstTime, firstTime);
+			await utimes(fixture.getPath('test.txt'), firstTime, firstTime);
 
-			const mtime1 = await getFileModifiedTime(`${fixture.path}/test.txt`);
+			const mtime1 = await getFileModifiedTime(fixture.getPath('test.txt'));
 			expect(mtime1).toBe(firstTime.getTime());
 
 			// Modify file and set second time

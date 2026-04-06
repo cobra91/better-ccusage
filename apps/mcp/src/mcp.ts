@@ -17,8 +17,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createFixture } from 'fs-fixture';
 
 import { Hono } from 'hono/tiny';
-import { name, version } from '../package.json';
-
+import packageJson from '../package.json' with { type: 'json' };
 import {
 	ccusageParametersSchema,
 	ccusageParametersShape,
@@ -34,6 +33,8 @@ import {
 	getCodexMonthly,
 } from './codex.ts';
 import { defaultOptions } from './mcp-utils.ts';
+
+const { name, version } = packageJson;
 
 /**
  * Creates an MCP server with tools for showing usage reports.
@@ -682,7 +683,7 @@ if (import.meta.vitest != null) {
 				// Extract the JSON data from the SSE response
 				const dataLine = text.split('\n').find(line => line.startsWith('data: '));
 				expect(dataLine).toBeDefined();
-				const data = JSON.parse(dataLine!.replace('data: ', ''));
+				const data = JSON.parse(dataLine!.replaceAll('data: ', ''));
 
 				expect(data.jsonrpc).toBe('2.0');
 				expect(data.id).toBe(1);
@@ -752,7 +753,7 @@ if (import.meta.vitest != null) {
 				// Extract the JSON data from the SSE response
 				const dataLine = text.split('\n').find(line => line.startsWith('data: '));
 				expect(dataLine).toBeDefined();
-				const data = JSON.parse(dataLine!.replace('data: ', ''));
+				const data = JSON.parse(dataLine!.replaceAll('data: ', ''));
 
 				expect(data.jsonrpc).toBe('2.0');
 				expect(data.id).toBe(2);
@@ -821,7 +822,7 @@ if (import.meta.vitest != null) {
 				// Extract the JSON data from the SSE response
 				const dataLine = text.split('\n').find(line => line.startsWith('data: '));
 				expect(dataLine).toBeDefined();
-				const data = JSON.parse(dataLine!.replace('data: ', ''));
+				const data = JSON.parse(dataLine!.replaceAll('data: ', ''));
 
 				expect(data.jsonrpc).toBe('2.0');
 				expect(data.id).toBe(2);

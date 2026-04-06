@@ -1,13 +1,13 @@
 {
 	"name": "@better-ccusage/docs",
-	"version": "1.2.9",
+	"version": "1.3.0",
 	"private": true,
 	"description": "Documentation for better-ccusage",
 	"type": "module",
 	"scripts": {
-		"build": "pnpm run docs:api && cp ../apps/better-ccusage/config-schema.json public/config-schema.json && vitepress build",
+		"build": "pnpm run docs:api && node -e 'require(\"fs\").copyFileSync(\"../apps/better-ccusage/config-schema.json\",\"public/config-schema.json\")' && vitepress build",
 		"deploy": "wrangler deploy",
-		"dev": "pnpm run docs:api && cp ../apps/better-ccusage/config-schema.json public/config-schema.json && vitepress dev",
+		"dev": "pnpm run docs:api && node -e 'require(\"fs\").copyFileSync(\"../apps/better-ccusage/config-schema.json\",\"public/config-schema.json\")' && vitepress dev",
 		"docs:api": "bun ./update-api-index.ts",
 		"format": "pnpm run lint --fix",
 		"lint": "eslint --cache .",

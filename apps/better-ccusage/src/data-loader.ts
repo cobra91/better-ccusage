@@ -23,7 +23,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { toArray } from '@antfu/utils';
 import { Result } from '@praha/byethrow';
-import { groupBy, uniq } from 'es-toolkit'; // TODO: after node20 is deprecated, switch to native Object.groupBy
+import { groupBy } from 'es-toolkit';
 import { createFixture } from 'fs-fixture';
 import { isDirectorySync } from 'path-type';
 import { glob } from 'tinyglobby';
@@ -103,8 +103,8 @@ export function getClaudePaths(): string[] {
 		}
 		// If environment variable is set but no valid paths found, throw error
 		throw new Error(
-			`No valid Claude data directories found in CLAUDE_CONFIG_DIR. Please ensure the following exists:
-- ${envPaths}/${CLAUDE_PROJECTS_DIR_NAME}`.trim(),
+			`No valid Claude data directories found in CLAUDE_CONFIG_DIR. Please ensure one of the following exists:
+${envPaths.split(',').map(p => `- ${path.join(p.trim(), CLAUDE_PROJECTS_DIR_NAME)}`).join('\n')}`.trim(),
 		);
 	}
 
@@ -147,7 +147,7 @@ export function getClaudePaths(): string[] {
  */
 export function extractProjectFromPath(jsonlPath: string): string {
 	// Normalize path separators for cross-platform compatibility
-	const normalizedPath = jsonlPath.replace(/[/\\]/g, path.sep);
+	const normalizedPath = jsonlPath.replaceAll('/', path.sep).replaceAll('\\', path.sep);
 	const segments = normalizedPath.split(path.sep);
 	const projectsIndex = segments.findIndex(segment => segment === CLAUDE_PROJECTS_DIR_NAME);
 
@@ -538,7 +538,7 @@ function extractUniqueModels<T>(
 	entries: T[],
 	getModel: (entry: T) => string | undefined,
 ): string[] {
-	return uniq(entries.map(getModel).filter((m): m is string => m != null && m !== '<synthetic>'));
+	return [...new Set(entries.map(getModel).filter((m): m is string => m != null && m !== '<synthetic>'))];
 }
 
 /**
@@ -554,7 +554,7 @@ export function createUniqueHash(data: UsageData): string | null {
 
 	// Use both messageId and requestId if available, otherwise just messageId
 	// This handles cases where requestId is missing from JSONL entries
-	return requestId != null ? `${messageId}:${requestId}` : messageId;
+	return requestId == null ? messageId : `${messageId}:${requestId}`;
 }
 
 /**
@@ -613,7 +613,7 @@ export async function sortFilesByTimestamp(files: string[]): Promise<string[]> {
 	);
 
 	return filesWithTimestamps
-		.sort((a, b) => {
+		.toSorted((a, b) => {
 			// Files without timestamps go to the end
 			if (a.timestamp == null && b.timestamp == null) {
 				return 0;
@@ -769,7 +769,10 @@ export async function loadDailyUsageData(
 	const droidPath = getDroidPath();
 	logger.debug(`Droid path: ${droidPath}`);
 	let droidEntries: UsageData[] = [];
-	if (droidPath !== '') {
+	if (droidPath === '') {
+		logger.debug('Droid path is null or undefined');
+	}
+	else {
 		try {
 			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
 			droidEntries = await processDroidSessions(droidPath, options);
@@ -778,9 +781,6 @@ export async function loadDailyUsageData(
 		catch (error) {
 			logger.warn(`Failed to load droid sessions: ${String(error)}`);
 		}
-	}
-	else {
-		logger.debug('Droid path is null or undefined');
 	}
 
 	if (fileList.length === 0 && droidEntries.length === 0) {
@@ -826,9 +826,7 @@ export async function loadDailyUsageData(
 				const data = result.output;
 
 				// Add source field for Claude data if not present
-				if (data.source == null) {
-					data.source = createSource('claude');
-				}
+				data.source ??= createSource('claude');
 
 				// Check for duplicate message + request ID combination
 				const uniqueHash = createUniqueHash(data);
@@ -844,9 +842,9 @@ export async function loadDailyUsageData(
 				const date = formatDate(data.timestamp, options?.timezone, DEFAULT_LOCALE);
 				// If fetcher is available, calculate cost based on mode and tokens
 				// If fetcher is null, use pre-calculated costUSD or default to 0
-				const cost = fetcher != null
-					? await calculateCostForEntry(data, mode, fetcher)
-					: data.costUSD ?? 0;
+				const cost = fetcher == null
+					? data.costUSD ?? 0
+					: await calculateCostForEntry(data, mode, fetcher);
 
 				// Extract project name from file path
 				const project = extractProjectFromPath(file);
@@ -862,9 +860,7 @@ export async function loadDailyUsageData(
 	// Add droid entries to the collection
 	for (const droidData of droidEntries) {
 		// Add source field for droid data if not present
-		if (droidData.source === undefined) {
-			droidData.source = createSource('droid');
-		}
+		droidData.source ??= createSource('droid');
 
 		logger.debug(`Processing droid entry with source: ${droidData.source}, model: ${droidData.message.model}`);
 
@@ -882,16 +878,16 @@ export async function loadDailyUsageData(
 		const date = formatDate(droidData.timestamp, options?.timezone, DEFAULT_LOCALE);
 		// If fetcher is available, calculate cost based on mode and tokens
 		// If fetcher is null, use pre-calculated costUSD or default to 0
-		const cost = fetcher != null
-			? await calculateCostForEntry(droidData, mode, fetcher)
-			: droidData.costUSD ?? 0;
+		const cost = fetcher == null
+			? droidData.costUSD ?? 0
+			: await calculateCostForEntry(droidData, mode, fetcher);
 
 		allEntries.push({
 			data: droidData,
 			date,
 			cost,
 			model: droidData.message.model,
-			project: droidData.cwd ?? '/droid/unknown',
+			project: droidData.cwd ?? path.join('droid', 'unknown'),
 		});
 	}
 
@@ -963,7 +959,7 @@ export async function loadDailyUsageData(
 				...totals,
 				modelsUsed: modelsUsed as ModelName[],
 				modelBreakdowns,
-				...(project !== null ? { project } : {}),
+				...(project == null ? {} : { project }),
 			};
 		})
 		.filter(item => item != null);
@@ -997,7 +993,10 @@ export async function loadSessionData(
 	const droidPath = getDroidPath();
 	logger.debug(`Droid path: ${droidPath}`);
 	let droidEntries: UsageData[] = [];
-	if (droidPath !== '') {
+	if (droidPath === '') {
+		logger.debug('Droid path is null or undefined');
+	}
+	else {
 		try {
 			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
 			droidEntries = await processDroidSessions(droidPath, options);
@@ -1006,9 +1005,6 @@ export async function loadSessionData(
 		catch (error) {
 			logger.warn(`Failed to load droid sessions: ${String(error)}`);
 		}
-	}
-	else {
-		logger.debug('Droid path is null or undefined');
 	}
 
 	if (filesWithBase.length === 0 && droidEntries.length === 0) {
@@ -1081,9 +1077,7 @@ export async function loadSessionData(
 				const data = result.output;
 
 				// Add source field for Claude data if not present
-				if (data.source == null) {
-					data.source = createSource('claude');
-				}
+				data.source ??= createSource('claude');
 
 				// Check for duplicate message + request ID combination
 				const uniqueHash = createUniqueHash(data);
@@ -1095,10 +1089,10 @@ export async function loadSessionData(
 				// Mark this combination as processed
 				markAsProcessed(uniqueHash, processedHashes);
 
-				const sessionKey = `${projectPath}/${sessionId}`;
-				const cost = fetcher != null
-					? await calculateCostForEntry(data, mode, fetcher)
-					: data.costUSD ?? 0;
+				const sessionKey = `${projectPath}${path.sep}${sessionId}`;
+				const cost = fetcher == null
+					? data.costUSD ?? 0
+					: await calculateCostForEntry(data, mode, fetcher);
 
 				allEntries.push({
 					data,
@@ -1119,21 +1113,19 @@ export async function loadSessionData(
 	// Add droid entries to the collection
 	for (const droidData of droidEntries) {
 		// Add source field if not present
-		if (droidData.source === undefined) {
-			droidData.source = createSource('droid');
-		}
+		droidData.source ??= createSource('droid');
 
 		// Set default source for Claude data (will be added later during processing)
-		const sessionKey = `/droid/${droidData.sessionId}`;
-		const cost = fetcher != null
-			? await calculateCostForEntry(droidData, mode, fetcher)
-			: droidData.costUSD ?? 0;
+		const sessionKey = path.join('droid', droidData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? droidData.costUSD ?? 0
+			: await calculateCostForEntry(droidData, mode, fetcher);
 
 		allEntries.push({
 			data: droidData,
 			sessionKey,
 			sessionId: droidData.sessionId ?? 'unknown-session',
-			projectPath: droidData.cwd ?? '/droid/unknown',
+			projectPath: droidData.cwd ?? path.join('droid', 'unknown'),
 			cost,
 			timestamp: droidData.timestamp,
 			model: droidData.message.model,
@@ -1156,6 +1148,7 @@ export async function loadSessionData(
 			// Find the latest timestamp for lastActivity
 			const latestEntry = entries.reduce((latest, current) =>
 				current.timestamp > latest.timestamp ? current : latest,
+				entries[0]!,
 			);
 
 			// Collect all unique versions
@@ -1192,10 +1185,10 @@ export async function loadSessionData(
 				...totals,
 				// Always use DEFAULT_LOCALE for date storage to ensure YYYY-MM-DD format
 				lastActivity: formatDate(latestEntry.timestamp, options?.timezone, DEFAULT_LOCALE) as ActivityDate,
-				versions: uniq(versions).sort() as Version[],
+				versions: [...new Set(versions)].sort((a, b) => a.localeCompare(b)) as Version[],
 				modelsUsed: modelsUsed as ModelName[],
 				modelBreakdowns,
-				source: latestEntry.data.source !== undefined ? createSource(latestEntry.data.source) : createSource('claude'),
+				source: latestEntry.data.source === undefined ? createSource('claude') : createSource(latestEntry.data.source),
 			};
 		})
 		.filter(item => item != null);
@@ -1225,10 +1218,17 @@ export async function loadMonthlyUsageData(
 		})));
 }
 
+/**
+ * Load usage data aggregated by week. Each week starts on the configured day
+ * (defaults to Sunday).
+ *
+ * @param options - Loading options including start-of-week configuration
+ * @returns Array of weekly usage summaries
+ */
 export async function loadWeeklyUsageData(
 	options?: LoadOptions,
 ): Promise<WeeklyUsage[]> {
-	const startDay = options?.startOfWeek != null ? getDayNumber(options.startOfWeek) : getDayNumber('sunday');
+	const startDay = options?.startOfWeek == null ? getDayNumber('sunday') : getDayNumber(options.startOfWeek);
 
 	return loadBucketUsageData((data: DailyUsage) => getDateWeek(new Date(data.date), startDay), options)
 		.then(usages => usages.map<WeeklyUsage>(({ bucket, ...rest }) => ({
@@ -1256,7 +1256,7 @@ export async function loadSessionUsageById(
 
 	// Find the JSONL file for this session ID
 	// On Windows, replace backslashes from path.join with forward slashes for tinyglobby compatibility
-	const patterns = claudePaths.map(p => path.join(p, 'projects', '**', `${sessionId}.jsonl`).replace(/\\/g, '/'));
+	const patterns = claudePaths.map(p => path.join(p, 'projects', '**', `${sessionId}.jsonl`).replaceAll('\\', '/'));
 	// Absolute paths are important on Windows; relative paths break when the file is on a different drive.
 	const jsonlFiles = await glob(patterns, { absolute: true });
 
@@ -1286,9 +1286,9 @@ export async function loadSessionUsageById(
 			}
 			const data = result.output;
 
-			const cost = fetcher != null
-				? await calculateCostForEntry(data, mode, fetcher)
-				: data.costUSD ?? 0;
+			const cost = fetcher == null
+				? data.costUSD ?? 0
+				: await calculateCostForEntry(data, mode, fetcher);
 
 			totalCost += cost;
 			entries.push(data);
@@ -1301,6 +1301,15 @@ export async function loadSessionUsageById(
 	return { totalCost, entries };
 }
 
+/**
+ * Generic bucket-based usage data loader. Groups daily usage entries into
+ * arbitrary time buckets (weeks, months, etc.) using the provided grouping
+ * function.
+ *
+ * @param groupingFn - Maps a DailyUsage entry to its bucket key
+ * @param options - Loading options including project filtering
+ * @returns Array of usage summaries grouped by bucket
+ */
 export async function loadBucketUsageData(
 	groupingFn: (data: DailyUsage) => Bucket,
 	options?: LoadOptions,
@@ -1314,10 +1323,10 @@ export async function loadBucketUsageData(
 
 	const groupingKey = needsProjectGrouping
 		? (data: DailyUsage) => {
-			const bucketValue = groupingFn(data);
-			const projectSegment = data.project ?? 'unknown';
-			return `${bucketValue}\x00${projectSegment}`;
-		}
+				const bucketValue = groupingFn(data);
+				const projectSegment = data.project ?? 'unknown';
+				return `${bucketValue}\x00${projectSegment}`;
+			}
 		: (data: DailyUsage) => `${groupingFn(data)}`;
 
 	const grouped = groupBy(dailyData, groupingKey);
@@ -1395,9 +1404,9 @@ export async function loadBucketUsageData(
 			cacheCreationTokens: totalCacheCreationTokens,
 			cacheReadTokens: totalCacheReadTokens,
 			totalCost,
-			modelsUsed: uniq(models) as ModelName[],
+			modelsUsed: [...new Set(models)] as ModelName[],
 			modelBreakdowns,
-			...(project !== null ? { project } : {}),
+			...(project == null ? {} : { project }),
 		};
 
 		buckets.push(bucketUsage);
@@ -1448,14 +1457,12 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 
 			// Check if this line contains the required token usage fields
 			if (obj.type === 'assistant'
-				&& obj.message != null
-				&& obj.message.usage != null
-				&& obj.message.usage.input_tokens != null) {
+				&& obj.message?.usage?.input_tokens != null) {
 				const usage = obj.message.usage;
 				const inputTokens
 					= usage.input_tokens!
-					+ (usage.cache_creation_input_tokens ?? 0)
-					+ (usage.cache_read_input_tokens ?? 0);
+						+ (usage.cache_creation_input_tokens ?? 0)
+						+ (usage.cache_read_input_tokens ?? 0);
 
 				// Get context limit from CcusagePricingFetcher
 				let contextLimit = 200_000; // Fallback for when modelId is not provided
@@ -1572,9 +1579,9 @@ export async function loadSessionBlockData(
 					// Mark this combination as processed
 					markAsProcessed(uniqueHash, processedHashes);
 
-					const cost = fetcher != null
-						? await calculateCostForEntry(data, mode, fetcher)
-						: data.costUSD ?? 0;
+					const cost = fetcher == null
+						? data.costUSD ?? 0
+						: await calculateCostForEntry(data, mode, fetcher);
 
 					// Get Claude Code/Droid Usage limit expiration date
 					const usageLimitResetTime = getUsageLimitResetTime(data);
@@ -1616,7 +1623,10 @@ export async function loadSessionBlockData(
 	const droidPath = getDroidPath();
 	logger.debug(`Droid path for blocks: ${droidPath}`);
 	let droidEntries: LoadedUsageEntry[] = [];
-	if (droidPath !== '') {
+	if (droidPath === '') {
+		logger.debug('Droid path for blocks is null or undefined');
+	}
+	else {
 		try {
 			logger.debug(`Attempting to load droid sessions for blocks from ${droidPath}`);
 			const rawDroidEntries = await processDroidSessions(droidPath, options);
@@ -1641,9 +1651,6 @@ export async function loadSessionBlockData(
 			logger.warn(`Failed to load droid sessions for blocks: ${String(error)}`);
 		}
 	}
-	else {
-		logger.debug('Droid path for blocks is null or undefined');
-	}
 
 	// Combine Claude and droid entries
 	const combinedEntries = [...allEntries, ...droidEntries];
@@ -1655,15 +1662,15 @@ export async function loadSessionBlockData(
 	const dateFiltered = (options?.since != null && options.since !== '') || (options?.until != null && options.until !== '')
 		? blocks.filter((block) => {
 			// Always use DEFAULT_LOCALE for date comparison to ensure YYYY-MM-DD format
-			const blockDateStr = formatDate(block.startTime.toISOString(), options?.timezone, DEFAULT_LOCALE).replace(/-/g, '');
-			if (options.since != null && options.since !== '' && blockDateStr < options.since) {
-				return false;
-			}
-			if (options.until != null && options.until !== '' && blockDateStr > options.until) {
-				return false;
-			}
-			return true;
-		})
+				const blockDateStr = formatDate(block.startTime.toISOString(), options?.timezone, DEFAULT_LOCALE).replaceAll('-', '');
+				if (options.since != null && options.since !== '' && blockDateStr < options.since) {
+					return false;
+				}
+				if (options.until != null && options.until !== '' && blockDateStr > options.until) {
+					return false;
+				}
+				return true;
+			})
 		: blocks;
 
 	// Sort by start time based on order option
@@ -1774,7 +1781,7 @@ if (import.meta.vitest != null) {
 									},
 									model: 'claude-sonnet-4-20250514',
 								},
-								costUSD: 1.0,
+								costUSD: 1,
 							})}`,
 						},
 					},
@@ -1820,7 +1827,7 @@ if (import.meta.vitest != null) {
 									},
 									model: 'claude-sonnet-4-5-20250929',
 								},
-								costUSD: 1.0,
+								costUSD: 1,
 							})}`,
 						},
 					},
@@ -3953,30 +3960,30 @@ invalid json line
 			};
 
 			const mockFetcher = {
-				calculateCostFromTokens: vi.fn((_usage, _model) => Result.succeed(1.00)), // $1.00 base cost
+				calculateCostFromTokens: vi.fn((_usage, _model) => Result.succeed(1)), // $1.00 base cost
 			};
 
 			// Test different models - all should return base cost without multipliers
 			const sonnetCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'sonnet-4-5'));
-			expect(sonnetCost).toBe(1.00);
+			expect(sonnetCost).toBe(1);
 
 			const gpt5Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'gpt-5'));
-			expect(gpt5Cost).toBe(1.00);
+			expect(gpt5Cost).toBe(1);
 
 			const glmCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-4.6'));
-			expect(glmCost).toBe(1.00);
+			expect(glmCost).toBe(1);
 
 			const glm47Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-4.7'));
-			expect(glm47Cost).toBe(1.00);
+			expect(glm47Cost).toBe(1);
 
 			const glm5Cost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'glm-5'));
-			expect(glm5Cost).toBe(1.00);
+			expect(glm5Cost).toBe(1);
 
 			const katCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'kat-coder'));
-			expect(katCost).toBe(1.00);
+			expect(katCost).toBe(1);
 
 			const unknownCost = Result.unwrap(mockFetcher.calculateCostFromTokens(mockUsage, 'unknown-model'));
-			expect(unknownCost).toBe(1.00);
+			expect(unknownCost).toBe(1);
 		});
 	});
 
@@ -4386,7 +4393,7 @@ invalid json line
 			expect(untilResult.length).toBeGreaterThan(0);
 			// The filter uses formatDate which converts to YYYYMMDD format for comparison
 			expect(untilResult.every((block) => {
-				const blockDateStr = block.startTime.toISOString().slice(0, 10).replace(/-/g, '');
+				const blockDateStr = block.startTime.toISOString().slice(0, 10).replaceAll('-', '');
 				return blockDateStr <= '20240102';
 			})).toBe(true);
 		});
@@ -4795,13 +4802,13 @@ if (import.meta.vitest != null) {
 
 				// Session 2 should either not exist or have 0 tokens (duplicate was skipped)
 				const session2 = sessions.find(s => s.sessionId === 'session2');
-				if (session2 != null) {
-					expect(session2.inputTokens).toBe(0);
-					expect(session2.outputTokens).toBe(0);
-				}
-				else {
+				if (session2 == null) {
 					// It's also valid for session2 to not be included if it has no entries
 					expect(sessions.length).toBe(1);
+				}
+				else {
+					expect(session2.inputTokens).toBe(0);
+					expect(session2.outputTokens).toBe(0);
 				}
 			});
 		});

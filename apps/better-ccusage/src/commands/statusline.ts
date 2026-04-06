@@ -269,7 +269,7 @@ export const statuslineCommand = define({
 				try: async () => {
 					const costSource = ctx.values.costSource;
 					const today = new Date();
-					const todayStr = today.toISOString().split('T')[0]?.replace(/-/g, '') ?? '';
+					const todayStr = today.toISOString().split('T')[0]?.replaceAll('-', '') ?? '';
 					const sharedFetcher = createSharedPricingFetcher();
 
 					// Load all data in parallel: statusline data + context tokens
