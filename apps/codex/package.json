@@ -21,6 +21,9 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "test": "TZ=UTC vitest run"
+  },
   "engines": {
     "node": ">=20.19.4"
   },

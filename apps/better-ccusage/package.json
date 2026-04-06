@@ -33,6 +33,9 @@
 		"model_prices_and_context_window.json",
 		"dist"
 	],
+	"scripts": {
+		"test": "TZ=UTC vitest run"
+	},
 	"engines": {
 		"node": ">=20.19.4"
 	},
