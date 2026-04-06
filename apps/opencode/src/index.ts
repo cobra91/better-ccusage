@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import process from 'node:process';
 import { run } from './commands/index.ts';
 
 run().catch((error) => {

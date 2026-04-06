@@ -14,12 +14,13 @@ import type {
 import type { LoadOptions, UsageData } from './data-loader.ts';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import process from 'node:process';
 import { Result } from '@praha/byethrow';
 import { createFixture } from 'fs-fixture';
 import { isDirectorySync, isFileSync } from 'path-type';
 import { globSync } from 'tinyglobby';
 import * as v from 'valibot';
-import { DEFAULT_DROID_SESSIONS_PATH, USER_HOME_DIR } from './_consts.ts';
+import { DEFAULT_DROID_SESSIONS_PATH, DROID_SESSIONS_DIR_ENV, USER_HOME_DIR } from './_consts.ts';
 import { createISOTimestamp, createMessageId, createModelName, createRequestId, createSessionId, createSource, createVersion } from './_types.ts';
 import { logger } from './logger.ts';
 
@@ -223,6 +224,11 @@ export async function parseDroidSession(
  * @returns Path to droid sessions directory
  */
 export function getDroidPath(): string {
+	const envPath = process.env[DROID_SESSIONS_DIR_ENV]?.trim();
+	if (envPath != null && envPath !== '') {
+		return path.resolve(envPath);
+	}
+
 	const defaultPath = path.join(USER_HOME_DIR, DEFAULT_DROID_SESSIONS_PATH);
 
 	// Return default path even if it doesn't exist (will be handled by caller)

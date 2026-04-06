@@ -1,4 +1,5 @@
 import type { CliInvocation } from './cli-utils.ts';
+import os from 'node:os';
 import { z } from 'zod';
 import { createCliInvocation, executeCliCommand, resolveBinaryPath } from './cli-utils.ts';
 import { DATE_FILTER_REGEX } from './consts.ts';
@@ -60,6 +61,8 @@ async function runCcusageCliJson(
 	return executeCliCommand(executable, cliArgs, {
 		// Set Claude path for ccusage
 		CLAUDE_CONFIG_DIR: claudePath,
+		// Clear droid path to avoid mixing in unrelated local droid sessions
+		DROID_SESSIONS_DIR: os.devNull,
 		// Force offline mode to prevent network calls to external sources
 		OFFLINE: 'true',
 	}, 15000); // 15 second timeout

@@ -5,6 +5,7 @@
 
 <p align="center">
     <a href="https://npmjs.com/package/better-ccusage"><img src="https://img.shields.io/npm/v/better-ccusage?color=yellow" alt="npm version" /></a>
+    <a href="https://npmjs.com/package/better-ccusage"><img src="https://img.shields.io/npm/dt/better-ccusage" alt="npm downloads" /></a>
     <a href="https://packagephobia.com/result?p=better-ccusage"><img src="https://packagephobia.com/badge?p=better-ccusage" alt="install size" /></a>
     <a href="https://zread.ai/cobra91/better-ccusage" target="_blank"><img src="https://img.shields.io/badge/Ask_Zread-_.svg?style=flat&color=00b0aa&labelColor=000000&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTYxNTYgMS42MDAxSDIuMjQxNTZDMS44ODgxIDEuNjAwMSAxLjYwMTU2IDEuODg2NjQgMS42MDE1NiAyLjI0MDFWNC45NjAxQzEuNjAxNTYgNS4zMTM1NiAxLjg4ODEgNS42MDAxIDIuMjQxNTYgNS42MDAxSDQuOTYxNTZDNS4zMTUwMiA1LjYwMDEgNS42MDE1NiA1LjMxMzU2IDUuNjAxNTYgNC45NjAxVjIuMjQwMUM1LjYwMTU2IDEuODg2NjQgNS4zMTUwMiAxLjYwMDEgNC45NjE1NiAxLjYwMDFaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00Ljk2MTU2IDEwLjM5OTlIMi4yNDE1NkMxLjg4ODEgMTAuMzk5OSAxLjYwMTU2IDEwLjY4NjQgMS42MDE1NiAxMS4wMzk5VjEzLjc1OTlDMS42MDE1NiAxNC4xMTM0IDEuODg4MSAxNC4zOTk5IDIuMjQxNTYgMTQuMzk5OUg0Ljk2MTU2QzUuMzE1MDIgMTQuMzk5OSA1LjYwMTU2IDE0LjExMzQgNS42MDE1NiAxMy43NTk5VjExLjAzOTlDNS42MDE1NiAxMC42ODY0IDUuMzE1MDIgMTAuMzk5OSA0Ljk2MTU2IDEwLjM5OTlaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik0xMy43NTg0IDEuNjAwMUgxMS4wMzg0QzEwLjY4NSAxLjYwMDEgMTAuMzk4NCAxLjg4NjY0IDEwLjM5ODQgMi4yNDAxVjQuOTYwMUMxMC4zOTg0IDUuMzEzNTYgMTAuNjg1IDUuNjAwMSAxMS4wMzg0IDUuNjAwMUgxMy43NTg0QzE0LjExMTkgNS42MDAxIDE0LjM5ODQgNS4zMTM1NiAxNC4zOTg0IDQuOTYwMVYyLjI0MDFDMTQuMzk4NCAxLjg4NjY0IDE0LjExMTkgMS42MDAxIDEzLjc1ODQgMS42MDAxWiIgZmlsbD0iI2ZmZiIvPgo8cGF0aCBkPSJNNCAxMkwxMiA0TDQgMTJaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00IDEyTDEyIDQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K&logoColor=ffffff" alt="zread"/></a>
     <a href="https://deepwiki.com/cobra91/better-ccusage"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
@@ -20,7 +21,7 @@
 
 ## About better-ccusage
 
-**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashscope and many models like glm series from Zai, kat-coder from Kwaipilot, kimi from Moonshot, Minimax, sonnet-4, sonnet-4.5 and Qwen-Max etc..
+**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashscope and many models like GLM series from Zai, kat-coder from Kwaipilot, kimi from Moonshot, Minimax, sonnet-4, sonnet-4.5 and Qwen-Max etc.
 
 ### Why the Fork?
 
@@ -36,11 +37,15 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code/Droid Usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and All GLM models (including GLM-5-Turbo), kat-coder models. Track daily, monthly, and session-based usage with beautiful tables and live monitoring.
+The main CLI tool for analyzing Claude Code/Droid/OpenCode usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring.
 
 ### 🤖 [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex) - OpenAI Codex Usage Analyzer
 
 Companion tool for analyzing OpenAI Codex usage. Same powerful features as better-ccusage but tailored for Codex users, including GPT-5 support and 1M token context windows.
+
+### 🧠 [@better-ccusage/opencode](https://www.npmjs.com/package/@better-ccusage/opencode) - OpenCode Usage Analyzer
+
+Companion tool for analyzing [OpenCode](https://github.com/opencode-ai/opencode) usage. Track token usage and costs from OpenCode sessions with the same reporting capabilities as better-ccusage.
 
 ### 🔌 [@better-ccusage/mcp](https://www.npmjs.com/package/@better-ccusage/mcp) - MCP Server Integration
 
@@ -105,6 +110,7 @@ This enables real-time usage tracking and analysis directly within Claude Deskto
 # Basic usage
 npx better-ccusage          # Show daily report (default)
 npx better-ccusage daily    # Daily token usage and costs
+npx better-ccusage weekly   # Weekly aggregated report
 npx better-ccusage monthly  # Monthly aggregated report
 npx better-ccusage session  # Usage by conversation session
 npx better-ccusage blocks   # 5-hour billing windows
@@ -148,7 +154,7 @@ better-ccusage extends the original ccusage functionality with automatic support
 
 ### 🚀 Supported AI Providers & Models
 
-**Moonshot AI** (kimi-* models):
+**Moonshot AI** (kimi-\* models):
 
 - `kimi-k2-0905-preview`, `kimi-k2-0711-preview`, `kimi-k2-turbo-preview`
 - `kimi-k2-thinking`, `kimi-k2-thinking-turbo`, `kimi-for-coding`
@@ -165,7 +171,7 @@ better-ccusage extends the original ccusage functionality with automatic support
 
 **Zai Provider**:
 
-- All Zai-specific model variants like glm-5
+- All Zai-specific model variants like GLM-5
 
 **And More**:
 
@@ -181,7 +187,8 @@ better-ccusage extends the original ccusage functionality with automatic support
 ## Features
 
 - 📊 **Daily Report**: View token usage and costs aggregated by date
-- 📅 **Monthly Report**: View token usage and costs aggregated by month
+- 📅 **Weekly Report**: View token usage and costs aggregated by week
+- 📆 **Monthly Report**: View token usage and costs aggregated by month
 - 💬 **Session Report**: View usage grouped by conversation sessions
 - ⏰ **5-Hour Blocks Report**: Track usage within Claude's billing windows with active block monitoring
 - 📈 **Live Monitoring**: Real-time dashboard showing active session progress, token burn rate, and cost projections with `blocks --live`
@@ -206,20 +213,20 @@ better-ccusage extends the original ccusage functionality with automatic support
 
 ## Comparison with ccusage
 
-| Feature                      | ccusage | better-ccusage |
-| ---------------------------- | ------- | -------------- |
-| Anthropic Models             | ✅      | ✅             |
-| Moonshot (kimi) Models       | ❌      | ✅             |
-| MiniMax Models               | ❌      | ✅             |
-| GLM* Models                  | ❌      | ✅             |
-| Zai Provider                 | ❌      | ✅             |
-| kat-coder                    | ❌      | ✅             |
-| **Automatic Provider Detection** | ❌  | ✅             |
-| Multi-Provider Support       | ❌      | ✅             |
-| Cost Calculation by Provider | ❌      | ✅             |
-| Original ccusage Features    | ✅      | ✅             |
-| Show prompt usage for Coding | ❌      | ✅             |
-| Droid usage                  | ❌      | ✅             |
+| Feature                          | ccusage | better-ccusage |
+| -------------------------------- | ------- | -------------- |
+| Anthropic Models                 | ✅      | ✅             |
+| Moonshot (kimi) Models           | ❌      | ✅             |
+| MiniMax Models                   | ❌      | ✅             |
+| GLM\* Models                     | ❌      | ✅             |
+| Zai Provider                     | ❌      | ✅             |
+| kat-coder                        | ❌      | ✅             |
+| **Automatic Provider Detection** | ❌      | ✅             |
+| Multi-Provider Support           | ❌      | ✅             |
+| Cost Calculation by Provider     | ❌      | ✅             |
+| Original ccusage Features        | ✅      | ✅             |
+| Show prompt usage for Coding     | ❌      | ✅             |
+| Droid usage                      | ❌      | ✅             |
 
 ## Star History
 
