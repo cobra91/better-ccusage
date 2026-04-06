@@ -99,6 +99,13 @@ export const MCP_DEFAULT_PORT = 8080;
 export const DEFAULT_REFRESH_INTERVAL_SECONDS = 1;
 
 /**
+ * Default refresh interval in seconds for the statusline command.
+ * Higher than live monitoring to reduce redundant I/O in active sessions
+ * where transcript mtime changes constantly (which would invalidate hybrid cache).
+ */
+export const DEFAULT_STATUSLINE_REFRESH_INTERVAL_SECONDS = 15;
+
+/**
  * Minimum refresh interval in seconds for live monitoring mode
  * Prevents too-frequent updates that could impact performance
  */

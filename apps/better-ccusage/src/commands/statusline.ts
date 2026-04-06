@@ -11,13 +11,14 @@ import { define } from 'gunshi';
 import pc from 'picocolors';
 import * as v from 'valibot';
 import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
-import { DEFAULT_CONTEXT_USAGE_THRESHOLDS, DEFAULT_REFRESH_INTERVAL_SECONDS } from '../_consts.ts';
+import { DEFAULT_CONTEXT_USAGE_THRESHOLDS, DEFAULT_STATUSLINE_REFRESH_INTERVAL_SECONDS } from '../_consts.ts';
+import { createSharedPricingFetcher } from '../_pricing-fetcher.ts';
 import { calculateBurnRate } from '../_session-blocks.ts';
 import { sharedArgs } from '../_shared-args.ts';
+import { loadStatuslineData } from '../_statusline-loader.ts';
 import { statuslineHookJsonSchema } from '../_types.ts';
 import { getFileModifiedTime, unreachable } from '../_utils.ts';
-import { calculateTotals } from '../calculate-cost.ts';
-import { calculateContextTokens, loadDailyUsageData, loadSessionBlockData, loadSessionUsageById } from '../data-loader.ts';
+import { calculateContextTokens } from '../data-loader.ts';
 import { log, logger } from '../logger.ts';
 
 /**
@@ -129,8 +130,8 @@ export const statuslineCommand = define({
 		},
 		refreshInterval: {
 			type: 'number',
-			description: `Refresh interval in seconds for cache expiry (default: ${DEFAULT_REFRESH_INTERVAL_SECONDS})`,
-			default: DEFAULT_REFRESH_INTERVAL_SECONDS,
+			description: `Refresh interval in seconds for cache expiry (default: ${DEFAULT_STATUSLINE_REFRESH_INTERVAL_SECONDS})`,
+			default: DEFAULT_STATUSLINE_REFRESH_INTERVAL_SECONDS,
 		},
 		contextLowThreshold: {
 			type: 'custom',
@@ -197,17 +198,17 @@ export const statuslineCommand = define({
 
 		if (mergedOptions.cache && initialSemaphoreState != null) {
 			/**
-			 * Hybrid cache validation:
-			 * 1. Time-based expiry: Cache expires after refreshInterval seconds
-			 * 2. File modification: Immediate invalidation when transcript file is modified
-			 * This ensures real-time updates while maintaining good performance
+			 * Time-only cache validation:
+			 * Cache expires after refreshInterval seconds (default: 15s).
+			 * In active sessions, transcript mtime changes constantly which caused
+			 * permanent cache misses with the old hybrid (time + mtime) approach.
+			 * Time-only mode ensures the cache actually works in practice.
 			 */
 			const now = Date.now();
 			const timeElapsed = now - (initialSemaphoreState.lastUpdateTime ?? 0);
 			const isExpired = timeElapsed >= refreshInterval * 1000;
-			const isFileModified = initialSemaphoreState.transcriptMtime !== currentMtime;
 
-			if (!isExpired && !isFileModified) {
+			if (!isExpired) {
 				// Cache is still valid, return cached output
 				log(initialSemaphoreState.lastOutput);
 				return;
@@ -266,116 +267,70 @@ export const statuslineCommand = define({
 		const mainProcessingResult = Result.pipe(
 			await Result.try({
 				try: async () => {
-					// Determine session cost based on cost source
-					const { sessionCost, ccCost, betterCcusageCost } = await (async (): Promise<{ sessionCost?: number; ccCost?: number; betterCcusageCost?: number }> => {
-						const costSource = ctx.values.costSource;
-
-						// Helper function to get better-ccusage cost
-						const getCcusageCost = async (): Promise<number | undefined> => {
-							return Result.pipe(
-								Result.try({
-									try: async () => loadSessionUsageById(sessionId, {
-										mode: 'auto',
-									}),
-									catch: error => error,
-								})(),
-								Result.map(sessionCost => sessionCost?.totalCost),
-								Result.inspectError(error => logger.error('Failed to load session data:', error)),
-								Result.unwrap(undefined),
-							);
-						};
-
-						// If 'both' mode, calculate both costs
-						if (costSource === 'both') {
-							const ccCost = hookData.cost?.total_cost_usd;
-							const betterCcusageCost = await getCcusageCost();
-							return { ccCost, betterCcusageCost };
-						}
-
-						// If 'cc' mode and cost is available from Claude Code, use it
-						if (costSource === 'cc') {
-							return { sessionCost: hookData.cost?.total_cost_usd };
-						}
-
-						// If 'better-ccusage' mode, always calculate using better-ccusage
-						if (costSource === 'better-ccusage') {
-							const cost = await getCcusageCost();
-							return { sessionCost: cost };
-						}
-
-						// If 'auto' mode (default), prefer Claude Code cost, fallback to better-ccusage
-						if (costSource === 'auto') {
-							if (hookData.cost?.total_cost_usd != null) {
-								return { sessionCost: hookData.cost.total_cost_usd };
-							}
-							// Fallback to better-ccusage calculation
-							const cost = await getCcusageCost();
-							return { sessionCost: cost };
-						}
-						unreachable(costSource);
-						return {}; // This line should never be reached
-					})();
-
-					// Load today's usage data
+					const costSource = ctx.values.costSource;
 					const today = new Date();
-					const todayStr = today.toISOString().split('T')[0]?.replace(/-/g, '') ?? ''; // Convert to YYYYMMDD format
+					const todayStr = today.toISOString().split('T')[0]?.replace(/-/g, '') ?? '';
+					const sharedFetcher = createSharedPricingFetcher();
 
-					const todayCost = await Result.pipe(
-						Result.try({
-							try: async () => loadDailyUsageData({
-								since: todayStr,
-								until: todayStr,
-								mode: 'auto',
+					// Load all data in parallel: statusline data + context tokens
+					const [statuslineData, contextInfo] = await Promise.all([
+						loadStatuslineData({ sessionId, todayStr, mode: 'auto' }, sharedFetcher),
+						Result.pipe(
+							Result.try({
+								try: calculateContextTokens(hookData.transcript_path, hookData.model.id, sharedFetcher),
+								catch: error => error,
 							}),
-							catch: error => error,
-						})(),
-						Result.map((dailyData) => {
-							if (dailyData.length > 0) {
-								const totals = calculateTotals(dailyData);
-								return totals.totalCost;
-							}
-							return 0;
-						}),
-						Result.inspectError(error => logger.error('Failed to load daily data:', error)),
-						Result.unwrap(0),
-					);
-
-					// Load session block data to find active block
-					const { blockInfo, burnRateInfo } = await Result.pipe(
-						Result.try({
-							try: async () => loadSessionBlockData({
-								mode: 'auto',
-							}),
-							catch: error => error,
-						})(),
-						Result.map((blocks) => {
-						// Only identify blocks if we have data
-							if (blocks.length === 0) {
-								return { blockInfo: 'No active block', burnRateInfo: '' };
-							}
-
-							// Find active block that contains our session
-							const activeBlock = blocks.find((block) => {
-								if (!block.isActive) {
-									return false;
+							Result.inspectError(error => logger.debug(`Failed to calculate context tokens: ${error instanceof Error ? error.message : String(error)}`)),
+							Result.map((contextResult) => {
+								if (contextResult == null) {
+									return undefined;
 								}
+								const color = contextResult.percentage < ctx.values.contextLowThreshold
+									? pc.green
+									: contextResult.percentage < ctx.values.contextMediumThreshold
+										? pc.yellow
+										: pc.red;
+								const coloredPercentage = color(`${contextResult.percentage}%`);
+								const tokenDisplay = contextResult.inputTokens.toLocaleString();
+								return `${tokenDisplay} (${coloredPercentage})`;
+							}),
+							Result.unwrap(undefined),
+						),
+					]);
 
-								// Check if any entry in this block matches our session
-								// Since we don't have direct session mapping in entries,
-								// we use the active block that's currently running
-								return true;
-							});
+					// Determine session cost display based on cost source
+					const { sessionCost, todayCost, activeBlock } = statuslineData;
+					let ccCost: number | undefined;
+					let betterCcusageCost: number | undefined;
+					let displaySessionCost: number | undefined;
 
-							if (activeBlock != null) {
+					if (costSource === 'both') {
+						ccCost = hookData.cost?.total_cost_usd;
+						betterCcusageCost = sessionCost;
+					}
+					else if (costSource === 'cc') {
+						displaySessionCost = hookData.cost?.total_cost_usd;
+					}
+					else if (costSource === 'better-ccusage') {
+						displaySessionCost = sessionCost;
+					}
+					else if (costSource === 'auto') {
+						displaySessionCost = hookData.cost?.total_cost_usd ?? sessionCost;
+					}
+					else {
+						unreachable(costSource);
+					}
+
+					// Format block info from active block
+					const { blockInfo, burnRateInfo } = activeBlock != null
+						? (() => {
 								const now = new Date();
 								const remaining = Math.round((activeBlock.endTime.getTime() - now.getTime()) / (1000 * 60));
 								const blockCost = activeBlock.costUSD;
+								const blockInfoStr = `${formatCurrency(blockCost)} block (${formatRemainingTime(remaining)})`;
 
-								const blockInfo = `${formatCurrency(blockCost)} block (${formatRemainingTime(remaining)})`;
-
-								// Calculate burn rate
 								const burnRate = calculateBurnRate(activeBlock);
-								const burnRateInfo = burnRate != null
+								const burnRateInfoStr = burnRate != null
 									? (() => {
 											const renderEmojiStatus = ctx.values.visualBurnRate === 'emoji' || ctx.values.visualBurnRate === 'emoji-text';
 											const renderTextStatus = ctx.values.visualBurnRate === 'text' || ctx.values.visualBurnRate === 'emoji-text';
@@ -414,55 +369,21 @@ export const statuslineCommand = define({
 										})()
 									: '';
 
-								return { blockInfo, burnRateInfo };
-							}
-
-							return { blockInfo: 'No active block', burnRateInfo: '' };
-						}),
-						Result.inspectError(error => logger.error('Failed to load block data:', error)),
-						Result.unwrap({ blockInfo: 'No active block', burnRateInfo: '' }),
-					);
-
-					// Calculate context tokens from transcript with model-specific limits
-					const contextInfo = await Result.pipe(
-						Result.try({
-							try: calculateContextTokens(hookData.transcript_path, hookData.model.id),
-							catch: error => error,
-						}),
-						Result.inspectError(error => logger.debug(`Failed to calculate context tokens: ${error instanceof Error ? error.message : String(error)}`)),
-						Result.map((contextResult) => {
-							if (contextResult == null) {
-								return undefined;
-							}
-							// Format context percentage with color coding using option thresholds
-							const color = contextResult.percentage < ctx.values.contextLowThreshold
-								? pc.green
-								: contextResult.percentage < ctx.values.contextMediumThreshold
-									? pc.yellow
-									: pc.red;
-							const coloredPercentage = color(`${contextResult.percentage}%`);
-
-							// Format token count with thousand separators
-							const tokenDisplay = contextResult.inputTokens.toLocaleString();
-							return `${tokenDisplay} (${coloredPercentage})`;
-						}),
-						Result.unwrap(undefined),
-					);
+								return { blockInfo: blockInfoStr, burnRateInfo: burnRateInfoStr };
+							})()
+						: { blockInfo: 'No active block', burnRateInfo: '' };
 
 					// Get model display name
 					const modelName = hookData.model.display_name;
 
 					// Format and output the status line
-					// Format: 🤖 model | 💰 session / today / block | 🔥 burn | 🧠 context
 					const sessionDisplay = (() => {
-						// If both costs are available, show them side by side
 						if (ccCost != null || betterCcusageCost != null) {
 							const ccDisplay = ccCost != null ? formatCurrency(ccCost) : 'N/A';
 							const betterCcusageDisplay = betterCcusageCost != null ? formatCurrency(betterCcusageCost) : 'N/A';
 							return `(${ccDisplay} cc / ${betterCcusageDisplay} better-ccusage)`;
 						}
-						// Single cost display
-						return sessionCost != null ? formatCurrency(sessionCost) : 'N/A';
+						return displaySessionCost != null ? formatCurrency(displaySessionCost) : 'N/A';
 					})();
 					const statusLine = `🤖 ${modelName} | 💰 ${sessionDisplay} session / ${formatCurrency(todayCost)} today / ${blockInfo}${burnRateInfo} | 🧠 ${contextInfo ?? 'N/A'}`;
 					return statusLine;

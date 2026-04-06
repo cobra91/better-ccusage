@@ -1,8 +1,8 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
+import { Result } from '@praha/byethrow';
 import { prefetchAllPricing } from './_macro.ts';
 import { logger } from './logger.ts';
-import { Result } from '@praha/byethrow';
 
 const PREFETCHED_PRICING = prefetchAllPricing();
 
@@ -15,12 +15,18 @@ async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
 }
 
 let _sharedPricingMap: Map<string, ModelPricing> | null = null;
+let _sharedPricingPromise: Promise<Map<string, ModelPricing>> | null = null;
 
 async function getSharedPricingMap(): Promise<Map<string, ModelPricing>> {
-	if (_sharedPricingMap == null) {
-		_sharedPricingMap = new Map(Object.entries(await prefetchCcusagePricing()));
+	if (_sharedPricingPromise == null) {
+		_sharedPricingPromise = (async () => {
+			if (_sharedPricingMap == null) {
+				_sharedPricingMap = new Map(Object.entries(await prefetchCcusagePricing()));
+			}
+			return _sharedPricingMap;
+		})();
 	}
-	return _sharedPricingMap;
+	return _sharedPricingPromise;
 }
 
 /**

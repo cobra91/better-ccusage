@@ -134,10 +134,11 @@ export class PricingFetcher implements Disposable {
 		}
 
 		if (this.offlineLoader != null) {
+			const loader: NonNullable<typeof this.offlineLoader> = this.offlineLoader;
 			return Result.pipe(
 				Result.try({
 					try: async () => {
-						const pricing = new Map(Object.entries(await this.offlineLoader()));
+						const pricing = new Map(Object.entries(await loader()));
 						this.cachedPricing = pricing;
 						return pricing;
 					},
