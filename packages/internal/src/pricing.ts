@@ -127,10 +127,20 @@ export class PricingFetcher implements Disposable {
 		}
 
 		if (this.preloadedPricing != null) {
-			const pricing = await this.preloadedPricing();
-			this.cachedPricing = pricing;
-			this.logger.info(`Loaded preloaded pricing for ${pricing.size} models`);
-			return Result.succeed(this.cachedPricing);
+			const loader: NonNullable<typeof this.preloadedPricing> = this.preloadedPricing;
+			return Result.pipe(
+				Result.try({
+					try: async () => {
+						const pricing = await loader();
+						this.cachedPricing = pricing;
+						return pricing;
+					},
+					catch: error => new Error('Failed to load preloaded pricing data', { cause: error }),
+				})(),
+				Result.inspect((pricing) => {
+					this.logger.info(`Loaded preloaded pricing for ${pricing.size} models`);
+				}),
+			);
 		}
 
 		if (this.offlineLoader != null) {

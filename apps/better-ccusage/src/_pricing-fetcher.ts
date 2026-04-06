@@ -160,8 +160,8 @@ if (import.meta.vitest != null) {
 		});
 
 		it('shared fetchers use the same pricing Map', async () => {
-			const f1 = createSharedPricingFetcher();
-			const f2 = createSharedPricingFetcher();
+			using f1 = createSharedPricingFetcher();
+			using f2 = createSharedPricingFetcher();
 			const p1 = await Result.unwrap(f1.fetchModelPricing());
 			const p2 = await Result.unwrap(f2.fetchModelPricing());
 			expect(p1).toBe(p2);

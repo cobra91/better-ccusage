@@ -1,5 +1,5 @@
 import { homedir } from 'node:os';
-import path from 'node:path';
+import path from "node:path";
 import { xdgConfig } from 'xdg-basedir';
 
 /**

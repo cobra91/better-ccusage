@@ -662,9 +662,9 @@
 								},
 								"refreshInterval": {
 									"type": "number",
-									"description": "Refresh interval in seconds for cache expiry (default: 1)",
-									"markdownDescription": "Refresh interval in seconds for cache expiry (default: 1)",
-									"default": 1
+									"description": "Refresh interval in seconds for cache expiry (default: 15)",
+									"markdownDescription": "Refresh interval in seconds for cache expiry (default: 15)",
+									"default": 15
 								},
 								"contextLowThreshold": {
 									"type": "string",
