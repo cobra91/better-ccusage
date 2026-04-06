@@ -1,6 +1,6 @@
 {
 	"name": "@better-ccusage/opencode",
-	"version": "1.3.1",
+	"version": "1.3.2",
 	"description": "Usage analysis tool for OpenCode AI assistant",
 	"homepage": "https://github.com/cobra91/better-ccusage#readme",
 	"bugs": {
@@ -20,9 +20,9 @@
 		"./cost-utils": "./src/cost-utils.ts",
 		"./package.json": "./package.json"
 	},
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
+	"main": "./dist/index.mjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"bin": {
 		"better-ccusage-opencode": "./src/index.ts"
 	},
@@ -30,47 +30,20 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "tsdown",
-		"format": "pnpm run lint --fix",
-		"lint": "eslint --cache .",
-		"prepack": "pnpm run build && clean-pkg-json",
-		"prerelease": "pnpm run lint && pnpm run typecheck && pnpm run build",
-		"start": "bun ./src/index.ts",
-		"test": "TZ=UTC vitest",
-		"typecheck": "tsgo --noEmit"
-	},
-	"devDependencies": {
-		"@better-ccusage/internal": "workspace:*",
-		"@better-ccusage/terminal": "workspace:*",
-		"@praha/byethrow": "catalog:runtime",
-		"@ryoppippi/eslint-config": "catalog:lint",
-		"@typescript/native-preview": "catalog:types",
-		"clean-pkg-json": "catalog:release",
-		"es-toolkit": "catalog:runtime",
-		"eslint": "catalog:lint",
-		"fast-sort": "catalog:runtime",
-		"fs-fixture": "catalog:testing",
-		"gunshi": "catalog:runtime",
-		"path-type": "catalog:runtime",
-		"picocolors": "catalog:runtime",
-		"tinyglobby": "catalog:runtime",
-		"tsdown": "catalog:build",
-		"unplugin-macros": "catalog:build",
-		"unplugin-unused": "catalog:build",
-		"valibot": "catalog:runtime",
-		"vitest": "catalog:testing"
+		"build": "pnpm tsdown && node -e \"require('fs').copyFileSync('../../packages/internal/model_prices_and_context_window.json','dist/model_prices_and_context_window.json')\"",
+		"prepack": "pnpm run build && pnpm clean-pkg-json"
 	},
 	"engines": {
 		"node": ">=20.19.4"
 	},
 	"publishConfig": {
 		"bin": {
-			"better-ccusage-opencode": "./dist/index.js"
+			"better-ccusage-opencode": "./dist/index.mjs"
 		},
 		"exports": {
-			".": "./dist/index.js",
-			"./data-loader": "./dist/data-loader.js",
-			"./cost-utils": "./dist/cost-utils.js",
+			".": "./dist/index.mjs",
+			"./data-loader": "./dist/data-loader.mjs",
+			"./cost-utils": "./dist/cost-utils.mjs",
 			"./package.json": "./package.json"
 		}
 	}
