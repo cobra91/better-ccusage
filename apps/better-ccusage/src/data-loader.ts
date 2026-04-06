@@ -1416,7 +1416,7 @@ export async function loadBucketUsageData(
  * @param modelId - Optional model identifier used to look up the model's context limit; if omitted a conservative fallback limit is used
  * @returns An object with `inputTokens`, `percentage` (0–100 rounded), and `contextLimit` when usage is found; `null` if the file cannot be read or contains no assistant usage information
  */
-export async function calculateContextTokens(transcriptPath: string, modelId?: string): Promise<{
+export async function calculateContextTokens(transcriptPath: string, modelId?: string, fetcher?: CcusagePricingFetcher): Promise<{
 	inputTokens: number;
 	percentage: number;
 	contextLimit: number;
@@ -1460,8 +1460,8 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 				// Get context limit from CcusagePricingFetcher
 				let contextLimit = 200_000; // Fallback for when modelId is not provided
 				if (modelId != null && modelId !== '') {
-					const fetcher = new CcusagePricingFetcher();
-					const contextLimitResult = await fetcher.getModelContextLimit(modelId);
+					const effectiveFetcher = fetcher ?? new CcusagePricingFetcher();
+					const contextLimitResult = await effectiveFetcher.getModelContextLimit(modelId);
 					if (Result.isSuccess(contextLimitResult) && contextLimitResult.value != null) {
 						contextLimit = contextLimitResult.value;
 					}

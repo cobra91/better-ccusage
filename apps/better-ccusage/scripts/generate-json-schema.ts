@@ -24,6 +24,18 @@ import { logger } from '../src/logger.ts';
 const execAsync = promisify(exec);
 
 /**
+ * Run lint on generated files
+ */
+async function runLint(files: string[]) {
+	try {
+		await execAsync(`pnpm run lint --fix ${files.join(' ')}`);
+	}
+	catch (error) {
+		logger.error('Failed to lint generated files:', error);
+	}
+}
+
+/**
  * The filename for the generated JSON Schema file.
  * Used for both root directory and docs/public directory output.
  */
@@ -190,19 +202,6 @@ function createConfigSchemaJson() {
 }
 
 /**
- *
- * Run lint on generated files
- */
-async function runLint(files: string[]) {
-	try {
-		await execAsync(`pnpm run lint --fix ${files.join(' ')}`);
-		return Result.success(undefined);
-	} catch (error) {
-		return Result.failure(error);
-	}
-}
-
-/**
  * Generate JSON Schema and write to files
  */
 async function generateJsonSchema() {
@@ -226,10 +225,10 @@ async function generateJsonSchema() {
 		Result.try({
 			try: async () => {
 				const content = await readFile(SCHEMA_FILENAME);
-				return JSON.parse(content) as unknown;
+				return JSON.parse(String(content)) as unknown;
 			},
 			catch: () => null,
-		}),
+		})(),
 		Result.unwrap(null),
 	);
 
@@ -251,7 +250,7 @@ async function generateJsonSchema() {
 		Result.try({
 			try: async () => writeFile(SCHEMA_FILENAME, schemaJson),
 			catch: error => error,
-		}),
+		})(),
 		Result.inspectError((error) => {
 			logger.error(`Failed to write ${SCHEMA_FILENAME}:`, error);
 			process.exit(1);
@@ -263,17 +262,7 @@ async function generateJsonSchema() {
 	await copySchemaToDocsPublic();
 
 	// Run lint on the root schema file that was changed
-	await Result.pipe(
-		Result.try({
-			try: async () => runLint([SCHEMA_FILENAME]),
-			catch: error => error,
-		}),
-		Result.inspectError((error) => {
-			logger.error('Failed to lint generated files:', error);
-			process.exit(1);
-		}),
-		Result.inspect(() => logger.info('✓ Linted generated files')),
-	);
+	await runLint([SCHEMA_FILENAME]);
 
 	logger.info('JSON Schema generation completed successfully!');
 }

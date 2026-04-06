@@ -1,8 +1,8 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
+import { Result } from '@praha/byethrow';
 import { prefetchAllPricing } from './_macro.ts';
 import { logger } from './logger.ts';
-import { Result } from '@praha/byethrow';
 
 const PREFETCHED_PRICING = prefetchAllPricing();
 
@@ -14,13 +14,38 @@ async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
 	return PREFETCHED_PRICING;
 }
 
+let _sharedPricingMap: Map<string, ModelPricing> | null = null;
+let _sharedPricingPromise: Promise<Map<string, ModelPricing>> | null = null;
+
+async function getSharedPricingMap(): Promise<Map<string, ModelPricing>> {
+	if (_sharedPricingPromise == null) {
+		_sharedPricingPromise = (async () => {
+			if (_sharedPricingMap == null) {
+				_sharedPricingMap = new Map(Object.entries(await prefetchCcusagePricing()));
+			}
+			return _sharedPricingMap;
+		})();
+	}
+	return _sharedPricingPromise;
+}
+
+/**
+ * Create a PricingFetcher that shares a singleton pricing Map across all instances.
+ * Use this when multiple fetchers are needed in the same process (e.g. statusline).
+ */
+export function createSharedPricingFetcher(): CcusagePricingFetcher {
+	return new CcusagePricingFetcher({
+		preloadedPricing: getSharedPricingMap,
+		logger,
+	});
+}
+
 export class CcusagePricingFetcher extends PricingFetcher {
-	constructor() {
+	constructor(options?: ConstructorParameters<typeof PricingFetcher>[0]) {
 		super({
 			offlineLoader: async () => prefetchCcusagePricing(),
 			logger,
-			// No provider prefixes needed - PricingFetcher automatically searches
-			// for models with and without prefixes via fallback logic
+			...options,
 		});
 	}
 }
@@ -132,6 +157,14 @@ if (import.meta.vitest != null) {
 			}, pricing!);
 
 			expect(cost).toBeGreaterThan(0);
+		});
+
+		it('shared fetchers use the same pricing Map', async () => {
+			using f1 = createSharedPricingFetcher();
+			using f2 = createSharedPricingFetcher();
+			const p1 = await Result.unwrap(f1.fetchModelPricing());
+			const p2 = await Result.unwrap(f2.fetchModelPricing());
+			expect(p1).toBe(p2);
 		});
 	});
 }

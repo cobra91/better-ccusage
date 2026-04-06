@@ -69,7 +69,8 @@ export type PricingLogger = {
 
 export type PricingFetcherOptions = {
 	logger?: PricingLogger;
-	offlineLoader: () => Promise<Record<string, ModelPricing>>;
+	offlineLoader?: () => Promise<Record<string, ModelPricing>>;
+	preloadedPricing?: () => Promise<Map<string, ModelPricing>>;
 	providerPrefixes?: string[];
 };
 
@@ -101,12 +102,14 @@ function createLogger(logger?: PricingLogger): PricingLogger {
 export class PricingFetcher implements Disposable {
 	private cachedPricing: Map<string, ModelPricing> | null = null;
 	private readonly logger: PricingLogger;
-	private readonly offlineLoader: () => Promise<Record<string, ModelPricing>>;
+	private readonly offlineLoader?: () => Promise<Record<string, ModelPricing>>;
+	private readonly preloadedPricing?: () => Promise<Map<string, ModelPricing>>;
 	private readonly providerPrefixes: string[];
 
 	constructor(options: PricingFetcherOptions) {
 		this.logger = createLogger(options.logger);
 		this.offlineLoader = options.offlineLoader;
+		this.preloadedPricing = options.preloadedPricing;
 		this.providerPrefixes = options.providerPrefixes ?? DEFAULT_PROVIDER_PREFIXES;
 	}
 
@@ -123,19 +126,41 @@ export class PricingFetcher implements Disposable {
 			return Result.succeed(this.cachedPricing);
 		}
 
-		return Result.pipe(
-			Result.try({
-				try: async () => {
-					const pricing = new Map(Object.entries(await this.offlineLoader()));
-					this.cachedPricing = pricing;
-					return pricing;
-				},
-				catch: error => new Error('Failed to load pricing data', { cause: error }),
-			})(),
-			Result.inspect((pricing) => {
-				this.logger.info(`Loaded pricing for ${pricing.size} models`);
-			}),
-		);
+		if (this.preloadedPricing != null) {
+			const loader: NonNullable<typeof this.preloadedPricing> = this.preloadedPricing;
+			return Result.pipe(
+				Result.try({
+					try: async () => {
+						const pricing = await loader();
+						this.cachedPricing = pricing;
+						return pricing;
+					},
+					catch: error => new Error('Failed to load preloaded pricing data', { cause: error }),
+				})(),
+				Result.inspect((pricing) => {
+					this.logger.info(`Loaded preloaded pricing for ${pricing.size} models`);
+				}),
+			);
+		}
+
+		if (this.offlineLoader != null) {
+			const loader: NonNullable<typeof this.offlineLoader> = this.offlineLoader;
+			return Result.pipe(
+				Result.try({
+					try: async () => {
+						const pricing = new Map(Object.entries(await loader()));
+						this.cachedPricing = pricing;
+						return pricing;
+					},
+					catch: error => new Error('Failed to load pricing data', { cause: error }),
+				})(),
+				Result.inspect((pricing) => {
+					this.logger.info(`Loaded pricing for ${pricing.size} models`);
+				}),
+			);
+		}
+
+		return Result.fail(new Error('No pricing data source configured'));
 	}
 
 	async fetchModelPricing(): Result.ResultAsync<Map<string, ModelPricing>, Error> {
