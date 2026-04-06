@@ -275,7 +275,7 @@ if (import.meta.vitest != null) {
 			const recentTimestamp = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
 
 			const fixture = await createFixture({
-				'projects/test-project/session1/usage.jsonl': `${JSON.stringify({
+				'projects/test-project/session1.jsonl': `${JSON.stringify({
 					timestamp: recentTimestamp.toISOString(),
 					message: {
 						model: 'claude-sonnet-4-20250514',
@@ -331,7 +331,7 @@ if (import.meta.vitest != null) {
 			const recentTimestamp = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
 
 			const sonnet45Fixture = await createFixture({
-				'projects/test-project/session1/usage.jsonl': `${JSON.stringify({
+				'projects/test-project/session1.jsonl': `${JSON.stringify({
 					timestamp: recentTimestamp.toISOString(),
 					message: {
 						model: 'claude-sonnet-4-5-20250929',

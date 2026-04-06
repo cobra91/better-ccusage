@@ -238,7 +238,7 @@ if (import.meta.vitest != null) {
 		describe('stdio transport', () => {
 			it('should connect via stdio transport and list tools', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -276,7 +276,7 @@ if (import.meta.vitest != null) {
 
 			it('should call daily tool successfully', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -320,7 +320,7 @@ if (import.meta.vitest != null) {
 
 			it('should call daily tool successfully with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -364,7 +364,7 @@ if (import.meta.vitest != null) {
 
 			it('should call session tool successfully', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -406,7 +406,7 @@ if (import.meta.vitest != null) {
 
 			it('should call session tool successfully with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -448,7 +448,7 @@ if (import.meta.vitest != null) {
 
 			it('should call monthly tool successfully', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -490,7 +490,7 @@ if (import.meta.vitest != null) {
 
 			it('should call monthly tool successfully with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -532,7 +532,7 @@ if (import.meta.vitest != null) {
 
 			it('should call blocks tool successfully', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -573,7 +573,7 @@ if (import.meta.vitest != null) {
 
 			it('should call blocks tool successfully with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -642,7 +642,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle MCP initialize request', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -694,7 +694,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle MCP callTool request for daily tool', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -763,7 +763,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle MCP callTool request for daily tool with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -834,7 +834,7 @@ if (import.meta.vitest != null) {
 		describe('error handling', () => {
 			it('should handle tool call with invalid arguments', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -870,7 +870,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle tool call with invalid date format', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -906,7 +906,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle tool call with unknown tool name', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -979,7 +979,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle malformed JSONL files', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': 'invalid json\n{"valid": "json"}',
+					'projects/test-project/session1.jsonl': 'invalid json\n{"valid": "json"}',
 				});
 
 				const client = new Client({ name: 'test-client', version: '1.0.0' });
@@ -1040,7 +1040,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle concurrent tool calls', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
@@ -1095,7 +1095,7 @@ if (import.meta.vitest != null) {
 
 			it('should handle concurrent tool calls with Sonnet 4.5', async () => {
 				await using fixture = await createFixture({
-					'projects/test-project/session1/usage.jsonl': JSON.stringify({
+					'projects/test-project/session1.jsonl': JSON.stringify({
 						timestamp: '2024-01-01T12:00:00Z',
 						costUSD: 0.001,
 						version: '1.0.0',
