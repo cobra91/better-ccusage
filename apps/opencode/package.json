@@ -1,50 +1,46 @@
 {
-	"name": "@better-ccusage/opencode",
-	"version": "1.3.4",
-	"description": "Usage analysis tool for OpenCode AI assistant",
-	"homepage": "https://github.com/cobra91/better-ccusage#readme",
-	"bugs": {
-		"url": "https://github.com/cobra91/better-ccusage/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/cobra91/better-ccusage.git"
-	},
-	"funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
-	"license": "MIT",
-	"author": "cobra91",
-	"type": "module",
-	"exports": {
-		".": "./src/index.ts",
-		"./data-loader": "./src/data-loader.ts",
-		"./cost-utils": "./src/cost-utils.ts",
-		"./package.json": "./package.json"
-	},
-	"main": "./dist/index.mjs",
-	"module": "./dist/index.mjs",
-	"types": "./dist/index.d.mts",
-	"bin": {
-		"better-ccusage-opencode": "./src/index.ts"
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "pnpm tsdown && node -e \"require('fs').copyFileSync('../../packages/internal/model_prices_and_context_window.json','dist/model_prices_and_context_window.json')\"",
-		"prepack": "pnpm run build && pnpm clean-pkg-json"
-	},
-	"engines": {
-		"node": ">=20.19.4"
-	},
-	"publishConfig": {
-		"bin": {
-			"better-ccusage-opencode": "./dist/index.mjs"
-		},
-		"exports": {
-			".": "./dist/index.mjs",
-			"./data-loader": "./dist/data-loader.mjs",
-			"./cost-utils": "./dist/cost-utils.mjs",
-			"./package.json": "./package.json"
-		}
-	}
+  "name": "@better-ccusage/opencode",
+  "version": "1.3.4",
+  "description": "Usage analysis tool for OpenCode AI assistant",
+  "homepage": "https://github.com/cobra91/better-ccusage#readme",
+  "bugs": {
+    "url": "https://github.com/cobra91/better-ccusage/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cobra91/better-ccusage.git"
+  },
+  "funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
+  "license": "MIT",
+  "author": "cobra91",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./data-loader": "./src/data-loader.ts",
+    "./cost-utils": "./src/cost-utils.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "bin": {
+    "better-ccusage-opencode": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "publishConfig": {
+    "bin": {
+      "better-ccusage-opencode": "./dist/index.mjs"
+    },
+    "exports": {
+      ".": "./dist/index.mjs",
+      "./data-loader": "./dist/data-loader.mjs",
+      "./cost-utils": "./dist/cost-utils.mjs",
+      "./package.json": "./package.json"
+    }
+  }
 }

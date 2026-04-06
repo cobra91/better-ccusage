@@ -1,36 +1,32 @@
 {
-	"name": "@better-ccusage/codex",
-	"version": "1.3.4",
-	"description": "Usage analysis tool for OpenAI Codex sessions",
-	"homepage": "https://github.com/cobra91/better-ccusage#readme",
-	"bugs": {
-		"url": "https://github.com/cobra91/better-ccusage/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/cobra91/better-ccusage.git"
-	},
-	"funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
-	"license": "MIT",
-	"author": "cobra91",
-	"type": "module",
-	"module": "./dist/index.js",
-	"bin": {
-		"better-ccusage-codex": "./src/index.ts"
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "pnpm tsdown && node -e \"require('fs').copyFileSync('../../packages/internal/model_prices_and_context_window.json','dist/model_prices_and_context_window.json')\"",
-		"prepack": "pnpm run build && pnpm clean-pkg-json"
-	},
-	"engines": {
-		"node": ">=20.19.4"
-	},
-	"publishConfig": {
-		"bin": {
-			"better-ccusage-codex": "./dist/index.js"
-		}
-	}
+  "name": "@better-ccusage/codex",
+  "version": "1.3.4",
+  "description": "Usage analysis tool for OpenAI Codex sessions",
+  "homepage": "https://github.com/cobra91/better-ccusage#readme",
+  "bugs": {
+    "url": "https://github.com/cobra91/better-ccusage/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cobra91/better-ccusage.git"
+  },
+  "funding": "https://github.com/cobra91/better-ccusage?sponsor=1",
+  "license": "MIT",
+  "author": "cobra91",
+  "type": "module",
+  "module": "./dist/index.js",
+  "bin": {
+    "better-ccusage-codex": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "publishConfig": {
+    "bin": {
+      "better-ccusage-codex": "./dist/index.js"
+    }
+  }
 }
