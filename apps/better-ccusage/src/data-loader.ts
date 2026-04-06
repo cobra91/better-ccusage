@@ -959,7 +959,7 @@ export async function loadDailyUsageData(
 				...totals,
 				modelsUsed: modelsUsed as ModelName[],
 				modelBreakdowns,
-				...(project === null ? {} : { project }),
+				...(project == null ? {} : { project }),
 			};
 		})
 		.filter(item => item != null);
@@ -1406,7 +1406,7 @@ export async function loadBucketUsageData(
 			totalCost,
 			modelsUsed: [...new Set(models)] as ModelName[],
 			modelBreakdowns,
-			...(project === null ? {} : { project }),
+			...(project == null ? {} : { project }),
 		};
 
 		buckets.push(bucketUsage);

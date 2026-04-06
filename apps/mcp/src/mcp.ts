@@ -18,9 +18,6 @@ import { createFixture } from 'fs-fixture';
 
 import { Hono } from 'hono/tiny';
 import packageJson from '../package.json' with { type: 'json' };
-
-const { name, version } = packageJson;
-
 import {
 	ccusageParametersSchema,
 	ccusageParametersShape,
@@ -36,6 +33,8 @@ import {
 	getCodexMonthly,
 } from './codex.ts';
 import { defaultOptions } from './mcp-utils.ts';
+
+const { name, version } = packageJson;
 
 /**
  * Creates an MCP server with tools for showing usage reports.
