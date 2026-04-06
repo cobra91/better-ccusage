@@ -126,7 +126,7 @@ export function filterByDateRange<T>(
 	}
 
 	return items.filter((item) => {
-		const dateStr = getDate(item).substring(0, 10).replace(/-/g, ''); // Convert to YYYYMMDD
+		const dateStr = getDate(item).substring(0, 10).replaceAll('-', ''); // Convert to YYYYMMDD
 		if (since != null && dateStr < since) {
 			return false;
 		}

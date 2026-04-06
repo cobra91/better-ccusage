@@ -49,7 +49,7 @@ export async function loadStatuslineData(
 
 	// 1. Find the session file directly (targeted glob)
 	const sessionFilePatterns = claudePaths.map(
-		p => path.join(p, CLAUDE_PROJECTS_DIR_NAME, '**', `${options.sessionId}.jsonl`).replace(/\\/g, '/'),
+		p => path.join(p, CLAUDE_PROJECTS_DIR_NAME, '**', `${options.sessionId}.jsonl`).replaceAll('\\', '/'),
 	);
 	const sessionFiles = await glob(sessionFilePatterns, { absolute: true });
 	const sessionFile = sessionFiles[0] ?? null;

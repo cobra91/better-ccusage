@@ -1,7 +1,6 @@
 import process from 'node:process';
 import { cli } from 'gunshi';
 import packageJson from '../../package.json' with { type: 'json' };
-const { description, name, version } = packageJson;
 import { dailyCommand } from './daily.ts';
 import { monthlyCommand } from './monthly.ts';
 import { sessionCommand } from './session.ts';
@@ -13,6 +12,8 @@ export { dailyCommand, monthlyCommand, sessionCommand, weeklyCommand };
 /**
  * Command entries as tuple array
  */
+const { description, name, version } = packageJson;
+
 export const subCommandUnion = [
 	['daily', dailyCommand],
 	['monthly', monthlyCommand],

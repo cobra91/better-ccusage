@@ -5,11 +5,12 @@ import { getClaudePaths } from 'better-ccusage/data-loader';
 import { logger } from 'better-ccusage/logger';
 import { cli, define } from 'gunshi';
 import packageJson from '../package.json' with { type: 'json' };
-const { description, name, version } = packageJson;
 import { createMcpHttpApp, createMcpServer, startMcpServerStdio } from './mcp.ts';
 
 type McpType = (typeof MCP_TYPE_CHOICES)[number];
 type Mode = LoadOptions['mode'];
+
+const { description, name, version } = packageJson;
 
 const MCP_DEFAULT_PORT = 8080;
 const MODE_CHOICES = ['auto', 'calculate', 'display'] as const satisfies readonly Mode[];

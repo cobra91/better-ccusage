@@ -1,6 +1,7 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import process from 'node:process';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
 import { Result } from '@praha/byethrow';
@@ -20,8 +21,8 @@ async function loadPricingData(): Promise<Record<string, ModelPricing>> {
 	try {
 		// Try to load from internal package (works in dev mode)
 		const internalPath = require.resolve('@better-ccusage/internal/package.json');
-		const internalDir = internalPath.replace('/package.json', '');
-		const pricingPath = `${internalDir}/../model_prices_and_context_window.json`;
+		const internalDir = path.dirname(internalPath);
+		const pricingPath = path.join(internalDir, '..', 'model_prices_and_context_window.json');
 		const content = await readFile(pricingPath, 'utf-8');
 		return JSON.parse(content) as Record<string, ModelPricing>;
 	}
@@ -29,7 +30,7 @@ async function loadPricingData(): Promise<Record<string, ModelPricing>> {
 		// Fallback: try loading from better-ccusage dist
 		try {
 			const betterCcusagePath = require.resolve('better-ccusage/package.json');
-			const content = await readFile(`${betterCcusagePath.replace('/package.json', '')}/model_prices_and_context_window.json`, 'utf-8');
+			const content = await readFile(path.join(path.dirname(betterCcusagePath), 'model_prices_and_context_window.json'), 'utf-8');
 			return JSON.parse(content) as Record<string, ModelPricing>;
 		}
 		catch {
@@ -47,8 +48,8 @@ async function loadPricingData(): Promise<Record<string, ModelPricing>> {
 export function getOpenCodePath(): string {
 	const baseDir = process.env.OPENCODE_DATA_DIR
 		?? process.env.XDG_DATA_HOME
-		?? `${process.env.HOME ?? ''}/.local/share`;
-	return `${baseDir}/opencode/storage`;
+		?? path.join(process.env.HOME ?? '', '.local', 'share');
+	return path.join(baseDir, 'opencode', 'storage');
 }
 
 /**
@@ -156,7 +157,7 @@ export type ModelBreakdown = {
  */
 export async function loadOpenCodeMessages(): Promise<LoadedUsageEntry[]> {
 	const basePath = getOpenCodePath();
-	const messagePattern = `${basePath}/message/**/msg_*.json`;
+	const messagePattern = path.join(basePath, 'message', '**', 'msg_*.json');
 
 	const files = await glob(messagePattern);
 	logger.debug(`Found ${files.length} OpenCode message files`);
@@ -218,7 +219,7 @@ export async function loadOpenCodeMessages(): Promise<LoadedUsageEntry[]> {
  */
 export async function loadOpenCodeSessions(): Promise<LoadedSessionMetadata[]> {
 	const basePath = getOpenCodePath();
-	const sessionPattern = `${basePath}/session/*.json`;
+	const sessionPattern = path.join(basePath, 'session', '*.json');
 
 	const files = await glob(sessionPattern);
 	logger.debug(`Found ${files.length} OpenCode session files`);
@@ -455,8 +456,8 @@ if (import.meta.vitest != null) {
 			delete process.env.OPENCODE_DATA_DIR;
 			delete process.env.XDG_DATA_HOME;
 
-			const path = getOpenCodePath();
-			expect(path).toBe('/home/test/.local/share/opencode/storage');
+			const result = getOpenCodePath();
+			expect(result).toBe(path.join('/home/test', '.local', 'share', 'opencode', 'storage'));
 
 			process.env.HOME = originalHome;
 		});
@@ -465,8 +466,8 @@ if (import.meta.vitest != null) {
 			const original = process.env.OPENCODE_DATA_DIR;
 			process.env.OPENCODE_DATA_DIR = '/custom';
 
-			const path = getOpenCodePath();
-			expect(path).toBe('/custom/opencode/storage');
+			const result = getOpenCodePath();
+			expect(result).toBe(path.join('/custom', 'opencode', 'storage'));
 
 			process.env.OPENCODE_DATA_DIR = original;
 		});
@@ -476,8 +477,8 @@ if (import.meta.vitest != null) {
 			const original = process.env.XDG_DATA_HOME;
 			process.env.XDG_DATA_HOME = '/custom/xdg';
 
-			const path = getOpenCodePath();
-			expect(path).toBe('/custom/xdg/opencode/storage');
+			const result = getOpenCodePath();
+			expect(result).toBe(path.join('/custom/xdg', 'opencode', 'storage'));
 
 			process.env.XDG_DATA_HOME = original;
 		});

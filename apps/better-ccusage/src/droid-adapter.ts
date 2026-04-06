@@ -183,7 +183,7 @@ export async function parseDroidSession(
 			/// Extract project path from title if it contains one
 			const pathMatch = sessionStart.title?.match(/(?:for|in)?\s*([A-Z]:\\[^\\].*?|\.[^.\s].*?)(?:\s|$)/i);
 			if (pathMatch?.[1] != null) {
-				const normalizedPath = pathMatch[1].replace(/\\/g, '/');
+				const normalizedPath = pathMatch[1].replaceAll('\\', '/');
 				projectName = path.basename(normalizedPath);
 			}
 		}
@@ -205,7 +205,7 @@ export async function parseDroidSession(
 			},
 			// Cost will be calculated by better-ccusage based on model pricing
 			requestId: createRequestId(sessionId), // Use session id as request id for droid
-			cwd: `/droid/${projectName}`, // Virtual working directory for droid
+			cwd: path.join('droid', projectName), // Virtual working directory for droid
 			source: createSource('droid'), // Mark as droid source
 		};
 
@@ -253,7 +253,7 @@ function findDroidSessions(droidPath: string): DroidSessionEntry[] {
 	});
 
 	for (const file of rootJsonlFiles) {
-		const sessionId = file.replace('.jsonl', '');
+		const sessionId = file.replaceAll('.jsonl', '');
 		const settingsFile = `${sessionId}.settings.json`;
 		if (globSync([settingsFile], { cwd: droidPath, onlyFiles: true }).length > 0) {
 			results.push({ dirPath: droidPath, sessionId });
@@ -277,7 +277,7 @@ function findDroidSessions(droidPath: string): DroidSessionEntry[] {
 		});
 
 		for (const file of subJsonlFiles) {
-			const sessionId = file.replace('.jsonl', '');
+			const sessionId = file.replaceAll('.jsonl', '');
 			const settingsFile = `${sessionId}.settings.json`;
 			if (globSync([settingsFile], { cwd: subDirPath, onlyFiles: true }).length > 0) {
 				results.push({ dirPath: subDirPath, sessionId });
@@ -356,7 +356,7 @@ if (import.meta.vitest != null) {
 			expect(result?.message.model).toBe('sonnet-4-5');
 			expect(result?.message.usage.input_tokens).toBe(1000);
 			expect(result?.message.usage.output_tokens).toBe(500);
-			expect(result?.cwd).toBe('/droid/test');
+			expect(result?.cwd).toBe(path.join('droid', 'test'));
 		});
 
 		it('should parse droid session with openai provider', async () => {
