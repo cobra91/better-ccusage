@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { cli } from 'gunshi';
-import { description, name, version } from '../../package.json';
+import packageJson from '../../package.json' with { type: 'json' };
+const { description, name, version } = packageJson;
 import { dailyCommand } from './daily.ts';
 import { monthlyCommand } from './monthly.ts';
 import { sessionCommand } from './session.ts';

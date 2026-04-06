@@ -347,7 +347,7 @@ if (import.meta.vitest != null) {
 				},
 			});
 
-			const sessionDir = `${testFixture.path}/${sessionId}`;
+			const sessionDir = path.join(testFixture.path, sessionId);
 			const result = await parseDroidSession(sessionDir, sessionId);
 
 			expect(result).not.toBeNull();
@@ -383,7 +383,7 @@ if (import.meta.vitest != null) {
 				},
 			});
 
-			const sessionDir = `${testFixture.path}/${sessionId}`;
+			const sessionDir = path.join(testFixture.path, sessionId);
 			const result = await parseDroidSession(sessionDir, sessionId);
 
 			expect(result?.message.model).toBe('gpt-5');
@@ -413,7 +413,7 @@ if (import.meta.vitest != null) {
 				},
 			});
 
-			const sessionDir = `${testFixture.path}/${sessionId}`;
+			const sessionDir = path.join(testFixture.path, sessionId);
 			const result = await parseDroidSession(sessionDir, sessionId);
 
 			expect(result?.message.model).toBe('glm-4.6');
@@ -423,7 +423,7 @@ if (import.meta.vitest != null) {
 			const sessionId = 'test-session-missing';
 
 			const testFixture = await createFixture({}); // Empty fixture
-			const sessionDir = `${testFixture.path}/${sessionId}`;
+			const sessionDir = path.join(testFixture.path, sessionId);
 
 			const result = await parseDroidSession(sessionDir, sessionId);
 			expect(result).toBeNull();
@@ -438,7 +438,7 @@ if (import.meta.vitest != null) {
 				},
 			});
 
-			const sessionDir = `${testFixture.path}/${sessionId}`;
+			const sessionDir = path.join(testFixture.path, sessionId);
 			const result = await parseDroidSession(sessionDir, sessionId);
 			expect(result).toBeNull();
 		});
@@ -506,7 +506,7 @@ if (import.meta.vitest != null) {
 				},
 			});
 
-			const sessionDir = `${testFixture.path}/${sessionId}`;
+			const sessionDir = path.join(testFixture.path, sessionId);
 			const result = await parseDroidSession(sessionDir, sessionId);
 			expect(result?.message.model).toBe('sonnet-4-5');
 		});

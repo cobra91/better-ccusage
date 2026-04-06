@@ -104,7 +104,7 @@ export function getClaudePaths(): string[] {
 		// If environment variable is set but no valid paths found, throw error
 		throw new Error(
 			`No valid Claude data directories found in CLAUDE_CONFIG_DIR. Please ensure the following exists:
-- ${envPaths}/${CLAUDE_PROJECTS_DIR_NAME}`.trim(),
+- ${path.join(envPaths, CLAUDE_PROJECTS_DIR_NAME)}`.trim(),
 		);
 	}
 
@@ -891,7 +891,7 @@ export async function loadDailyUsageData(
 			date,
 			cost,
 			model: droidData.message.model,
-			project: droidData.cwd ?? '/droid/unknown',
+			project: droidData.cwd ?? path.join('droid', 'unknown'),
 		});
 	}
 
@@ -1095,7 +1095,7 @@ export async function loadSessionData(
 				// Mark this combination as processed
 				markAsProcessed(uniqueHash, processedHashes);
 
-				const sessionKey = `${projectPath}/${sessionId}`;
+				const sessionKey = `${projectPath}${path.sep}${sessionId}`;
 				const cost = fetcher != null
 					? await calculateCostForEntry(data, mode, fetcher)
 					: data.costUSD ?? 0;
@@ -1133,7 +1133,7 @@ export async function loadSessionData(
 			data: droidData,
 			sessionKey,
 			sessionId: droidData.sessionId ?? 'unknown-session',
-			projectPath: droidData.cwd ?? '/droid/unknown',
+			projectPath: droidData.cwd ?? path.join('droid', 'unknown'),
 			cost,
 			timestamp: droidData.timestamp,
 			model: droidData.message.model,

@@ -17,7 +17,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createFixture } from 'fs-fixture';
 
 import { Hono } from 'hono/tiny';
-import { name, version } from '../package.json';
+import packageJson from '../package.json' with { type: 'json' };
+const { name, version } = packageJson;
 
 import {
 	ccusageParametersSchema,
