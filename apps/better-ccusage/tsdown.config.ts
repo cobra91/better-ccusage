@@ -34,5 +34,8 @@ export default defineConfig({
 	define: {
 		'import.meta.vitest': 'undefined',
 	},
-	onSuccess: 'sort-package-json',
+	onSuccess: [
+		'sort-package-json',
+		'node -e "require(\'fs\').copyFileSync(\'../../packages/internal/model_prices_and_context_window.json\',\'dist/model_prices_and_context_window.json\')"',
+	],
 });

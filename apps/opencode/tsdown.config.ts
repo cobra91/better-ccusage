@@ -12,4 +12,7 @@ export default defineConfig({
 	minify: false,
 	sourcemap: true,
 	external: [],
+	onSuccess: [
+		'node -e "require(\'fs\').copyFileSync(\'../../packages/internal/model_prices_and_context_window.json\',\'dist/model_prices_and_context_window.json\')"',
+	],
 });
