@@ -29,6 +29,24 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "test": "TZ=UTC vitest run"
+  },
+  "devDependencies": {
+    "@better-ccusage/internal": "workspace:*",
+    "@better-ccusage/terminal": "workspace:*",
+    "@praha/byethrow": "catalog:runtime",
+    "@ryoppippi/eslint-config": "catalog:lint",
+    "consola": "catalog:runtime",
+    "es-toolkit": "catalog:runtime",
+    "eslint": "catalog:lint",
+    "fs-fixture": "catalog:testing",
+    "gunshi": "catalog:runtime",
+    "tinyglobby": "catalog:runtime",
+    "tsdown": "catalog:",
+    "valibot": "catalog:runtime",
+    "vitest": "catalog:testing"
+  },
   "engines": {
     "node": ">=20.19.4"
   },

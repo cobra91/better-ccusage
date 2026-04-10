@@ -39,8 +39,8 @@
 		"sort-package-json": "catalog:release"
 	},
 	"lint-staged": {
-		"*": [
-			"pnpm run format"
+		"*.{ts,js,mjs,cjs,json,md}": [
+			"eslint --cache --fix --no-warn-ignored"
 		],
 		"./**/package.json": [
 			"sort-package-json"
