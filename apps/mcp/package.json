@@ -31,8 +31,22 @@
     "test": "TZ=UTC vitest run"
   },
   "devDependencies": {
+    "@better-ccusage/internal": "workspace:*",
+    "@hono/mcp": "catalog:runtime",
+    "@hono/node-server": "catalog:runtime",
+    "@modelcontextprotocol/sdk": "catalog:runtime",
+    "@ryoppippi/eslint-config": "catalog:lint",
+    "better-ccusage": "workspace:*",
+    "eslint": "catalog:lint",
     "fs-fixture": "catalog:testing",
-    "vitest": "catalog:testing"
+    "gunshi": "catalog:runtime",
+    "hono": "catalog:runtime",
+    "nano-spawn": "catalog:runtime",
+    "tsdown": "catalog:",
+    "unplugin-macros": "catalog:build",
+    "unplugin-unused": "catalog:build",
+    "vitest": "catalog:testing",
+    "zod": "catalog:runtime"
   },
   "engines": {
     "node": ">=20.19.4"

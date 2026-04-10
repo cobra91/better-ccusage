@@ -25,7 +25,20 @@
     "test": "TZ=UTC vitest run"
   },
   "devDependencies": {
+    "@better-ccusage/internal": "workspace:*",
+    "@praha/byethrow": "catalog:runtime",
+    "@ryoppippi/eslint-config": "catalog:lint",
+    "consola": "catalog:runtime",
+    "eslint": "catalog:lint",
+    "fast-sort": "catalog:runtime",
     "fs-fixture": "catalog:testing",
+    "gunshi": "catalog:runtime",
+    "picocolors": "catalog:runtime",
+    "tinyglobby": "catalog:runtime",
+    "tsdown": "catalog:",
+    "unplugin-macros": "catalog:build",
+    "unplugin-unused": "catalog:build",
+    "valibot": "catalog:runtime",
     "vitest": "catalog:testing"
   },
   "engines": {
