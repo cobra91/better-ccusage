@@ -36,6 +36,10 @@
 	"scripts": {
 		"test": "TZ=UTC vitest run"
 	},
+	"devDependencies": {
+		"fs-fixture": "catalog:testing",
+		"vitest": "catalog:testing"
+	},
 	"engines": {
 		"node": ">=20.19.4"
 	},
