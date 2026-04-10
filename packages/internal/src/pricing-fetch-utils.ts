@@ -37,7 +37,8 @@ export function loadLocalPricingDataset(): PricingDataset {
 		const possiblePaths = [
 			// Bundled package: alongside the bundled file in dist/
 			join(currentModuleDir, 'model_prices_and_context_window.json'),
-			// Published npm package: one level up from dist/ to package root
+			// Development (unbundled): import.meta.url resolves to src/, so
+			// '..' lands on the internal package root where the JSON lives
 			join(currentModuleDir, '..', 'model_prices_and_context_window.json'),
 			// Development: in the app root directory
 			join(cwd(), 'model_prices_and_context_window.json'),
