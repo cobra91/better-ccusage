@@ -28,7 +28,13 @@
     "dist"
   ],
   "scripts": {
-    "test": "TZ=UTC vitest run"
+    "build": "tsdown",
+    "format": "pnpm run lint --fix",
+    "lint": "eslint --cache .",
+    "prepack": "pnpm run build && clean-pkg-json",
+    "prerelease": "pnpm run lint && pnpm run typecheck && pnpm run build",
+    "test": "TZ=UTC vitest run",
+    "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
     "@better-ccusage/internal": "workspace:*",
@@ -36,7 +42,9 @@
     "@hono/node-server": "catalog:runtime",
     "@modelcontextprotocol/sdk": "catalog:runtime",
     "@ryoppippi/eslint-config": "catalog:lint",
+    "@typescript/native-preview": "catalog:types",
     "better-ccusage": "workspace:*",
+    "clean-pkg-json": "catalog:release",
     "eslint": "catalog:lint",
     "fs-fixture": "catalog:testing",
     "gunshi": "catalog:runtime",

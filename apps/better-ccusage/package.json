@@ -33,7 +33,14 @@
 		"dist"
 	],
 	"scripts": {
-		"test": "TZ=UTC vitest run"
+		"build": "pnpm run generate:schema && tsdown",
+		"format": "pnpm run lint --fix",
+		"generate:schema": "bun scripts/generate-json-schema.ts",
+		"lint": "eslint --cache .",
+		"prepack": "pnpm run build && clean-pkg-json",
+		"prerelease": "pnpm run lint && pnpm run typecheck && pnpm run build",
+		"test": "TZ=UTC vitest run",
+		"typecheck": "tsgo --noEmit"
 	},
 	"devDependencies": {
 		"@antfu/utils": "catalog:runtime",
@@ -43,7 +50,9 @@
 		"@ryoppippi/eslint-config": "catalog:lint",
 		"@ryoppippi/limo": "catalog:runtime",
 		"@std/async": "catalog:runtime",
+		"@typescript/native-preview": "catalog:types",
 		"ansi-escapes": "catalog:runtime",
+		"clean-pkg-json": "catalog:release",
 		"consola": "catalog:runtime",
 		"es-toolkit": "catalog:runtime",
 		"eslint": "catalog:lint",
