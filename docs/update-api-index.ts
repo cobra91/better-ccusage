@@ -74,7 +74,7 @@ ${noteText}`;
 }
 
 if (import.meta.main) {
-	const typedocBin = join(import.meta.dirname, '..', 'node_modules', '.bin', 'typedoc');
+	const typedocBin = join(import.meta.dirname, 'node_modules', '.bin', 'typedoc');
 	const typedocConfig = join(import.meta.dirname, 'typedoc.config.ts');
 	await Bun.$`cd ${import.meta.dirname} && ${typedocBin} --excludeInternal --options ${typedocConfig}`;
 	await updateApiIndex();

@@ -21,6 +21,10 @@ export default {
 	// ref: https://typedoc.org/documents/Options.html
 	entryPoints,
 	tsconfig: './node_modules/better-ccusage/tsconfig.json',
+	exclude: [
+		'**/node_modules/**/tsdown.config.ts',
+		'**/node_modules/**/scripts/**',
+	],
 	out: 'api',
 	plugin: ['typedoc-plugin-markdown', 'typedoc-vitepress-theme'],
 	readme: 'none',

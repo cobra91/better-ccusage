@@ -22,12 +22,21 @@
     "dist"
   ],
   "scripts": {
-    "test": "TZ=UTC vitest run"
+    "build": "tsdown",
+    "format": "pnpm run lint --fix",
+    "lint": "eslint --cache .",
+    "prepack": "pnpm run build && clean-pkg-json",
+    "prerelease": "pnpm run lint && pnpm run typecheck && pnpm run build",
+    "test": "TZ=UTC vitest run",
+    "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
     "@better-ccusage/internal": "workspace:*",
+    "@better-ccusage/terminal": "workspace:*",
     "@praha/byethrow": "catalog:runtime",
     "@ryoppippi/eslint-config": "catalog:lint",
+    "@typescript/native-preview": "catalog:types",
+    "clean-pkg-json": "catalog:release",
     "consola": "catalog:runtime",
     "eslint": "catalog:lint",
     "fast-sort": "catalog:runtime",
