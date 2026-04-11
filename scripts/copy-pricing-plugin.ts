@@ -16,8 +16,7 @@ export function copyPricingPlugin(appName: string): Plugin {
 		name: 'copy-pricing-json',
 		writeBundle() {
 			if (!existsSync(src)) {
-				console.error(`[copy-pricing-json] Source not found: ${src}`);
-				return;
+				throw new Error(`[copy-pricing-json] Source not found: ${src}`);
 			}
 
 			const dest = resolve(monorepoRoot, 'apps', appName, 'dist', 'model_prices_and_context_window.json');
