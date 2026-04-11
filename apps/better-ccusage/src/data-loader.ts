@@ -1248,11 +1248,17 @@ export async function loadSessionUsageById(
 ): Promise<{ totalCost: number; entries: UsageData[] } | null> {
 	const claudePaths = getClaudePaths();
 
-	// Find the JSONL file for this session ID
-	// On Windows, replace backslashes from path.join with forward slashes for tinyglobby compatibility
-	const patterns = claudePaths.map(p => path.join(p, 'projects', '**', `${sessionId}.jsonl`).replaceAll('\\', '/'));
-	// Absolute paths are important on Windows; relative paths break when the file is on a different drive.
-	const jsonlFiles = await glob(patterns, { absolute: true });
+	// Find the JSONL file for this session ID.
+	// Use cwd-based glob per path to avoid tinyglobby issues with Windows 8.3
+	// short paths (e.g. C:\Users\DAMLEC~1\...) where absolute glob patterns fail.
+	const relativePattern = `projects/**/${sessionId}.jsonl`;
+	const results = await Promise.all(
+		claudePaths.map(async (p) => {
+			const files = await glob([relativePattern], { cwd: p, absolute: true });
+			return files;
+		}),
+	);
+	const jsonlFiles = results.flat();
 
 	if (jsonlFiles.length === 0) {
 		return null;
