@@ -1,7 +1,11 @@
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Plugin } from 'rolldown';
+
+interface RolldownPlugin {
+	name: string;
+	writeBundle(): void;
+}
 
 const monorepoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const src = resolve(monorepoRoot, 'packages', 'internal', 'model_prices_and_context_window.json');
@@ -11,7 +15,7 @@ const src = resolve(monorepoRoot, 'packages', 'internal', 'model_prices_and_cont
  * app's dist/ directory after the bundle is written. Runs in-process so it
  * works reliably on Windows where tsdown's onSuccess shell quoting breaks.
  */
-export function copyPricingPlugin(appName: string): Plugin {
+export function copyPricingPlugin(appName: string): RolldownPlugin {
 	return {
 		name: 'copy-pricing-json',
 		writeBundle() {
