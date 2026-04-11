@@ -1,5 +1,6 @@
 import { defineConfig } from 'tsdown';
 import Macros from 'unplugin-macros/rolldown';
+import { copyPricingPlugin } from '../../scripts/copy-pricing-plugin.ts';
 
 export default defineConfig({
 	entry: ['src/index.ts'],
@@ -18,12 +19,9 @@ export default defineConfig({
 		Macros({
 			include: ['src/index.ts', 'src/pricing.ts'],
 		}),
+		copyPricingPlugin('codex'),
 	],
 	define: {
 		'import.meta.vitest': 'undefined',
 	},
-	onSuccess: [
-		'sort-package-json',
-		'node -e "require(\'fs\').copyFileSync(\'../../packages/internal/model_prices_and_context_window.json\',\'dist/model_prices_and_context_window.json\')"',
-	],
 });
