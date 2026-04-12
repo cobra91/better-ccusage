@@ -253,8 +253,13 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 		const remoteData = await fetchFilteredRemotePricing();
 		const merged = mergePricingDatasets(staticData, remoteData);
 
-		// Step 5: Write to cache
-		writeCacheFile(merged);
+		// Step 5: Write to cache (best-effort, never block on failure)
+		try {
+			writeCacheFile(merged);
+		}
+		catch {
+			// Cache write failed (read-only fs, permissions) — still return merged
+		}
 
 		return merged;
 	}
