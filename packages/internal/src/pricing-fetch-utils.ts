@@ -112,7 +112,15 @@ export function filterPricingDataset(
  * Throws on network errors or invalid response.
  */
 export async function fetchLiteLLMPricingDataset(): Promise<Record<string, LiteLLMModelPricing>> {
-	const response = await fetch(LITELLM_PRICING_URL);
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), 15_000);
+	let response: Response;
+	try {
+		response = await fetch(LITELLM_PRICING_URL, { signal: controller.signal });
+	}
+	finally {
+		clearTimeout(timeout);
+	}
 	if (!response.ok) {
 		throw new Error(`Failed to fetch LiteLLM pricing: ${response.status} ${response.statusText}`);
 	}

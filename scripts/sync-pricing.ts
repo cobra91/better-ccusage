@@ -29,7 +29,7 @@ const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const isForce = args.includes('--force');
 
-const monorepoRoot = resolve(fileURLToPath(import.meta.url), '..');
+const monorepoRoot = resolve(fileURLToPath(import.meta.url), '..', '..');
 const staticJsonPath = resolve(monorepoRoot, 'packages', 'internal', 'model_prices_and_context_window.json');
 
 async function main(): Promise<void> {

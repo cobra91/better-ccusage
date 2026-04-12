@@ -7,9 +7,8 @@ import {
 	readFileSync,
 	writeFileSync,
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
-import { Result } from '@praha/byethrow';
 import * as v from 'valibot';
 import {
 	createPricingDataset,
@@ -70,6 +69,8 @@ const STRIP_PROVIDER_PREFIXES = [
 	'vercel_ai_gateway/',
 	'wandb/',
 	'gmi/',
+	'azure/',
+	'vertex_ai/',
 	'openrouter/',
 ];
 
@@ -167,7 +168,7 @@ function readCacheFile(): PricingCache | null {
 		const raw = readFileSync(cachePath, 'utf8');
 		const cache = JSON.parse(raw) as PricingCache;
 
-		if (typeof cache.timestamp !== 'number' || typeof cache.dataset !== 'object') {
+		if (typeof cache.timestamp !== 'number' || typeof cache.dataset !== 'object' || cache.dataset === null) {
 			return null;
 		}
 
