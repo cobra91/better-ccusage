@@ -1,10 +1,12 @@
-import type { ModelPricing } from './pricing.ts';
+import type { LiteLLMModelPricing, ModelPricing } from './pricing.ts';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { cwd } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import * as v from 'valibot';
 import {
+	LITELLM_PRICING_URL,
+	liteLLMModelPricingSchema,
 	modelPricingSchema,
 } from './pricing.ts';
 
@@ -102,4 +104,34 @@ export function filterPricingDataset(
 		}
 	}
 	return filtered;
+}
+
+/**
+ * Fetch the LiteLLM model pricing database from GitHub and validate each entry.
+ * Returns a dataset of LiteLLMModelPricing entries keyed by model name.
+ * Throws on network errors or invalid response.
+ */
+export async function fetchLiteLLMPricingDataset(): Promise<Record<string, LiteLLMModelPricing>> {
+	const response = await fetch(LITELLM_PRICING_URL);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch LiteLLM pricing: ${response.status} ${response.statusText}`);
+	}
+
+	const rawDataset = (await response.json()) as Record<string, unknown>;
+	const dataset = createPricingDataset() as Record<string, LiteLLMModelPricing>;
+
+	for (const [modelName, modelData] of Object.entries(rawDataset)) {
+		if (modelData == null || typeof modelData !== 'object') {
+			continue;
+		}
+
+		const parsed = v.safeParse(liteLLMModelPricingSchema, modelData);
+		if (!parsed.success) {
+			continue;
+		}
+
+		dataset[modelName] = parsed.output;
+	}
+
+	return dataset;
 }

@@ -35,6 +35,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 .eslintcache
 
+# auto-generated declarations
+scripts/copy-pricing-plugin.d.ts
+
 # lsmcp cache
 symbols.db
 

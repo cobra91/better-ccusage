@@ -1,18 +1,8 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
+import { loadMergedPricing } from '@better-ccusage/internal/remote-pricing';
 import { Result } from '@praha/byethrow';
-import { prefetchAllPricing } from './_macro.ts';
 import { logger } from './logger.ts';
-
-const PREFETCHED_PRICING = prefetchAllPricing();
-
-/**
- * Load all available pricing data.
- * The pricing fetcher's fallback logic (exact/suffix/fuzzy matching) handles all models automatically.
- */
-async function prefetchCcusagePricing(): Promise<Record<string, ModelPricing>> {
-	return PREFETCHED_PRICING;
-}
 
 let _sharedPricingMap: Map<string, ModelPricing> | null = null;
 let _sharedPricingPromise: Promise<Map<string, ModelPricing>> | null = null;
@@ -21,7 +11,7 @@ async function getSharedPricingMap(): Promise<Map<string, ModelPricing>> {
 	if (_sharedPricingPromise == null) {
 		_sharedPricingPromise = (async () => {
 			if (_sharedPricingMap == null) {
-				_sharedPricingMap = new Map(Object.entries(await prefetchCcusagePricing()));
+				_sharedPricingMap = new Map(Object.entries(await loadMergedPricing()));
 			}
 			return _sharedPricingMap;
 		})();
@@ -41,14 +31,14 @@ export function createSharedPricingFetcher(): CcusagePricingFetcher {
 }
 
 /**
- * Extended PricingFetcher pre-configured with offline pricing data from the
- * local pricing database. Uses the shared pre-fetched pricing macro for
- * efficient singleton loading across all instances.
+ * Extended PricingFetcher pre-configured with merged pricing data.
+ * Uses loadMergedPricing() which fetches from LiteLLM at runtime with
+ * local cache (24h TTL) and static JSON fallback.
  */
 export class CcusagePricingFetcher extends PricingFetcher {
 	constructor(options?: ConstructorParameters<typeof PricingFetcher>[0]) {
 		super({
-			offlineLoader: async () => prefetchCcusagePricing(),
+			offlineLoader: loadMergedPricing,
 			logger,
 			...options,
 		});

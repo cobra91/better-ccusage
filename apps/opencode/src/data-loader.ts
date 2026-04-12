@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
+import { loadMergedPricing } from '@better-ccusage/internal/remote-pricing';
 import { Result } from '@praha/byethrow';
 import { groupBy, sortBy } from 'es-toolkit';
 import { glob } from 'tinyglobby';
@@ -15,31 +16,10 @@ import { logger } from './logger.ts';
 const require = createRequire(import.meta.url);
 
 /**
- * Load pricing data from internal package
- * The JSON file is bundled with the internal package
+ * Load pricing data from LiteLLM (with cache) falling back to local static JSON.
  */
 async function loadPricingData(): Promise<Record<string, ModelPricing>> {
-	try {
-		// Try to load from internal package (works in dev mode)
-		const internalPath = require.resolve('@better-ccusage/internal/package.json');
-		const internalDir = path.dirname(internalPath);
-		const pricingPath = path.join(internalDir, '..', 'model_prices_and_context_window.json');
-		const content = await readFile(pricingPath, 'utf-8');
-		return JSON.parse(content) as Record<string, ModelPricing>;
-	}
-	catch {
-		// Fallback: try loading from better-ccusage dist
-		try {
-			const betterCcusagePath = require.resolve('better-ccusage/package.json');
-			const content = await readFile(path.join(path.dirname(betterCcusagePath), 'model_prices_and_context_window.json'), 'utf-8');
-			return JSON.parse(content) as Record<string, ModelPricing>;
-		}
-		catch {
-			// Last resort: return empty object
-			logger.warn('Could not load pricing data, costs will be $0.00');
-			return {};
-		}
-	}
+	return loadMergedPricing();
 }
 
 /**
