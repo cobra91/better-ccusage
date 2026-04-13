@@ -1,7 +1,7 @@
 {
 	"name": "better-ccusage-monorepo",
 	"type": "module",
-	"version": "1.3.5",
+	"version": "1.4.0",
 	"private": true,
 	"workspaces": [
 		"apps/*",
@@ -24,6 +24,7 @@
 		"prepare:git": "git config --local core.hooksPath .githooks",
 		"prerelease": "pnpm run --filter '*' prerelease",
 		"release": "pnpm bumpp -r",
+		"sync-pricing": "tsx scripts/sync-pricing.ts",
 		"test": "pnpm run --filter '*' test",
 		"typecheck": "pnpm run --filter '*' typecheck"
 	},

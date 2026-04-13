@@ -1,15 +1,35 @@
 import type { ModelPricing as InternalModelPricing } from '@better-ccusage/internal/pricing';
 import type { ModelPricing, PricingSource } from './_types.ts';
+import { loadMergedPricing } from '@better-ccusage/internal/remote-pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
 import { Result } from '@praha/byethrow';
 import { MILLION } from './_consts.ts';
-import { prefetchCodexPricing } from './_macro.ts' with { type: 'macro' };
 import { logger } from './logger.ts';
 
-const CODEX_PROVIDER_PREFIXES = ['openai/', 'azure/', 'openrouter/openai/'];
+const CODEX_PROVIDER_PREFIXES = ['openai/'];
 const CODEX_MODEL_ALIASES_MAP = new Map<string, string>([
 	['gpt-5-codex', 'gpt-5'],
 ]);
+const CODEX_MODEL_PREFIXES = [
+	'gpt-4', 'gpt-4o', 'gpt-5', 'gpt-5-',
+	'chatgpt-4', 'chatgpt-4o',
+	'o1-', 'o3-', 'o4-',
+];
+
+function isCodexModel(modelName: string): boolean {
+	return CODEX_MODEL_PREFIXES.some(prefix => modelName.startsWith(prefix));
+}
+
+async function loadCodexPricing(): Promise<Record<string, InternalModelPricing>> {
+	const merged = await loadMergedPricing();
+	const filtered: Record<string, InternalModelPricing> = {};
+	for (const [name, pricing] of Object.entries(merged)) {
+		if (isCodexModel(name)) {
+			filtered[name] = pricing;
+		}
+	}
+	return filtered;
+}
 
 /**
  * Convert a per-token cost to its per-million (per M tokens) equivalent.
@@ -29,14 +49,12 @@ export type CodexPricingSourceOptions = {
 	offlineLoader?: () => Promise<Record<string, InternalModelPricing>>;
 };
 
-const PREFETCHED_CODEX_PRICING = prefetchCodexPricing();
-
 export class CodexPricingSource implements PricingSource, Disposable {
 	private readonly fetcher: PricingFetcher;
 
 	constructor(options: CodexPricingSourceOptions = {}) {
 		this.fetcher = new PricingFetcher({
-			offlineLoader: options.offlineLoader ?? (async () => PREFETCHED_CODEX_PRICING),
+			offlineLoader: options.offlineLoader ?? loadCodexPricing,
 			logger,
 			providerPrefixes: CODEX_PROVIDER_PREFIXES,
 		});

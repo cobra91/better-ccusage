@@ -60,6 +60,46 @@ export const modelPricingSchema = v.object({
 
 export type ModelPricing = v.InferOutput<typeof modelPricingSchema>;
 
+/**
+ * LiteLLM pricing URL — the canonical source for model pricing data.
+ * Used by fetchLiteLLMPricingDataset() for runtime fetching.
+ */
+export const LITELLM_PRICING_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json';
+
+/**
+ * LiteLLM Model Pricing Schema
+ *
+ * Broader than modelPricingSchema — validates all LiteLLM fields including
+ * provider, mode, supports_*, tiered pricing, etc. Used for fetching and
+ * filtering from the LiteLLM database.
+ */
+export const liteLLMModelPricingSchema = v.object({
+	input_cost_per_token: v.optional(v.number()),
+	output_cost_per_token: v.optional(v.number()),
+	cache_creation_input_token_cost: v.optional(v.number()),
+	cache_read_input_token_cost: v.optional(v.number()),
+	max_tokens: v.optional(v.number()),
+	max_input_tokens: v.optional(v.number()),
+	max_output_tokens: v.optional(v.number()),
+	input_cost_per_token_above_200k_tokens: v.optional(v.number()),
+	output_cost_per_token_above_200k_tokens: v.optional(v.number()),
+	cache_creation_input_token_cost_above_200k_tokens: v.optional(v.number()),
+	cache_read_input_token_cost_above_200k_tokens: v.optional(v.number()),
+	input_cost_per_token_above_128k_tokens: v.optional(v.number()),
+	output_cost_per_token_above_128k_tokens: v.optional(v.number()),
+	tiered_pricing: v.optional(v.array(v.object({
+		input_cost_per_token: v.number(),
+		output_cost_per_token: v.number(),
+		range: v.tuple([v.number(), v.number()]),
+		cache_read_input_token_cost: v.optional(v.number()),
+	}))),
+	// LiteLLM extra fields (used for provider filtering)
+	provider: v.optional(v.string()),
+	mode: v.optional(v.string()),
+});
+
+export type LiteLLMModelPricing = v.InferOutput<typeof liteLLMModelPricingSchema>;
+
 export type PricingLogger = {
 	debug: (...args: unknown[]) => void;
 	error: (...args: unknown[]) => void;
