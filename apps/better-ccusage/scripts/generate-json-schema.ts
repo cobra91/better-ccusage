@@ -10,10 +10,10 @@
  * - Schema validation for configuration files
  */
 
-import process from 'node:process';
-import path from 'node:path';
-import { writeFile, readFile, copyFile } from 'node:fs/promises';
 import { exec } from 'node:child_process';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
 import { promisify } from 'node:util';
 import { Result } from '@praha/byethrow';
 import { sharedArgs } from '../src/_shared-args.ts';
@@ -273,7 +273,8 @@ async function copySchemaToDocsPublic() {
 		const { stdout } = await execAsync('git rev-parse --show-toplevel');
 		const gitRoot = stdout.trim();
 		await copyFile(SCHEMA_FILENAME, path.join(gitRoot, 'docs', 'public', SCHEMA_FILENAME));
-	} catch (error) {
+	}
+	catch (error) {
 		logger.error('Failed to copy schema to docs/public:', error);
 		process.exit(1);
 	}

@@ -1,5 +1,5 @@
-import os from 'node:os';
 import { stat, utimes, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { Result } from '@praha/byethrow';
 import { createFixture } from 'fs-fixture';

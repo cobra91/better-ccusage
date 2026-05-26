@@ -132,13 +132,13 @@ async function fetchFilteredRemotePricing(): Promise<Record<string, ModelPricing
  */
 function getCacheDir(): string {
 	const xdgCache = process.env.XDG_CACHE_HOME;
-	if (xdgCache) {
+	if (xdgCache !== undefined && xdgCache !== '') {
 		return join(xdgCache, 'better-ccusage');
 	}
 
 	if (process.platform === 'win32') {
 		const localAppData = process.env.LOCALAPPDATA;
-		if (localAppData) {
+		if (localAppData !== undefined && localAppData !== '') {
 			return join(localAppData, 'better-ccusage', 'cache');
 		}
 	}

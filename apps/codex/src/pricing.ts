@@ -1,7 +1,7 @@
 import type { ModelPricing as InternalModelPricing } from '@better-ccusage/internal/pricing';
 import type { ModelPricing, PricingSource } from './_types.ts';
-import { loadMergedPricing } from '@better-ccusage/internal/remote-pricing';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
+import { loadMergedPricing } from '@better-ccusage/internal/remote-pricing';
 import { Result } from '@praha/byethrow';
 import { MILLION } from './_consts.ts';
 import { logger } from './logger.ts';
@@ -11,9 +11,15 @@ const CODEX_MODEL_ALIASES_MAP = new Map<string, string>([
 	['gpt-5-codex', 'gpt-5'],
 ]);
 const CODEX_MODEL_PREFIXES = [
-	'gpt-4', 'gpt-4o', 'gpt-5', 'gpt-5-',
-	'chatgpt-4', 'chatgpt-4o',
-	'o1-', 'o3-', 'o4-',
+	'gpt-4',
+	'gpt-4o',
+	'gpt-5',
+	'gpt-5-',
+	'chatgpt-4',
+	'chatgpt-4o',
+	'o1-',
+	'o3-',
+	'o4-',
 ];
 
 function isCodexModel(modelName: string): boolean {

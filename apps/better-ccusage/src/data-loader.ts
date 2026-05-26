@@ -1141,9 +1141,7 @@ export async function loadSessionData(
 
 			// Find the latest timestamp for lastActivity
 			const latestEntry = entries.reduce((latest, current) =>
-				current.timestamp > latest.timestamp ? current : latest,
-				entries[0]!,
-			);
+				current.timestamp > latest.timestamp ? current : latest, entries[0]!);
 
 			// Collect all unique versions
 			const versions: string[] = [];
@@ -2936,10 +2934,10 @@ invalid json line
 
 			const fixture = await createFixture({
 				projects: {
-					'project1': {
+					project1: {
 						'session123.jsonl': JSON.stringify(mockData),
 					},
-					'project2': {
+					project2: {
 						'session456.jsonl': JSON.stringify(mockData),
 					},
 				},
