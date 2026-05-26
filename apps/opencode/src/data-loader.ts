@@ -1,7 +1,6 @@
 import type { ModelPricing } from '@better-ccusage/internal/pricing';
 import type { LoadedUsageEntry } from './cost-utils.ts';
 import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { PricingFetcher } from '@better-ccusage/internal/pricing';
@@ -12,8 +11,6 @@ import { glob } from 'tinyglobby';
 import * as v from 'valibot';
 import { calculateCostForEntry } from './cost-utils.ts';
 import { logger } from './logger.ts';
-
-const require = createRequire(import.meta.url);
 
 /**
  * Load pricing data from LiteLLM (with cache) falling back to local static JSON.

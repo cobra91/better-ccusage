@@ -168,6 +168,8 @@ export const dailyCommand = define({
 
 					// Add data rows for this project
 					for (const data of projectData) {
+						const hasMultipleModels = (data.modelsUsed?.length ?? 0) > 1;
+
 						const row = formatUsageDataRow(data.date, {
 							inputTokens: data.inputTokens,
 							outputTokens: data.outputTokens,
@@ -179,9 +181,8 @@ export const dailyCommand = define({
 						});
 						table.push(row);
 
-						// Add model breakdown rows if flag is set
-						if (mergedOptions.breakdown) {
-							pushBreakdownRows(table, data.modelBreakdowns);
+						if (hasMultipleModels || mergedOptions.breakdown) {
+							pushBreakdownRows(table, data.modelBreakdowns, 2, 0);
 						}
 					}
 
@@ -191,7 +192,8 @@ export const dailyCommand = define({
 			else {
 				// Standard display without project grouping
 				for (const data of dailyData) {
-					// Main row
+					const hasMultipleModels = (data.modelsUsed?.length ?? 0) > 1;
+
 					const row = formatUsageDataRow(data.date, {
 						inputTokens: data.inputTokens,
 						outputTokens: data.outputTokens,
@@ -203,9 +205,8 @@ export const dailyCommand = define({
 					});
 					table.push(row);
 
-					// Add model breakdown rows if flag is set
-					if (mergedOptions.breakdown) {
-						pushBreakdownRows(table, data.modelBreakdowns);
+					if (hasMultipleModels || mergedOptions.breakdown) {
+						pushBreakdownRows(table, data.modelBreakdowns, 2, 0);
 					}
 				}
 			}

@@ -151,8 +151,8 @@ export const sessionCommand = define({
 
 				// Add model breakdown rows if flag is set
 				if (ctx.values.breakdown) {
-					// Session has 1 extra column before data and 1 trailing column
-					pushBreakdownRows(table, data.modelBreakdowns, 1, 1);
+					// Session has 2 extra columns before data and 1 trailing column
+					pushBreakdownRows(table, data.modelBreakdowns, 2, 1);
 				}
 			}
 

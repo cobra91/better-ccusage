@@ -126,9 +126,11 @@ Always prefer indexed searches (tools with `_from_index` suffix) over reading en
 2. Delete all dist directories: `rm -rf apps/*/dist`
 3. Rebuild each app: `cd apps/<app> && pnpm tsdown`
 4. Copy pricing JSON to each app's dist:
+
    ```bash
    node -e "require('fs').copyFileSync('packages/internal/model_prices_and_context_window.json','apps/<app>/dist/model_prices_and_context_window.json')"
    ```
+
 5. Verify versions: `node apps/<app>/dist/index.js -v` (or `index.mjs` for opencode)
 6. Publish each: `cd apps/<app> && pnpm publish --no-git-checks --access public`
 

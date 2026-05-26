@@ -32,7 +32,6 @@
 		"skipLibCheck": true
 	},
 	"exclude": [
-		"dist",
-		"tsdown.config.ts"
+		"dist"
 	]
 }

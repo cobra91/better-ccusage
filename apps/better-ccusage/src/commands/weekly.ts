@@ -133,7 +133,7 @@ export const weeklyCommand = define({
 
 				// Add model breakdown rows if flag is set
 				if (mergedOptions.breakdown) {
-					pushBreakdownRows(table, data.modelBreakdowns);
+					pushBreakdownRows(table, data.modelBreakdowns, 2, 0);
 				}
 			}
 
