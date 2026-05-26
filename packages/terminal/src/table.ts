@@ -168,15 +168,14 @@ export class ResponsiveTable {
 		// Always use content-based widths with generous padding for numeric columns
 		const columnWidths = contentWidths.map((width, index) => {
 			const align = colAligns[index];
-			// For numeric columns, ensure generous width to prevent truncation
 			if (align === 'right') {
-				return Math.max(width + 3, 11); // At least 11 chars for numbers, +3 padding
+				return Math.max(width + 2, 12);
 			}
-			else if (index === 1) {
-				// Models column - can be longer
-				return Math.max(width + 2, 15);
+			else if (index === 2) {
+				// Models column - allow full content width
+				return Math.max(width + 2, 12);
 			}
-			return Math.max(width + 2, 10); // Other columns
+			return Math.max(width + 1, 8);
 		});
 
 		// Check if this fits in the terminal
@@ -189,15 +188,14 @@ export class ResponsiveTable {
 				const align = colAligns[index];
 				let adjustedWidth = Math.floor(width * scaleFactor);
 
-				// Apply minimum widths based on column type
 				if (align === 'right') {
-					adjustedWidth = Math.max(adjustedWidth, 10);
+					adjustedWidth = Math.max(adjustedWidth, 11);
 				}
 				else if (index === 0) {
 					adjustedWidth = Math.max(adjustedWidth, 10);
 				}
-				else if (index === 1) {
-					adjustedWidth = Math.max(adjustedWidth, 12);
+				else if (index === 2) {
+					adjustedWidth = Math.max(adjustedWidth, 10);
 				}
 				else {
 					adjustedWidth = Math.max(adjustedWidth, 8);
@@ -211,8 +209,7 @@ export class ResponsiveTable {
 				style: this.style,
 				colAligns,
 				colWidths: adjustedWidths,
-				wordWrap: true,
-				wrapOnWordBoundary: true,
+
 			});
 
 			// Add rows with special handling for separators and date formatting
@@ -248,8 +245,7 @@ export class ResponsiveTable {
 				style: this.style,
 				colAligns,
 				colWidths: columnWidths,
-				wordWrap: true,
-				wrapOnWordBoundary: true,
+
 			});
 
 			// Add rows with special handling for separators
@@ -330,6 +326,10 @@ function formatModelName(modelName: string): string {
 	if (match != null) {
 		return `${match[1]}-${match[2]}`;
 	}
+	// Truncate extremely long custom model names towards the end to keep the provider and model name visible
+	if (modelName.length > 25) {
+		return `${modelName.slice(0, 24)}…`;
+	}
 	// Return original if pattern doesn't match
 	return modelName;
 }
@@ -340,10 +340,16 @@ function formatModelName(modelName: string): string {
  * @param models - Array of model names
  * @returns Formatted string with unique, sorted model names separated by commas
  */
+const MAX_MODELS_DISPLAY_WIDTH = 38;
+
 export function formatModelsDisplay(models: string[]): string {
-	// Format array of models for display
-	const uniqueModels = uniq(models.map(formatModelName));
-	return uniqueModels.sort().join(', ');
+	const uniqueModels = uniq(models.map(formatModelName)).sort();
+	const formatted = uniqueModels.join(', ');
+	if (formatted.length <= MAX_MODELS_DISPLAY_WIDTH) {
+		return formatted;
+	}
+	// Truncate to fit one line; user can see full list via --breakdown or --json
+	return `${formatted.slice(0, MAX_MODELS_DISPLAY_WIDTH - 1)}…`;
 }
 
 /**
@@ -376,7 +382,7 @@ export function pushBreakdownRows(
 		cacheReadTokens: number;
 		cost: number;
 	}>,
-	extraColumns = 1,
+	extraColumns = 2,
 	trailingColumns = 0,
 ): void {
 	for (const breakdown of breakdowns) {
@@ -521,7 +527,7 @@ export function formatUsageDataRow(
 	const row: (string | number)[] = [
 		firstColumnValue,
 		data.source ?? 'claude', // Use source if provided, default to 'claude' only if null/undefined
-		data.modelsUsed != null ? formatModelsDisplayMultiline(data.modelsUsed) : '',
+		data.modelsUsed != null ? formatModelsDisplay(data.modelsUsed) : '',
 		formatNumber(data.inputTokens),
 		formatNumber(data.outputTokens),
 		formatNumber(data.cacheCreationTokens),
@@ -981,6 +987,11 @@ if (import.meta.vitest != null) {
 		it('handles models that do not match pattern with bullet points', () => {
 			const models = ['custom-model', 'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929'];
 			expect(formatModelsDisplayMultiline(models)).toBe('- custom-model\n- sonnet-4\n- sonnet-4-5');
+		});
+
+		it('truncates extremely long custom model names towards the end', () => {
+			const models = ['remote/unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ2'];
+			expect(formatModelsDisplayMultiline(models)).toBe('- remote/unsloth/Qwen3.6-3…');
 		});
 
 		it('formats Claude 4.5 models correctly', () => {
