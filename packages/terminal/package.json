@@ -1,6 +1,6 @@
 {
 	"name": "@better-ccusage/terminal",
-	"version": "1.4.1",
+	"version": "1.4.2",
 	"private": true,
 	"description": "Terminal utilities for better-ccusage",
 	"type": "module",
