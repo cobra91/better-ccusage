@@ -319,7 +319,14 @@ export class PricingFetcher implements Disposable {
 							n = last;
 						}
 					}
-					n = n.replace(/-(?:gguf|claude|opus|abliterated|uncenfull|uncensored|instruct|thinking).*$/, '');
+					if (n.startsWith('claude')) {
+						// For real Claude models, only strip non-standard local/quantization tags
+						n = n.replace(/-(?:gguf|abliterated|uncenfull|uncensored).*$/, '');
+					}
+					else {
+						// For non-Claude models (e.g. Qwen/Llama fine-tunes), strip vendor/quantization suffixes
+						n = n.replace(/-(?:gguf|claude|opus|abliterated|uncenfull|uncensored|instruct|thinking).*$/, '');
+					}
 					return n;
 				};
 
@@ -981,6 +988,21 @@ if (import.meta.vitest != null) {
 				expect(pricing?.input_cost_per_token).toBe(0.35e-6);
 				expect(pricing?.output_cost_per_token).toBe(1.4e-6);
 			}
+		});
+
+		it('preserves real model variant names when they are prefixed', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'claude-3-opus-20240229': {
+						input_cost_per_token: 15e-6,
+						output_cost_per_token: 75e-6,
+					},
+				}),
+			});
+
+			const pricing = await Result.unwrap(fetcher.getModelPricing('remote/claude-3-opus-20240229'));
+			expect(pricing).not.toBeNull();
+			expect(pricing?.input_cost_per_token).toBe(15e-6);
 		});
 	});
 }
