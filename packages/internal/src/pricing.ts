@@ -300,6 +300,83 @@ export class PricingFetcher implements Disposable {
 					return bestMatch;
 				}
 
+				// If no match is found, try normalizing custom model names (quantization, provider repo, local runs)
+				const normalizeModelName = (name: string): string => {
+					let n = name.toLowerCase();
+					const colonIdx = n.indexOf(':');
+					if (colonIdx !== -1) {
+						n = n.slice(0, colonIdx);
+					}
+					const parts = n.split('/');
+					if (parts.length > 1) {
+						const last = parts[parts.length - 1]!;
+						const cleanParts = parts.filter(p => p !== 'remote' && p !== 'unsloth');
+						if (cleanParts.length > 0) {
+							n = cleanParts[cleanParts.length - 1]!;
+						} else {
+							n = last;
+						}
+					}
+					n = n.replace(/-(?:gguf|claude|opus|abliterated|uncenfull|uncensored|instruct|thinking).*$/i, '');
+					return n;
+				};
+
+				const normalized = normalizeModelName(modelName);
+				if (normalized !== lower) {
+					// 1. Try matching candidates on normalized
+					for (const candidate of this.createMatchingCandidates(normalized)) {
+						const direct = pricing.get(candidate);
+						if (direct != null) {
+							return direct;
+						}
+					}
+
+					// 2. Try exact model name match on normalized
+					for (const [key, value] of pricing) {
+						const comparison = key.toLowerCase();
+						if (comparison === normalized || comparison.endsWith(`/${normalized}`)) {
+							return value;
+						}
+					}
+
+					// 3. Try fuzzy/partial match on normalized
+					let bestNormalizedMatch = null;
+					let bestNormalizedMatchScore = 0;
+
+					for (const [key, value] of pricing) {
+						const comparison = key.toLowerCase();
+						let score = 0;
+						if (comparison.includes(normalized)) {
+							if (comparison.includes(`${normalized}/`) || comparison.endsWith(`/${normalized}`)) {
+								score = 100;
+							}
+							else if (comparison.includes(normalized) && !comparison.includes('air')) {
+								if (comparison.startsWith('zai/')) {
+									score = 95;
+								}
+								else {
+									score = 90;
+								}
+							}
+							else if (comparison.includes(normalized)) {
+								score = 50;
+							}
+						}
+						else if (normalized.includes(comparison)) {
+							score = 10;
+						}
+
+						if (score > bestNormalizedMatchScore) {
+							bestNormalizedMatch = value;
+							bestNormalizedMatchScore = score;
+						}
+					}
+
+					if (bestNormalizedMatch !== null) {
+						return bestNormalizedMatch;
+					}
+				}
+
 				return null;
 			}),
 		);
@@ -925,6 +1002,31 @@ if (import.meta.vitest != null) {
 
 			const expectedCost = (50000 * 1e-6) + (10000 * 2e-6) + (5000 * 1e-7);
 			expect(cost).toBeCloseTo(expectedCost);
+		});
+
+		it('normalizes custom model names to match standard database models in getModelPricing', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'dashscope/qwen3.6-35b-a3b': {
+						input_cost_per_token: 0.35e-6,
+						output_cost_per_token: 1.4e-6,
+					},
+				}),
+			});
+
+			const customModels = [
+				'nutboy02/Qwen3.6-35B-A3B-Claude-4.7-Opus-abliterated-uncenfull:Q2_K_MTX',
+				'unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ2_M',
+				'remote/unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ2_M',
+				'remote/Qwen3.6-35B-A3B',
+			];
+
+			for (const model of customModels) {
+				const pricing = await Result.unwrap(fetcher.getModelPricing(model));
+				expect(pricing).not.toBeNull();
+				expect(pricing?.input_cost_per_token).toBe(0.35e-6);
+				expect(pricing?.output_cost_per_token).toBe(1.4e-6);
+			}
 		});
 	});
 }
