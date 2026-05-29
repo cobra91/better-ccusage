@@ -242,62 +242,63 @@ export class PricingFetcher implements Disposable {
 		return Result.pipe(
 			this.ensurePricingLoaded(),
 			Result.map((pricing) => {
-				for (const candidate of this.createMatchingCandidates(modelName)) {
-					const direct = pricing.get(candidate);
-					if (direct != null) {
-						return direct;
+				const findBestPricingMatch = (target: string): ModelPricing | null => {
+					// 1. Try direct matching candidates
+					for (const candidate of this.createMatchingCandidates(target)) {
+						const direct = pricing.get(candidate);
+						if (direct != null) {
+							return direct;
+						}
 					}
-				}
+
+					// 2. Try exact model name match
+					for (const [key, value] of pricing) {
+						const comparison = key.toLowerCase();
+						if (comparison === target || comparison.endsWith(`/${target}`)) {
+							return value;
+						}
+					}
+
+					// 3. Try partial fuzzy match
+					let bestMatch = null;
+					let bestMatchScore = 0;
+
+					for (const [key, value] of pricing) {
+						const comparison = key.toLowerCase();
+						let score = 0;
+						if (comparison.includes(target)) {
+							if (comparison.includes(`${target}/`) || comparison.endsWith(`/${target}`)) {
+								score = 100;
+							}
+							else if (comparison.includes(target) && !comparison.includes('air')) {
+								if (comparison.startsWith('zai/')) {
+									score = 95;
+								}
+								else {
+									score = 90;
+								}
+							}
+							else if (comparison.includes(target)) {
+								score = 50;
+							}
+						}
+						else if (target.includes(comparison)) {
+							score = 10;
+						}
+
+						if (score > bestMatchScore) {
+							bestMatch = value;
+							bestMatchScore = score;
+						}
+					}
+
+					return bestMatch;
+				};
 
 				const lower = modelName.toLowerCase();
-
-				// Try exact model name match first (highest priority)
-				for (const [key, value] of pricing) {
-					const comparison = key.toLowerCase();
-					if (comparison === lower || comparison.endsWith(`/${lower}`)) {
-						return value;
-					}
-				}
-
-				// Try partial match but prioritize models that contain the full model name
-				let bestMatch = null;
-				let bestMatchScore = 0;
-
-				for (const [key, value] of pricing) {
-					const comparison = key.toLowerCase();
-
-					// Score matches: exact substring gets higher score
-					let score = 0;
-					if (comparison.includes(lower)) {
-						// Higher score for exact model name without "air" suffix
-						if (comparison.includes(`${lower}/`) || comparison.endsWith(`/${lower}`)) {
-							score = 100; // Exact model name as provider/model
-						}
-						else if (comparison.includes(lower) && !comparison.includes('air')) {
-							// Extra priority for zai provider (main GLM models)
-							if (comparison.startsWith('zai/')) {
-								score = 95; // zai provider models get highest priority
-							}
-							else {
-								score = 90; // Contains model name, not air variant
-							}
-						}
-						else if (comparison.includes(lower)) {
-							score = 50; // Contains model name but might be air variant
-						}
-					}
-					else if (lower.includes(comparison)) {
-						score = 10; // Partial match
-					}
-
-					if (score > bestMatchScore) {
-						bestMatch = value;
-						bestMatchScore = score;
-					}
-				}
-
-				if (bestMatch !== null) {
-					return bestMatch;
+				const firstMatch = findBestPricingMatch(lower);
+				if (firstMatch !== null) {
+					return firstMatch;
 				}
 
 				// If no match is found, try normalizing custom model names (quantization, provider repo, local runs)
@@ -313,67 +314,20 @@ export class PricingFetcher implements Disposable {
 						const cleanParts = parts.filter(p => p !== 'remote' && p !== 'unsloth');
 						if (cleanParts.length > 0) {
 							n = cleanParts[cleanParts.length - 1]!;
-						} else {
+						}
+						else {
 							n = last;
 						}
 					}
-					n = n.replace(/-(?:gguf|claude|opus|abliterated|uncenfull|uncensored|instruct|thinking).*$/i, '');
+					n = n.replace(/-(?:gguf|claude|opus|abliterated|uncenfull|uncensored|instruct|thinking).*$/, '');
 					return n;
 				};
 
 				const normalized = normalizeModelName(modelName);
 				if (normalized !== lower) {
-					// 1. Try matching candidates on normalized
-					for (const candidate of this.createMatchingCandidates(normalized)) {
-						const direct = pricing.get(candidate);
-						if (direct != null) {
-							return direct;
-						}
-					}
-
-					// 2. Try exact model name match on normalized
-					for (const [key, value] of pricing) {
-						const comparison = key.toLowerCase();
-						if (comparison === normalized || comparison.endsWith(`/${normalized}`)) {
-							return value;
-						}
-					}
-
-					// 3. Try fuzzy/partial match on normalized
-					let bestNormalizedMatch = null;
-					let bestNormalizedMatchScore = 0;
-
-					for (const [key, value] of pricing) {
-						const comparison = key.toLowerCase();
-						let score = 0;
-						if (comparison.includes(normalized)) {
-							if (comparison.includes(`${normalized}/`) || comparison.endsWith(`/${normalized}`)) {
-								score = 100;
-							}
-							else if (comparison.includes(normalized) && !comparison.includes('air')) {
-								if (comparison.startsWith('zai/')) {
-									score = 95;
-								}
-								else {
-									score = 90;
-								}
-							}
-							else if (comparison.includes(normalized)) {
-								score = 50;
-							}
-						}
-						else if (normalized.includes(comparison)) {
-							score = 10;
-						}
-
-						if (score > bestNormalizedMatchScore) {
-							bestNormalizedMatch = value;
-							bestNormalizedMatchScore = score;
-						}
-					}
-
-					if (bestNormalizedMatch !== null) {
-						return bestNormalizedMatch;
+					const normalizedMatch = findBestPricingMatch(normalized);
+					if (normalizedMatch !== null) {
+						return normalizedMatch;
 					}
 				}
 
