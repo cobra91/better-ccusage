@@ -301,8 +301,8 @@ export class PricingFetcher implements Disposable {
 					return firstMatch;
 				}
 
-				// If no match is found, try normalizing custom model names (quantization, provider repo, local runs)
-				const normalizeModelName = (name: string): string => {
+				// If no match is found, try normalizing custom model names in two stages
+				const normalizeModelNameStage1 = (name: string): string => {
 					let n = name.toLowerCase();
 					const colonIdx = n.indexOf(':');
 					if (colonIdx !== -1) {
@@ -319,8 +319,24 @@ export class PricingFetcher implements Disposable {
 							n = last;
 						}
 					}
+					// Stage 1: Only strip non-standard quantization, local, and repo/fine-tune noise tags, preserving standard variants
+					n = n.replace(/-(?:gguf|awq|gptq|abliterated|uncenfull|uncensored|f16|fp16|bf16|q\d).*$/, '');
+					return n;
+				};
+
+				const normalized1 = normalizeModelNameStage1(modelName);
+				if (normalized1 !== lower) {
+					const match1 = findBestPricingMatch(normalized1);
+					if (match1 !== null) {
+						return match1;
+					}
+				}
+
+				// Stage 2: If Stage 1 didn't match, try a more aggressive normalization stripping variant tags
+				const normalizeModelNameStage2 = (name1: string): string => {
+					let n = name1;
 					if (n.startsWith('claude')) {
-						// For real Claude models, only strip non-standard local/quantization tags
+						// For real Claude models, only strip non-standard local/quantization tags (already done in Stage 1, but keep safety check)
 						n = n.replace(/-(?:gguf|abliterated|uncenfull|uncensored).*$/, '');
 					}
 					else {
@@ -330,11 +346,11 @@ export class PricingFetcher implements Disposable {
 					return n;
 				};
 
-				const normalized = normalizeModelName(modelName);
-				if (normalized !== lower) {
-					const normalizedMatch = findBestPricingMatch(normalized);
-					if (normalizedMatch !== null) {
-						return normalizedMatch;
+				const normalized2 = normalizeModelNameStage2(normalized1);
+				if (normalized2 !== normalized1) {
+					const match2 = findBestPricingMatch(normalized2);
+					if (match2 !== null) {
+						return match2;
 					}
 				}
 
@@ -1003,6 +1019,29 @@ if (import.meta.vitest != null) {
 			const pricing = await Result.unwrap(fetcher.getModelPricing('remote/claude-3-opus-20240229'));
 			expect(pricing).not.toBeNull();
 			expect(pricing?.input_cost_per_token).toBe(15e-6);
+		});
+
+		it('preserves real variant names like -thinking and -instruct for non-Claude models if they match in the DB', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'moonshot/kimi-k2-thinking': {
+						input_cost_per_token: 1.2e-5,
+						output_cost_per_token: 1.2e-5,
+					},
+					'groq/moonshotai/kimi-k2-instruct': {
+						input_cost_per_token: 1.5e-5,
+						output_cost_per_token: 1.5e-5,
+					},
+				}),
+			});
+
+			const pricingThinking = await Result.unwrap(fetcher.getModelPricing('my-custom-provider/kimi-k2-thinking'));
+			expect(pricingThinking).not.toBeNull();
+			expect(pricingThinking?.input_cost_per_token).toBe(1.2e-5);
+
+			const pricingInstruct = await Result.unwrap(fetcher.getModelPricing('my-custom-provider/kimi-k2-instruct-gguf'));
+			expect(pricingInstruct).not.toBeNull();
+			expect(pricingInstruct?.input_cost_per_token).toBe(1.5e-5);
 		});
 	});
 }
