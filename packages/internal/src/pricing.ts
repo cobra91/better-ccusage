@@ -242,62 +242,116 @@ export class PricingFetcher implements Disposable {
 		return Result.pipe(
 			this.ensurePricingLoaded(),
 			Result.map((pricing) => {
-				for (const candidate of this.createMatchingCandidates(modelName)) {
-					const direct = pricing.get(candidate);
-					if (direct != null) {
-						return direct;
+				const findBestPricingMatch = (target: string): ModelPricing | null => {
+					// 1. Try direct matching candidates
+					for (const candidate of this.createMatchingCandidates(target)) {
+						const direct = pricing.get(candidate);
+						if (direct != null) {
+							return direct;
+						}
 					}
-				}
+
+					// 2. Try exact model name match
+					for (const [key, value] of pricing) {
+						const comparison = key.toLowerCase();
+						if (comparison === target || comparison.endsWith(`/${target}`)) {
+							return value;
+						}
+					}
+
+					// 3. Try partial fuzzy match
+					let bestMatch = null;
+					let bestMatchScore = 0;
+
+					for (const [key, value] of pricing) {
+						const comparison = key.toLowerCase();
+						let score = 0;
+						if (comparison.includes(target)) {
+							if (comparison.includes(`${target}/`) || comparison.endsWith(`/${target}`)) {
+								score = 100;
+							}
+							else if (comparison.includes(target) && !comparison.includes('air')) {
+								if (comparison.startsWith('zai/')) {
+									score = 95;
+								}
+								else {
+									score = 90;
+								}
+							}
+							else if (comparison.includes(target)) {
+								score = 50;
+							}
+						}
+						else if (target.includes(comparison)) {
+							score = 10;
+						}
+
+						if (score > bestMatchScore) {
+							bestMatch = value;
+							bestMatchScore = score;
+						}
+					}
+
+					return bestMatch;
+				};
 
 				const lower = modelName.toLowerCase();
+				const firstMatch = findBestPricingMatch(lower);
+				if (firstMatch !== null) {
+					return firstMatch;
+				}
 
-				// Try exact model name match first (highest priority)
-				for (const [key, value] of pricing) {
-					const comparison = key.toLowerCase();
-					if (comparison === lower || comparison.endsWith(`/${lower}`)) {
-						return value;
+				// If no match is found, try normalizing custom model names in two stages
+				const normalizeModelNameStage1 = (name: string): string => {
+					let n = name.toLowerCase();
+					const colonIdx = n.indexOf(':');
+					if (colonIdx !== -1) {
+						n = n.slice(0, colonIdx);
+					}
+					const parts = n.split('/');
+					if (parts.length > 1) {
+						const last = parts[parts.length - 1]!;
+						const cleanParts = parts.filter(p => p !== 'remote' && p !== 'unsloth');
+						if (cleanParts.length > 0) {
+							n = cleanParts[cleanParts.length - 1]!;
+						}
+						else {
+							n = last;
+						}
+					}
+					// Stage 1: Only strip non-standard quantization, local, and repo/fine-tune noise tags, preserving standard variants
+					n = n.replace(/-(?:gguf|awq|gptq|abliterated|uncenfull|uncensored|f16|fp16|bf16|q\d).*$/, '');
+					return n;
+				};
+
+				const normalized1 = normalizeModelNameStage1(modelName);
+				if (normalized1 !== lower) {
+					const match1 = findBestPricingMatch(normalized1);
+					if (match1 !== null) {
+						return match1;
 					}
 				}
 
-				// Try partial match but prioritize models that contain the full model name
-				let bestMatch = null;
-				let bestMatchScore = 0;
-
-				for (const [key, value] of pricing) {
-					const comparison = key.toLowerCase();
-
-					// Score matches: exact substring gets higher score
-					let score = 0;
-					if (comparison.includes(lower)) {
-						// Higher score for exact model name without "air" suffix
-						if (comparison.includes(`${lower}/`) || comparison.endsWith(`/${lower}`)) {
-							score = 100; // Exact model name as provider/model
-						}
-						else if (comparison.includes(lower) && !comparison.includes('air')) {
-							// Extra priority for zai provider (main GLM models)
-							if (comparison.startsWith('zai/')) {
-								score = 95; // zai provider models get highest priority
-							}
-							else {
-								score = 90; // Contains model name, not air variant
-							}
-						}
-						else if (comparison.includes(lower)) {
-							score = 50; // Contains model name but might be air variant
-						}
+				// Stage 2: If Stage 1 didn't match, try a more aggressive normalization stripping variant tags
+				const normalizeModelNameStage2 = (name1: string): string => {
+					let n = name1;
+					if (n.startsWith('claude')) {
+						// For real Claude models, only strip non-standard local/quantization tags (already done in Stage 1, but keep safety check)
+						n = n.replace(/-(?:gguf|abliterated|uncenfull|uncensored).*$/, '');
 					}
-					else if (lower.includes(comparison)) {
-						score = 10; // Partial match
+					else {
+						// For non-Claude models (e.g. Qwen/Llama fine-tunes), strip vendor/quantization suffixes
+						n = n.replace(/-(?:gguf|claude|opus|abliterated|uncenfull|uncensored|instruct|thinking).*$/, '');
 					}
+					return n;
+				};
 
-					if (score > bestMatchScore) {
-						bestMatch = value;
-						bestMatchScore = score;
+				const normalized2 = normalizeModelNameStage2(normalized1);
+				if (normalized2 !== normalized1) {
+					const match2 = findBestPricingMatch(normalized2);
+					if (match2 !== null) {
+						return match2;
 					}
-				}
-
-				if (bestMatch !== null) {
-					return bestMatch;
 				}
 
 				return null;
@@ -925,6 +979,69 @@ if (import.meta.vitest != null) {
 
 			const expectedCost = (50000 * 1e-6) + (10000 * 2e-6) + (5000 * 1e-7);
 			expect(cost).toBeCloseTo(expectedCost);
+		});
+
+		it('normalizes custom model names to match standard database models in getModelPricing', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'dashscope/qwen3.6-35b-a3b': {
+						input_cost_per_token: 0.35e-6,
+						output_cost_per_token: 1.4e-6,
+					},
+				}),
+			});
+
+			const customModels = [
+				'nutboy02/Qwen3.6-35B-A3B-Claude-4.7-Opus-abliterated-uncenfull:Q2_K_MTX',
+				'unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ2_M',
+				'remote/unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ2_M',
+				'remote/Qwen3.6-35B-A3B',
+			];
+
+			for (const model of customModels) {
+				const pricing = await Result.unwrap(fetcher.getModelPricing(model));
+				expect(pricing).not.toBeNull();
+				expect(pricing?.input_cost_per_token).toBe(0.35e-6);
+				expect(pricing?.output_cost_per_token).toBe(1.4e-6);
+			}
+		});
+
+		it('preserves real model variant names when they are prefixed', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'claude-3-opus-20240229': {
+						input_cost_per_token: 15e-6,
+						output_cost_per_token: 75e-6,
+					},
+				}),
+			});
+
+			const pricing = await Result.unwrap(fetcher.getModelPricing('remote/claude-3-opus-20240229'));
+			expect(pricing).not.toBeNull();
+			expect(pricing?.input_cost_per_token).toBe(15e-6);
+		});
+
+		it('preserves real variant names like -thinking and -instruct for non-Claude models if they match in the DB', async () => {
+			using fetcher = new PricingFetcher({
+				offlineLoader: async () => ({
+					'moonshot/kimi-k2-thinking': {
+						input_cost_per_token: 1.2e-5,
+						output_cost_per_token: 1.2e-5,
+					},
+					'groq/moonshotai/kimi-k2-instruct': {
+						input_cost_per_token: 1.5e-5,
+						output_cost_per_token: 1.5e-5,
+					},
+				}),
+			});
+
+			const pricingThinking = await Result.unwrap(fetcher.getModelPricing('my-custom-provider/kimi-k2-thinking'));
+			expect(pricingThinking).not.toBeNull();
+			expect(pricingThinking?.input_cost_per_token).toBe(1.2e-5);
+
+			const pricingInstruct = await Result.unwrap(fetcher.getModelPricing('my-custom-provider/kimi-k2-instruct-gguf'));
+			expect(pricingInstruct).not.toBeNull();
+			expect(pricingInstruct?.input_cost_per_token).toBe(1.5e-5);
 		});
 	});
 }

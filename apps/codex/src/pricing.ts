@@ -89,7 +89,12 @@ export class CodexPricingSource implements PricingSource, Disposable {
 		}
 
 		if (pricing == null) {
-			throw new Error(`Pricing not found for model ${model}`);
+			logger.warn(`Pricing not found for model ${model}, defaulting to 0`);
+			return {
+				inputCostPerMToken: 0,
+				cachedInputCostPerMToken: 0,
+				outputCostPerMToken: 0,
+			};
 		}
 
 		return {
@@ -117,6 +122,17 @@ if (import.meta.vitest != null) {
 			expect(pricing.inputCostPerMToken).toBeCloseTo(1.25);
 			expect(pricing.outputCostPerMToken).toBeCloseTo(10);
 			expect(pricing.cachedInputCostPerMToken).toBeCloseTo(0.125);
+		});
+
+		it('returns zero costs when model pricing is not found', async () => {
+			using source = new CodexPricingSource({
+				offlineLoader: async () => ({}),
+			});
+
+			const pricing = await source.getPricing('unknown-model');
+			expect(pricing.inputCostPerMToken).toBe(0);
+			expect(pricing.outputCostPerMToken).toBe(0);
+			expect(pricing.cachedInputCostPerMToken).toBe(0);
 		});
 	});
 }

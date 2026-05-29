@@ -229,6 +229,10 @@ export function getDroidPath(): string {
 		return path.resolve(envPath);
 	}
 
+	if (process.env.VITEST != null) {
+		return '';
+	}
+
 	const defaultPath = path.join(USER_HOME_DIR, DEFAULT_DROID_SESSIONS_PATH);
 
 	// Return default path even if it doesn't exist (will be handled by caller)
