@@ -155,7 +155,15 @@ export class ResponsiveTable {
 
 		const contentWidths = head.map((_, colIndex) => {
 			const maxLength = Math.max(
-				...allRows.map(row => stringWidth(String(row[colIndex] ?? ''))),
+				...allRows.map((row) => {
+					const cell = String(row[colIndex] ?? '');
+					// Multi-line cells (e.g. stacked sources/models) must be measured
+					// per line: stringWidth counts '\n' as zero-width and would
+					// otherwise report the concatenated width of all lines, which is
+					// wider than any single rendered line and starves other columns.
+					const lines = cell.split('\n');
+					return Math.max(...lines.map(line => stringWidth(line)));
+				}),
 			);
 			return maxLength;
 		});
@@ -165,7 +173,10 @@ export class ResponsiveTable {
 		const tableOverhead = 3 * numColumns + 1; // borders and separators
 		const availableWidth = terminalWidth - tableOverhead;
 
-		// Always use content-based widths with generous padding for numeric columns
+		// Always use content-based widths with generous padding for numeric columns.
+		// cli-table3 reserves 1 char of internal padding on each side of a cell,
+		// so colWidth must be content + 2 to render the full value (otherwise
+		// e.g. '2026-06' at width 8 becomes '2026-…').
 		const columnWidths = contentWidths.map((width, index) => {
 			const align = colAligns[index];
 			if (align === 'right') {
@@ -175,7 +186,11 @@ export class ResponsiveTable {
 				// Models column - allow full content width
 				return Math.max(width + 2, 12);
 			}
-			return Math.max(width + 1, 8);
+			else if (index === 0) {
+				// First column (Date/Month) - needs room for the value + padding
+				return Math.max(width + 2, 8);
+			}
+			return Math.max(width + 2, 8);
 		});
 
 		// Check if this fits in the terminal
