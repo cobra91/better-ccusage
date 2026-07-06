@@ -70,6 +70,26 @@ export CLAUDE_CONFIG_DIR="/ci-data/claude-logs"
 better-ccusage daily --json > usage-report.json
 ```
 
+## ZCODE_HOME
+
+Specifies the ZCode home directory where better-ccusage should look for the usage SQLite database (`cli/db/db.sqlite`).
+
+```bash
+export ZCODE_HOME="/path/to/your/zcode/home"
+better-ccusage daily
+```
+
+When `ZCODE_HOME` is not set, better-ccusage automatically looks in:
+
+- **Linux/macOS**: `~/.zcode/cli/db/db.sqlite`
+- **Windows**: `C:\Users\<user>\.zcode\cli\db\db.sqlite`
+
+ZCode (the official GLM coding tool) records every model request in this database, so better-ccusage reads it directly — no manual export needed. The database is opened **read-only**, so it never interferes with a running ZCode process.
+
+::: tip Node.js requirement
+Reading the ZCode database requires Node.js `>=22.13.0` (when the built-in `node:sqlite` module stopped requiring the `--experimental-sqlite` flag). On older Node versions or alternative runtimes (e.g. Bun), ZCode data is silently skipped and Claude/Droid usage continues to work normally.
+:::
+
 ## LOG_LEVEL
 
 Controls the verbosity of log output. better-ccusage uses [consola](https://github.com/unjs/consola) for logging under the hood.

@@ -75,6 +75,23 @@ export const DROID_SESSIONS_DIR_ENV = 'DROID_SESSIONS_DIR';
 export const DEFAULT_DROID_SESSIONS_PATH = `.factory/sessions`;
 
 /**
+ * Environment variable for overriding the ZCode home directory.
+ * When set, the usage database is resolved relative to it.
+ */
+export const ZCODE_HOME_ENV = 'ZCODE_HOME';
+
+/**
+ * Default ZCode home directory: `~/.zcode` (Windows: `C:\Users\<user>\.zcode`).
+ */
+export const DEFAULT_ZCODE_HOME_PATH = '.zcode';
+
+/**
+ * Subpath of the SQLite database that stores ZCode model usage, relative to
+ * the ZCode home directory.
+ */
+export const DEFAULT_ZCODE_DB_SUBPATH = path.join('cli', 'db', 'db.sqlite');
+
+/**
  * Claude projects directory name within the data directory
  * Contains subdirectories for each project with usage data
  */

@@ -155,7 +155,15 @@ export class ResponsiveTable {
 
 		const contentWidths = head.map((_, colIndex) => {
 			const maxLength = Math.max(
-				...allRows.map(row => stringWidth(String(row[colIndex] ?? ''))),
+				...allRows.map((row) => {
+					const cell = String(row[colIndex] ?? '');
+					// Multi-line cells (e.g. stacked sources/models) must be measured
+					// per line: stringWidth counts '\n' as zero-width and would
+					// otherwise report the concatenated width of all lines, which is
+					// wider than any single rendered line and starves other columns.
+					const lines = cell.split('\n');
+					return Math.max(...lines.map(line => stringWidth(line)));
+				}),
 			);
 			return maxLength;
 		});
@@ -165,7 +173,10 @@ export class ResponsiveTable {
 		const tableOverhead = 3 * numColumns + 1; // borders and separators
 		const availableWidth = terminalWidth - tableOverhead;
 
-		// Always use content-based widths with generous padding for numeric columns
+		// Always use content-based widths with generous padding for numeric columns.
+		// cli-table3 reserves 1 char of internal padding on each side of a cell,
+		// so colWidth must be content + 2 to render the full value (otherwise
+		// e.g. '2026-06' at width 8 becomes '2026-…').
 		const columnWidths = contentWidths.map((width, index) => {
 			const align = colAligns[index];
 			if (align === 'right') {
@@ -175,7 +186,11 @@ export class ResponsiveTable {
 				// Models column - allow full content width
 				return Math.max(width + 2, 12);
 			}
-			return Math.max(width + 1, 8);
+			else if (index === 0) {
+				// First column (Date/Month) - needs room for the value + padding
+				return Math.max(width + 2, 8);
+			}
+			return Math.max(width + 2, 8);
 		});
 
 		// Check if this fits in the terminal
@@ -365,6 +380,24 @@ export function formatModelsDisplayMultiline(models: string[]): string {
 }
 
 /**
+ * Formats a (possibly combined) source label for multi-line display.
+ *
+ * Combined sources are joined with '/' in a canonical order (e.g.
+ * 'claude/droid/zcode'). On narrow terminals this gets truncated, so we split
+ * it across lines — one source per line — mirroring the way the Models column
+ * stacks entries. A single source is returned unchanged.
+ *
+ * @param source - The source label, e.g. 'claude', 'claude/zcode'
+ * @returns The label with each source on its own line, or the original string
+ */
+export function formatSourceMultiline(source: string): string {
+	if (!source.includes('/')) {
+		return source;
+	}
+	return source.split('/').join('\n');
+}
+
+/**
  * Pushes model breakdown rows to a table
  * @param table - The table to push rows to
  * @param table.push - Method to add rows to the table
@@ -526,7 +559,7 @@ export function formatUsageDataRow(
 
 	const row: (string | number)[] = [
 		firstColumnValue,
-		data.source ?? 'claude', // Use source if provided, default to 'claude' only if null/undefined
+		formatSourceMultiline(data.source ?? 'claude'), // Split combined sources across lines for readability
 		data.modelsUsed != null ? formatModelsDisplay(data.modelsUsed) : '',
 		formatNumber(data.inputTokens),
 		formatNumber(data.outputTokens),
@@ -1001,6 +1034,23 @@ if (import.meta.vitest != null) {
 		it('formats mixed model versions', () => {
 			const models = ['claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929', 'claude-opus-4-1-20250805'];
 			expect(formatModelsDisplayMultiline(models)).toBe('- opus-4-1\n- sonnet-4\n- sonnet-4-5');
+		});
+	});
+
+	describe('formatSourceMultiline', () => {
+		it('returns a single source unchanged', () => {
+			expect(formatSourceMultiline('claude')).toBe('claude');
+			expect(formatSourceMultiline('droid')).toBe('droid');
+			expect(formatSourceMultiline('zcode')).toBe('zcode');
+		});
+
+		it('splits a two-source combination across lines', () => {
+			expect(formatSourceMultiline('claude/droid')).toBe('claude\ndroid');
+			expect(formatSourceMultiline('claude/zcode')).toBe('claude\nzcode');
+		});
+
+		it('splits a three-source combination across lines', () => {
+			expect(formatSourceMultiline('claude/droid/zcode')).toBe('claude\ndroid\nzcode');
 		});
 	});
 }

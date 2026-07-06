@@ -69,6 +69,7 @@ import {
 import { unreachable } from './_utils.ts';
 import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
 import { logger } from './logger.ts';
+import { getZcodeDbPath, processZcodeSessions } from './zcode-adapter.ts';
 
 /**
  * Get Claude data directories to search for usage data
@@ -558,6 +559,34 @@ export function createUniqueHash(data: UsageData): string | null {
 }
 
 /**
+ * Build a combined source label from the set of tool sources present in a group.
+ *
+ * Sources are joined with '/' in a stable canonical order (claude, droid, zcode)
+ * so grouped rows surface every contributing tool. Inputs may already be
+ * combined labels (e.g. `claude/droid` from a daily rollup); those are split
+ * first so the canonical ordering is preserved. An empty set defaults to
+ * 'claude' for backward compatibility with Claude-only data.
+ */
+const SOURCE_ORDER = ['claude', 'droid', 'zcode'] as const;
+
+function combineSources(sources: Set<string | undefined>): string {
+	const atoms = new Set<string>();
+	for (const source of sources) {
+		if (source == null) {
+			continue;
+		}
+		for (const part of source.split('/')) {
+			atoms.add(part);
+		}
+	}
+	const present = SOURCE_ORDER.filter(ordered => atoms.has(ordered));
+	if (present.length === 0) {
+		return createSource('claude');
+	}
+	return createSource(present.join('/'));
+}
+
+/**
  * Extract the earliest timestamp from a JSONL file
  * Scans through the file until it finds a valid timestamp
  */
@@ -783,7 +812,23 @@ export async function loadDailyUsageData(
 		}
 	}
 
-	if (fileList.length === 0 && droidEntries.length === 0) {
+	// Also load zcode usage from its SQLite database if available
+	const zcodeDbPath = getZcodeDbPath();
+	logger.debug(`ZCode database path: ${zcodeDbPath}`);
+	let zcodeEntries: UsageData[] = [];
+	if (zcodeDbPath === '') {
+		logger.debug('ZCode database path is empty');
+	}
+	else {
+		try {
+			zcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load zcode sessions: ${String(error)}`);
+		}
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0) {
 		return [];
 	}
 
@@ -891,6 +936,31 @@ export async function loadDailyUsageData(
 		});
 	}
 
+	// Add zcode entries to the collection
+	for (const zcodeData of zcodeEntries) {
+		zcodeData.source ??= createSource('zcode');
+
+		// Check for duplicate message + request ID combination
+		const uniqueHash = createUniqueHash(zcodeData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(zcodeData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? zcodeData.costUSD ?? 0
+			: await calculateCostForEntry(zcodeData, mode, fetcher);
+
+		allEntries.push({
+			data: zcodeData,
+			date,
+			cost,
+			model: zcodeData.message.model,
+			project: zcodeData.cwd ?? path.join('zcode', 'unknown'),
+		});
+	}
+
 	// Group by date, optionally including project
 	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
@@ -913,25 +983,11 @@ export async function loadDailyUsageData(
 			const date = parts[0] ?? groupKey;
 			const project = parts.length > 1 ? parts[1] : undefined;
 
-			// Determine combined source from all entries in this group
+			// Determine combined source from all entries in this group.
+			// Sources are joined with '/' in a stable order (claude, droid, zcode)
+			// so grouped rows surface every contributing tool.
 			const sources = new Set(entries.map(entry => entry.data.source).filter(Boolean));
-			const claudeSource = createSource('claude');
-			const droidSource = createSource('droid');
-			const claudeDroidSource = createSource('claude/droid');
-			let combinedSource: string;
-			// If no valid sources found, default to 'claude'
-			if (sources.size === 0) {
-				combinedSource = claudeSource;
-			}
-			else if (sources.has(claudeSource) && sources.has(droidSource)) {
-				combinedSource = claudeDroidSource;
-			}
-			else if (sources.has(droidSource)) {
-				combinedSource = droidSource;
-			}
-			else {
-				combinedSource = claudeSource;
-			}
+			const combinedSource = combineSources(sources);
 
 			// Aggregate by model first
 			const modelAggregates = aggregateByModel(
@@ -1007,7 +1063,23 @@ export async function loadSessionData(
 		}
 	}
 
-	if (filesWithBase.length === 0 && droidEntries.length === 0) {
+	// Also load zcode usage from its SQLite database if available
+	const zcodeDbPath = getZcodeDbPath();
+	logger.debug(`ZCode database path: ${zcodeDbPath}`);
+	let zcodeEntries: UsageData[] = [];
+	if (zcodeDbPath === '') {
+		logger.debug('ZCode database path is empty');
+	}
+	else {
+		try {
+			zcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load zcode sessions: ${String(error)}`);
+		}
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0) {
 		return [];
 	}
 
@@ -1123,6 +1195,26 @@ export async function loadSessionData(
 			cost,
 			timestamp: droidData.timestamp,
 			model: droidData.message.model,
+		});
+	}
+
+	// Add zcode entries to the collection
+	for (const zcodeData of zcodeEntries) {
+		zcodeData.source ??= createSource('zcode');
+
+		const sessionKey = path.join('zcode', zcodeData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? zcodeData.costUSD ?? 0
+			: await calculateCostForEntry(zcodeData, mode, fetcher);
+
+		allEntries.push({
+			data: zcodeData,
+			sessionKey,
+			sessionId: zcodeData.sessionId ?? 'unknown-session',
+			projectPath: zcodeData.cwd ?? path.join('zcode', 'unknown'),
+			cost,
+			timestamp: zcodeData.timestamp,
+			model: zcodeData.message.model,
 		});
 	}
 
@@ -1359,26 +1451,11 @@ export async function loadBucketUsageData(
 			}
 		}
 
-		// Determine combined source from all daily entries in this group
+		// Determine combined source from all daily entries in this group.
+		// Daily entries may already carry combined labels (e.g. 'claude/droid');
+		// combineSources splits and re-canonicalizes them.
 		const sources = new Set(dailyEntries.map(entry => entry.source).filter(Boolean));
-		const claudeSource = createSource('claude');
-		const droidSource = createSource('droid');
-		const claudeDroidSource = createSource('claude/droid');
-		let combinedSource: string;
-		// If no valid sources found, default to 'claude'
-		if (sources.size === 0) {
-			combinedSource = claudeSource;
-		}
-		// Check for mixed sources including combined sources
-		else if (sources.has(claudeDroidSource) || (sources.has(claudeSource) && sources.has(droidSource))) {
-			combinedSource = claudeDroidSource;
-		}
-		else if (sources.has(droidSource)) {
-			combinedSource = droidSource;
-		}
-		else {
-			combinedSource = claudeSource;
-		}
+		const combinedSource = combineSources(sources);
 
 		// Calculate totals from daily entries
 		let totalInputTokens = 0;
@@ -1650,8 +1727,39 @@ export async function loadSessionBlockData(
 		}
 	}
 
-	// Combine Claude and droid entries
-	const combinedEntries = [...allEntries, ...droidEntries];
+	// Also load zcode usage from its SQLite database if available
+	const zcodeDbPath = getZcodeDbPath();
+	logger.debug(`ZCode database path for blocks: ${zcodeDbPath}`);
+	let zcodeEntries: LoadedUsageEntry[] = [];
+	if (zcodeDbPath === '') {
+		logger.debug('ZCode database path for blocks is empty');
+	}
+	else {
+		try {
+			const rawZcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+			// Convert zcode entries to LoadedUsageEntry format with Date timestamps
+			zcodeEntries = rawZcodeEntries.map((entry): LoadedUsageEntry => ({
+				timestamp: new Date(entry.timestamp),
+				usage: {
+					inputTokens: entry.message.usage.input_tokens,
+					outputTokens: entry.message.usage.output_tokens,
+					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+				},
+				costUSD: entry.costUSD ?? 0,
+				model: entry.message.model ?? 'unknown',
+				version: entry.version ?? undefined,
+				usageLimitResetTime: undefined,
+				source: entry.source ?? 'zcode',
+			}));
+		}
+		catch (error) {
+			logger.warn(`Failed to load zcode sessions for blocks: ${String(error)}`);
+		}
+	}
+
+	// Combine Claude, droid, and zcode entries
+	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries];
 
 	// Identify session blocks
 	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);

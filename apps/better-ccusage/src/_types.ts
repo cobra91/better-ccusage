@@ -80,7 +80,15 @@ export const projectPathSchema = v.pipe(
 
 export const sourceSchema = v.pipe(
 	v.string(),
-	v.picklist(['claude/droid', 'claude', 'droid']),
+	v.picklist([
+		'claude/droid/zcode',
+		'claude/droid',
+		'claude/zcode',
+		'droid/zcode',
+		'claude',
+		'droid',
+		'zcode',
+	]),
 	v.brand('Source'),
 );
 
