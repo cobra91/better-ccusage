@@ -6396,7 +6396,7 @@ snapshots:
 
   '@vue/compiler-core@3.5.25':
     dependencies:
-      '@babel/parser': 7.28.5
+      '@babel/parser': 7.29.2
       '@vue/shared': 3.5.25
       entities: 4.5.0
       estree-walker: 2.0.2
@@ -6576,7 +6576,7 @@ snapshots:
 
   ast-kit@2.2.0:
     dependencies:
-      '@babel/parser': 7.28.5
+      '@babel/parser': 7.29.2
       pathe: 2.0.3
 
   bail@2.0.2: {}
@@ -8528,7 +8528,7 @@ snapshots:
   rolldown-plugin-dts@0.18.4(@typescript/native-preview@7.0.0-dev.20251201.1)(rolldown@1.0.0-beta.52(@emnapi/core@1.9.2)(@emnapi/runtime@1.7.1))(typescript@5.9.3):
     dependencies:
       '@babel/generator': 7.29.1
-      '@babel/parser': 7.28.5
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       ast-kit: 2.2.0
       birpc: 4.0.0
