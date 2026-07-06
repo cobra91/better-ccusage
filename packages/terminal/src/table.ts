@@ -365,6 +365,24 @@ export function formatModelsDisplayMultiline(models: string[]): string {
 }
 
 /**
+ * Formats a (possibly combined) source label for multi-line display.
+ *
+ * Combined sources are joined with '/' in a canonical order (e.g.
+ * 'claude/droid/zcode'). On narrow terminals this gets truncated, so we split
+ * it across lines — one source per line — mirroring the way the Models column
+ * stacks entries. A single source is returned unchanged.
+ *
+ * @param source - The source label, e.g. 'claude', 'claude/zcode'
+ * @returns The label with each source on its own line, or the original string
+ */
+export function formatSourceMultiline(source: string): string {
+	if (!source.includes('/')) {
+		return source;
+	}
+	return source.split('/').join('\n');
+}
+
+/**
  * Pushes model breakdown rows to a table
  * @param table - The table to push rows to
  * @param table.push - Method to add rows to the table
@@ -526,7 +544,7 @@ export function formatUsageDataRow(
 
 	const row: (string | number)[] = [
 		firstColumnValue,
-		data.source ?? 'claude', // Use source if provided, default to 'claude' only if null/undefined
+		formatSourceMultiline(data.source ?? 'claude'), // Split combined sources across lines for readability
 		data.modelsUsed != null ? formatModelsDisplay(data.modelsUsed) : '',
 		formatNumber(data.inputTokens),
 		formatNumber(data.outputTokens),
