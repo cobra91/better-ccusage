@@ -2,7 +2,7 @@
 
 ![better-ccusage daily report showing token usage and costs by date](/screenshot.png)
 
-**better-ccusage** (better-claude-code-usage) is a powerful CLI tool that analyzes your Claude Code/Droid Usage from local JSONL files to help you understand your token consumption patterns and estimated costs with multi-provider support.
+**better-ccusage** (better-claude-code-usage) is a powerful CLI tool that analyzes your Claude Code/Droid/ZCode Usage from local files to help you understand your token consumption patterns and estimated costs with multi-provider support.
 
 ## The Problem
 
@@ -106,7 +106,7 @@ better-ccusage extends the original ccusage functionality with support for multi
 
 ## Why better-ccusage?
 
-better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid with different providers like Zai, Dashscope and many models like GLM-xx, kat-coder, kimi, MiniMax etc.
+better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid/ZCode with different providers like Zai, Dashscope and many models like GLM-xx (including GLM-5.2), kat-coder, kimi, MiniMax etc.
 
 The original ccusage project doesn't account for:
 
@@ -145,4 +145,4 @@ The tool automatically detects and aggregates data from both locations for compa
 
 ## Getting Started
 
-Ready to analyze your Claude Code/Droid Usage? Check out our [Getting Started Guide](/guide/getting-started) to begin exploring your data!
+Ready to analyze your Claude Code/Droid/ZCode Usage? Check out our [Getting Started Guide](/guide/getting-started) to begin exploring your data!

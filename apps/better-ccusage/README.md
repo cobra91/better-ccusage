@@ -17,7 +17,7 @@
     <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/screenshot.png">
 </div>
 
-> Analyze your Claude Code or Droid token usage and costs from local JSONL files with multi-provider support — incredibly fast and informative!
+> Analyze your Claude Code, Droid, or ZCode token usage and costs from local JSONL/SQLite files with multi-provider support — incredibly fast and informative!
 
 ## About better-ccusage
 
@@ -35,9 +35,9 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ## better-ccusage Family
 
-### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid Usage Analyzer with Multi-Provider Support
+### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code/Droid/OpenCode usage from local JSONL files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring.
+The main CLI tool for analyzing Claude Code, Droid, and ZCode usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), so no manual export is needed.
 
 ### 🤖 [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex) - OpenAI Codex Usage Analyzer
 
@@ -227,6 +227,7 @@ better-ccusage extends the original ccusage functionality with automatic support
 | Original ccusage Features        | ✅      | ✅             |
 | Show prompt usage for Coding     | ❌      | ✅             |
 | Droid usage                      | ❌      | ✅             |
+| ZCode usage                      | ❌      | ✅             |
 
 ## Star History
 

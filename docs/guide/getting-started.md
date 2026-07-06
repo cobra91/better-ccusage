@@ -1,11 +1,11 @@
 # Getting Started
 
-Welcome to better-ccusage! This guide will help you get up and running with analyzing your Claude Code/Droid Usage data.
+Welcome to better-ccusage! This guide will help you get up and running with analyzing your Claude Code/Droid/ZCode Usage data.
 
 ## Prerequisites
 
-- Claude Code installed and used (generates JSONL files)
-- Node.js 20+ or Bun runtime
+- Claude Code, Droid, or ZCode installed and used
+- Node.js 22.13+ or Bun runtime (ZCode usage requires Node.js 22.13+ for the built-in SQLite reader; Claude/Droid work on Node.js 20+)
 
 ## Quick Start
 
@@ -44,7 +44,7 @@ The tool automatically detects the provider from your usage data and calculates 
 
 ## Your First Report
 
-When you run better-ccusage for the first time, you'll see a table showing your Claude Code/Droid Usage by date:
+When you run better-ccusage for the first time, you'll see a table showing your Claude Code/Droid/ZCode Usage by date:
 
 ```
 ╭──────────────────────────────────────────╮
