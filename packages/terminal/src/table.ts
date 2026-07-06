@@ -1036,4 +1036,21 @@ if (import.meta.vitest != null) {
 			expect(formatModelsDisplayMultiline(models)).toBe('- opus-4-1\n- sonnet-4\n- sonnet-4-5');
 		});
 	});
+
+	describe('formatSourceMultiline', () => {
+		it('returns a single source unchanged', () => {
+			expect(formatSourceMultiline('claude')).toBe('claude');
+			expect(formatSourceMultiline('droid')).toBe('droid');
+			expect(formatSourceMultiline('zcode')).toBe('zcode');
+		});
+
+		it('splits a two-source combination across lines', () => {
+			expect(formatSourceMultiline('claude/droid')).toBe('claude\ndroid');
+			expect(formatSourceMultiline('claude/zcode')).toBe('claude\nzcode');
+		});
+
+		it('splits a three-source combination across lines', () => {
+			expect(formatSourceMultiline('claude/droid/zcode')).toBe('claude\ndroid\nzcode');
+		});
+	});
 }
