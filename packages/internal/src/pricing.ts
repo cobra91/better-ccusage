@@ -259,7 +259,16 @@ export class PricingFetcher implements Disposable {
 						}
 					}
 
-					// 3. Try partial fuzzy match
+					// 3. Try partial fuzzy match.
+					//
+					// IMPORTANT: only match when a known key *contains* the requested
+					// target (e.g. the user passes `gpt-5` and the DB has `gpt-5-codex`).
+					// The reverse direction (target contains comparison) was previously
+					// allowed with a low score, but that caused severe mispricing: an
+					// unknown model like `gpt-5.6-sol` would match `gpt-5` (because
+					// `gpt-5.6-sol`.includes('gpt-5')), silently charging it at gpt-5
+					// rates instead of returning null ($0 + warning). An unknown model
+					// MUST resolve to null so the caller can warn the user.
 					let bestMatch = null;
 					let bestMatchScore = 0;
 
@@ -281,9 +290,6 @@ export class PricingFetcher implements Disposable {
 							else if (comparison.includes(target)) {
 								score = 50;
 							}
-						}
-						else if (target.includes(comparison)) {
-							score = 10;
 						}
 
 						if (score > bestMatchScore) {

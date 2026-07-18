@@ -42,3 +42,6 @@ scripts/copy-pricing-plugin.d.ts
 symbols.db
 
 settings.local.json
+
+# temporary LiteLLM pricing snapshot (used for ad-hoc pricing research)
+.litellm-latest.json

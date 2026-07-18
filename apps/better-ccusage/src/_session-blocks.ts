@@ -2,7 +2,7 @@ import type { UserMessage } from './data-loader.ts';
 import { uniq } from 'es-toolkit';
 import { DEFAULT_RECENT_DAYS } from './_consts.ts';
 import { getTotalTokens } from './_token-utils.ts';
-import { createSource } from './_types.ts';
+import { combineSources } from './data-loader.ts';
 
 /**
  * Default session duration in hours (Claude's billing block duration)
@@ -204,22 +204,12 @@ function createBlock(startTime: Date, entries: LoadedUsageEntry[], userMessages:
 		return msgTime >= startTime && msgTime < endTime;
 	}).length;
 
-	// Determine combined source from all entries in this block
+	// Determine combined source from all entries in this block. Delegates to
+	// the shared combineSources() helper so every source (claude/droid/zcode/
+	// codex) is handled consistently and in canonical order. An empty set
+	// defaults to 'claude' for backward compatibility with Claude-only data.
 	const sources = new Set(entries.map(entry => entry.source).filter(Boolean));
-	let combinedSource: string;
-	// If no valid sources found, default to 'claude'
-	if (sources.size === 0) {
-		combinedSource = 'claude';
-	}
-	else if (sources.has('claude') && sources.has('droid')) {
-		combinedSource = 'claude/droid';
-	}
-	else if (sources.has('droid')) {
-		combinedSource = 'droid';
-	}
-	else {
-		combinedSource = 'claude';
-	}
+	const combinedSource = combineSources(sources);
 
 	return {
 		id: startTime.toISOString(),
@@ -227,7 +217,7 @@ function createBlock(startTime: Date, entries: LoadedUsageEntry[], userMessages:
 		endTime,
 		actualEndTime,
 		isActive,
-		source: createSource(combinedSource),
+		source: combinedSource,
 		entries,
 		tokenCounts,
 		costUSD,

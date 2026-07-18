@@ -78,16 +78,28 @@ export const projectPathSchema = v.pipe(
 	v.brand('ProjectPath'),
 );
 
+// All non-empty subsets of {claude, droid, zcode, codex} joined by '/' in
+// canonical order. Enumerated explicitly (rather than computed) because
+// valibot's picklist needs a literal array. Keep in sync with SOURCE_ORDER in
+// data-loader.ts when adding/removing a source.
 export const sourceSchema = v.pipe(
 	v.string(),
 	v.picklist([
+		'claude/droid/zcode/codex',
 		'claude/droid/zcode',
+		'claude/droid/codex',
+		'claude/zcode/codex',
+		'droid/zcode/codex',
 		'claude/droid',
 		'claude/zcode',
+		'claude/codex',
 		'droid/zcode',
+		'droid/codex',
+		'zcode/codex',
 		'claude',
 		'droid',
 		'zcode',
+		'codex',
 	]),
 	v.brand('Source'),
 );

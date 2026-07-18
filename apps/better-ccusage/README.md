@@ -35,13 +35,9 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ## better-ccusage Family
 
-### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode Usage Analyzer with Multi-Provider Support
+### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code, Droid, and ZCode usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), so no manual export is needed.
-
-### 🤖 [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex) - OpenAI Codex Usage Analyzer
-
-Companion tool for analyzing OpenAI Codex usage. Same powerful features as better-ccusage but tailored for Codex users, including GPT-5 support and 1M token context windows.
+The main CLI tool for analyzing Claude Code, Droid, ZCode, and OpenAI Codex usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), so no manual export is needed. Codex usage is read from `~/.codex/sessions`.
 
 ### 🧠 [@better-ccusage/opencode](https://www.npmjs.com/package/@better-ccusage/opencode) - OpenCode Usage Analyzer
 
@@ -73,25 +69,6 @@ deno run -E -R=$HOME/.claude/projects/ -S=homedir -N='raw.githubusercontent.com:
 > 💡 **Important**: We strongly recommend using `@latest` suffix with npx (e.g., `npx better-ccusage@latest`) to ensure you're running the most recent version with the latest features and bug fixes.
 
 ### Related Tools
-
-#### Codex CLI
-
-Analyze OpenAI Codex usage with our companion tool [@better-ccusage/codex](https://www.npmjs.com/package/@better-ccusage/codex):
-
-```bash
-# Recommended - always include @latest
-npx @better-ccusage/codex@latest
-bunx @better-ccusage/codex@latest  # ⚠️ MUST include @latest with bunx
-
-# Alternative package runners
-pnpm dlx @better-ccusage/codex
-pnpx @better-ccusage/codex
-
-# Using deno (with security flags)
-deno run -E -R=$HOME/.codex/ -S=homedir -N='raw.githubusercontent.com:443' npm:@better-ccusage/codex@latest
-```
-
-> ⚠️ **Critical for bunx users**: Bun 1.2.x's bunx prioritizes binaries matching the package name suffix when given a scoped package. For `@better-ccusage/codex`, it looks for a `codex` binary in PATH first. If you have an existing `codex` command installed (e.g., GitHub Copilot's codex), that will be executed instead. **Always use `bunx @better-ccusage/codex@latest` with the version tag** to force bunx to fetch and run the correct package.
 
 #### MCP Server
 

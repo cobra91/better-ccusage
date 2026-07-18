@@ -1,33 +1,20 @@
 import process from 'node:process';
-import { cli } from 'gunshi';
-import packageJson from '../package.json' with { type: 'json' };
-import { dailyCommand } from './commands/daily.ts';
-import { monthlyCommand } from './commands/monthly.ts';
-import { sessionCommand } from './commands/session.ts';
+import { runForwarder } from './forwarder.ts';
+import { resolveBinaryPath } from './resolve-better-ccusage.ts';
 
-const { description, name, version } = packageJson;
-
-const subCommands = new Map([
-	['daily', dailyCommand],
-	['monthly', monthlyCommand],
-	['session', sessionCommand],
-]);
-
-const mainCommand = dailyCommand;
-
+/**
+ * Entry point for the deprecated `@better-ccusage/codex` package.
+ *
+ * Codex support is now built into `better-ccusage` as the `codex` source. This
+ * shim forwards every invocation to `better-ccusage` while preserving the
+ * original `CODEX_HOME` env var, so existing aliases and CI scripts keep
+ * working unchanged. A one-line deprecation notice is printed to stderr.
+ */
 export async function run(): Promise<void> {
-	// When invoked through npx, the binary name might be passed as the first argument
-	// Filter it out if it matches the expected binary name
-	let args = process.argv.slice(2);
-	if (args[0] === 'better-ccusage-codex') {
-		args = args.slice(1);
-	}
+	// When invoked through npx, the binary name may be passed as the first
+	// argument; filter it out so it doesn't confuse gunshi downstream.
+	const args = process.argv.slice(2).filter(arg => arg !== 'better-ccusage-codex');
 
-	await cli(args, mainCommand, {
-		name,
-		version,
-		description,
-		subCommands,
-		renderHeader: null,
-	});
+	const betterCcusageBin = resolveBinaryPath();
+	await runForwarder(betterCcusageBin, args);
 }

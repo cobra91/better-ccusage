@@ -67,6 +67,7 @@ import {
 	weeklyDateSchema,
 } from './_types.ts';
 import { unreachable } from './_utils.ts';
+import { getCodexPath, processCodexSessions } from './codex-adapter.ts';
 import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
 import { logger } from './logger.ts';
 import { getZcodeDbPath, processZcodeSessions } from './zcode-adapter.ts';
@@ -567,9 +568,9 @@ export function createUniqueHash(data: UsageData): string | null {
  * first so the canonical ordering is preserved. An empty set defaults to
  * 'claude' for backward compatibility with Claude-only data.
  */
-const SOURCE_ORDER = ['claude', 'droid', 'zcode'] as const;
+const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex'] as const;
 
-function combineSources(sources: Set<string | undefined>): string {
+export function combineSources(sources: Set<string | undefined>): string {
 	const atoms = new Set<string>();
 	for (const source of sources) {
 		if (source == null) {
@@ -828,7 +829,23 @@ export async function loadDailyUsageData(
 		}
 	}
 
-	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0) {
+	// Also load Codex usage from its session JSONL logs if available
+	const codexPath = getCodexPath();
+	logger.debug(`Codex sessions path: ${codexPath}`);
+	let codexEntries: UsageData[] = [];
+	if (codexPath === '') {
+		logger.debug('Codex sessions path is empty');
+	}
+	else {
+		try {
+			codexEntries = await processCodexSessions(codexPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load codex sessions: ${String(error)}`);
+		}
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0) {
 		return [];
 	}
 
@@ -961,6 +978,30 @@ export async function loadDailyUsageData(
 		});
 	}
 
+	// Add codex entries to the collection
+	for (const codexData of codexEntries) {
+		codexData.source ??= createSource('codex');
+
+		const uniqueHash = createUniqueHash(codexData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(codexData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? codexData.costUSD ?? 0
+			: await calculateCostForEntry(codexData, mode, fetcher);
+
+		allEntries.push({
+			data: codexData,
+			date,
+			cost,
+			model: codexData.message.model,
+			project: codexData.cwd ?? path.join('codex', 'unknown'),
+		});
+	}
+
 	// Group by date, optionally including project
 	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
@@ -1079,7 +1120,23 @@ export async function loadSessionData(
 		}
 	}
 
-	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0) {
+	// Also load Codex usage from its session JSONL logs if available
+	const codexPath = getCodexPath();
+	logger.debug(`Codex sessions path: ${codexPath}`);
+	let codexEntries: UsageData[] = [];
+	if (codexPath === '') {
+		logger.debug('Codex sessions path is empty');
+	}
+	else {
+		try {
+			codexEntries = await processCodexSessions(codexPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load codex sessions: ${String(error)}`);
+		}
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0) {
 		return [];
 	}
 
@@ -1215,6 +1272,26 @@ export async function loadSessionData(
 			cost,
 			timestamp: zcodeData.timestamp,
 			model: zcodeData.message.model,
+		});
+	}
+
+	// Add codex entries to the collection
+	for (const codexData of codexEntries) {
+		codexData.source ??= createSource('codex');
+
+		const sessionKey = path.join('codex', codexData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? codexData.costUSD ?? 0
+			: await calculateCostForEntry(codexData, mode, fetcher);
+
+		allEntries.push({
+			data: codexData,
+			sessionKey,
+			sessionId: codexData.sessionId ?? 'unknown-session',
+			projectPath: codexData.cwd ?? path.join('codex', 'unknown'),
+			cost,
+			timestamp: codexData.timestamp,
+			model: codexData.message.model,
 		});
 	}
 
@@ -1601,9 +1678,9 @@ export async function loadSessionBlockData(
 		allFiles.push(...files);
 	}
 
-	if (allFiles.length === 0) {
-		return [];
-	}
+	// Note: we intentionally do NOT early-return here when allFiles is empty.
+	// Droid/ZCode/Codex data may still be present (loaded below), and returning
+	// early would silently drop non-Claude blocks.
 
 	// Filter by project if specified
 	const blocksFilteredFiles = filterByProject(
@@ -1758,8 +1835,38 @@ export async function loadSessionBlockData(
 		}
 	}
 
-	// Combine Claude, droid, and zcode entries
-	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries];
+	// Also load Codex usage from its session JSONL logs if available
+	const codexPath = getCodexPath();
+	logger.debug(`Codex sessions path for blocks: ${codexPath}`);
+	let codexEntries: LoadedUsageEntry[] = [];
+	if (codexPath === '') {
+		logger.debug('Codex sessions path for blocks is empty');
+	}
+	else {
+		try {
+			const rawCodexEntries = await processCodexSessions(codexPath, options);
+			codexEntries = rawCodexEntries.map((entry): LoadedUsageEntry => ({
+				timestamp: new Date(entry.timestamp),
+				usage: {
+					inputTokens: entry.message.usage.input_tokens,
+					outputTokens: entry.message.usage.output_tokens,
+					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+				},
+				costUSD: entry.costUSD ?? 0,
+				model: entry.message.model ?? 'unknown',
+				version: entry.version ?? undefined,
+				usageLimitResetTime: undefined,
+				source: entry.source ?? 'codex',
+			}));
+		}
+		catch (error) {
+			logger.warn(`Failed to load codex sessions for blocks: ${String(error)}`);
+		}
+	}
+
+	// Combine Claude, droid, zcode, and codex entries
+	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries];
 
 	// Identify session blocks
 	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);
@@ -5078,6 +5185,9 @@ if (import.meta.vitest != null) {
 		});
 	});
 }
+
+// Re-export codex functions for external use
+export { getCodexPath, processCodexSessions } from './codex-adapter.ts';
 
 // Re-export droid functions for external use
 export { getDroidPath, processDroidSessions } from './droid-adapter.ts';

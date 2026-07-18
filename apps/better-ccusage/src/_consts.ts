@@ -92,6 +92,28 @@ export const DEFAULT_ZCODE_HOME_PATH = '.zcode';
 export const DEFAULT_ZCODE_DB_SUBPATH = path.join('cli', 'db', 'db.sqlite');
 
 /**
+ * Environment variable for overriding the OpenAI Codex CLI home directory.
+ * When set, the sessions directory is resolved relative to it.
+ */
+export const CODEX_HOME_ENV = 'CODEX_HOME';
+
+/**
+ * Default Codex home directory: `~/.codex`.
+ */
+export const DEFAULT_CODEX_HOME_PATH = '.codex';
+
+/**
+ * Subpath of the sessions directory that stores Codex JSONL logs, relative
+ * to the Codex home directory.
+ */
+export const DEFAULT_CODEX_SESSIONS_SUBPATH = 'sessions';
+
+/**
+ * JSONL file glob pattern for finding Codex session files (recursive).
+ */
+export const CODEX_SESSION_GLOB = '**/*.jsonl';
+
+/**
  * Claude projects directory name within the data directory
  * Contains subdirectories for each project with usage data
  */

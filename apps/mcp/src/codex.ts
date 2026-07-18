@@ -2,44 +2,49 @@ import type { CliInvocation } from './cli-utils.ts';
 import { z } from 'zod';
 import { createCliInvocation, executeCliCommand, resolveBinaryPath } from './cli-utils.ts';
 
+// Codex is now a source inside better-ccusage. We still expose dedicated
+// codex-daily/codex-monthly tools (backed by the @better-ccusage/codex shim,
+// which forwards to better-ccusage while silencing non-codex sources), so
+// existing MCP clients keep working without API changes. The JSON shape now
+// matches better-ccusage's Claude-model output (input/output/cache buckets).
 const codexModelUsageSchema = z.object({
+	modelName: z.string().optional(),
 	inputTokens: z.number(),
-	cachedInputTokens: z.number(),
 	outputTokens: z.number(),
-	reasoningOutputTokens: z.number(),
-	totalTokens: z.number(),
-	isFallback: z.boolean().optional(),
+	cacheCreationTokens: z.number(),
+	cacheReadTokens: z.number(),
+	cost: z.number(),
 });
 
 const codexTotalsSchema = z.object({
 	inputTokens: z.number(),
-	cachedInputTokens: z.number(),
 	outputTokens: z.number(),
-	reasoningOutputTokens: z.number(),
-	totalTokens: z.number(),
-	costUSD: z.number(),
+	cacheCreationTokens: z.number(),
+	cacheReadTokens: z.number(),
+	totalCost: z.number(),
+	totalTokens: z.number().optional(),
 });
 
 const codexDailyRowSchema = z.object({
 	date: z.string(),
 	inputTokens: z.number(),
-	cachedInputTokens: z.number(),
 	outputTokens: z.number(),
-	reasoningOutputTokens: z.number(),
-	totalTokens: z.number(),
-	costUSD: z.number(),
-	models: z.record(codexModelUsageSchema),
+	cacheCreationTokens: z.number(),
+	cacheReadTokens: z.number(),
+	totalCost: z.number(),
+	modelsUsed: z.array(z.string()).optional(),
+	modelBreakdowns: z.array(codexModelUsageSchema).optional(),
 });
 
 const codexMonthlyRowSchema = z.object({
 	month: z.string(),
 	inputTokens: z.number(),
-	cachedInputTokens: z.number(),
 	outputTokens: z.number(),
-	reasoningOutputTokens: z.number(),
-	totalTokens: z.number(),
-	costUSD: z.number(),
-	models: z.record(codexModelUsageSchema),
+	cacheCreationTokens: z.number(),
+	cacheReadTokens: z.number(),
+	totalCost: z.number(),
+	modelsUsed: z.array(z.string()).optional(),
+	modelBreakdowns: z.array(codexModelUsageSchema).optional(),
 });
 
 // Response schemas for internal parsing only - not exported
@@ -69,13 +74,16 @@ function getCodexInvocation(): CliInvocation {
 		return cachedCodexInvocation;
 	}
 
+	// The @better-ccusage/codex shim now forwards to better-ccusage while
+	// silencing non-codex sources, so this tool returns codex-only data.
 	const entryPath = resolveBinaryPath('@better-ccusage/codex', 'better-ccusage-codex');
 	cachedCodexInvocation = createCliInvocation(entryPath);
 	return cachedCodexInvocation;
 }
 
 /**
- * Execute the codex CLI with the given command and parameters and return its JSON output.
+ * Execute the codex shim with the given command and parameters and return its
+ * JSON output. The shim forwards to better-ccusage scoped to the codex source.
  *
  * @param command - The codex subcommand to run; either 'daily' or 'monthly'.
  * @param parameters - Parameters that, when present and non-empty, are appended as CLI flags:
@@ -83,7 +91,7 @@ function getCodexInvocation(): CliInvocation {
  *   - `until` -> `--until`
  *   - `timezone` -> `--timezone`
  *   - `locale` -> `--locale`
- * @returns The raw JSON output from the codex CLI as a string.
+ * @returns The raw JSON output from the codex shim as a string.
  */
 async function runCodexCliJson(command: 'daily' | 'monthly', parameters: z.infer<typeof codexParametersSchema>): Promise<string> {
 	const { executable, prefixArgs } = getCodexInvocation();
@@ -106,13 +114,11 @@ async function runCodexCliJson(command: 'daily' | 'monthly', parameters: z.infer
 		cliArgs.push('--locale', locale);
 	}
 
-	return executeCliCommand(executable, cliArgs, {
-		// Keep default log level to allow JSON output
-	});
+	return executeCliCommand(executable, cliArgs, {}, 15000);
 }
 
 /**
- * Retrieve daily Codex usage data by invoking the codex CLI.
+ * Retrieve daily Codex usage data by invoking the codex shim.
  *
  * @param parameters - Query parameters (since, until, timezone, locale)
  * @returns Validated daily usage data
@@ -123,7 +129,7 @@ export async function getCodexDaily(parameters: z.infer<typeof codexParametersSc
 }
 
 /**
- * Retrieve monthly Codex usage data by invoking the codex CLI.
+ * Retrieve monthly Codex usage data by invoking the codex shim.
  *
  * @param parameters - Query parameters (since, until, timezone, locale)
  * @returns Validated monthly usage data
