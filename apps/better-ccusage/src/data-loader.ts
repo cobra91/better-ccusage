@@ -68,6 +68,7 @@ import {
 } from './_types.ts';
 import { unreachable } from './_utils.ts';
 import { getCodexPath, processCodexSessions } from './codex-adapter.ts';
+import { getDevinPath, processDevinSessions } from './devin-adapter.ts';
 import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
 import { logger } from './logger.ts';
 import { getOpenCodeDbPath, processOpenCodeSessions } from './opencode-adapter.ts';
@@ -860,7 +861,23 @@ export async function loadDailyUsageData(
 		}
 	}
 
-	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0) {
+	// Also load Devin usage from its ATIF transcripts if available
+	const devinPath = getDevinPath();
+	logger.debug(`Devin data directory: ${devinPath}`);
+	let devinEntries: UsageData[] = [];
+	if (devinPath === '') {
+		logger.debug('Devin data directory is empty');
+	}
+	else {
+		try {
+			devinEntries = await processDevinSessions(devinPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load devin sessions: ${String(error)}`);
+		}
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0) {
 		return [];
 	}
 
@@ -1041,6 +1058,30 @@ export async function loadDailyUsageData(
 		});
 	}
 
+	// Add devin entries to the collection
+	for (const devinData of devinEntries) {
+		devinData.source ??= createSource('devin');
+
+		const uniqueHash = createUniqueHash(devinData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(devinData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? devinData.costUSD ?? 0
+			: await calculateCostForEntry(devinData, mode, fetcher);
+
+		allEntries.push({
+			data: devinData,
+			date,
+			cost,
+			model: devinData.message.model,
+			project: devinData.cwd ?? path.join('devin', 'unknown'),
+		});
+	}
+
 	// Group by date, optionally including project
 	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
@@ -1191,7 +1232,23 @@ export async function loadSessionData(
 		}
 	}
 
-	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0) {
+	// Also load Devin usage from its ATIF transcripts if available
+	const devinPath = getDevinPath();
+	logger.debug(`Devin data directory: ${devinPath}`);
+	let devinEntries: UsageData[] = [];
+	if (devinPath === '') {
+		logger.debug('Devin data directory is empty');
+	}
+	else {
+		try {
+			devinEntries = await processDevinSessions(devinPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load devin sessions: ${String(error)}`);
+		}
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0) {
 		return [];
 	}
 
@@ -1367,6 +1424,26 @@ export async function loadSessionData(
 			cost,
 			timestamp: opencodeData.timestamp,
 			model: opencodeData.message.model,
+		});
+	}
+
+	// Add devin entries to the collection
+	for (const devinData of devinEntries) {
+		devinData.source ??= createSource('devin');
+
+		const sessionKey = path.join('devin', devinData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? devinData.costUSD ?? 0
+			: await calculateCostForEntry(devinData, mode, fetcher);
+
+		allEntries.push({
+			data: devinData,
+			sessionKey,
+			sessionId: devinData.sessionId ?? 'unknown-session',
+			projectPath: devinData.cwd ?? path.join('devin', 'unknown'),
+			cost,
+			timestamp: devinData.timestamp,
+			model: devinData.message.model,
 		});
 	}
 
@@ -1992,8 +2069,37 @@ export async function loadSessionBlockData(
 		}
 	}
 
+	// Also load Devin usage from its ATIF transcripts if available
+	const devinPath = getDevinPath();
+	logger.debug(`Devin data directory: ${devinPath}`);
+	let devinEntries: LoadedUsageEntry[] = [];
+	if (devinPath !== '') {
+		try {
+			const rawDevinEntries = await processDevinSessions(devinPath, options);
+			devinEntries = await Promise.all(rawDevinEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+				timestamp: new Date(entry.timestamp),
+				usage: {
+					inputTokens: entry.message.usage.input_tokens,
+					outputTokens: entry.message.usage.output_tokens,
+					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+				},
+				costUSD: fetcher == null
+					? entry.costUSD ?? 0
+					: await calculateCostForEntry(entry, mode, fetcher),
+				model: entry.message.model ?? 'unknown',
+				version: entry.version ?? undefined,
+				usageLimitResetTime: undefined,
+				source: entry.source ?? 'devin',
+			})));
+		}
+		catch (error) {
+			logger.warn(`Failed to load devin sessions: ${String(error)}`);
+		}
+	}
+
 	// Combine Claude, droid, zcode, codex, and opencode entries
-	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries];
+	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries, ...devinEntries];
 
 	// Identify session blocks
 	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);

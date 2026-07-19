@@ -90,6 +90,22 @@ ZCode (the official GLM coding tool) records every model request in this databas
 Reading the ZCode database requires Node.js `>=22.13.0` (when the built-in `node:sqlite` module stopped requiring the `--experimental-sqlite` flag). On older Node versions or alternative runtimes (e.g. Bun), ZCode data is silently skipped and Claude/Droid usage continues to work normally.
 :::
 
+## DEVIN_DATA_DIR
+
+Specifies the Devin CLI data directory where better-ccusage should look for ATIF trajectory transcripts (`transcripts/*.json`) and the optional `sessions.db` enrichment database.
+
+```bash
+export DEVIN_DATA_DIR="/path/to/your/devin/cli"
+better-ccusage daily
+```
+
+When `DEVIN_DATA_DIR` is not set, better-ccusage automatically looks in:
+
+- **Linux/macOS**: `~/.local/share/devin/cli/`
+- **Windows**: `%APPDATA%\devin\cli\`
+
+See the [Devin usage guide](/guide/devin.md) for details on token semantics, hidden-session filtering, and the ATIF transcript format.
+
 ## LOG_LEVEL
 
 Controls the verbosity of log output. better-ccusage uses [consola](https://github.com/unjs/consola) for logging under the hood.
