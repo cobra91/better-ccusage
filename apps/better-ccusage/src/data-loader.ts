@@ -908,18 +908,20 @@ export async function loadDailyUsageData(
 	}
 
 	// Also load pi/oh-my-pi usage from its JSONL sessions if available
-	const piPaths = getPiPaths();
-	logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
 	let piEntries: UsageData[] = [];
-	if (piPaths.length === 0 || (piPaths.length === 1 && piPaths[0] === '')) {
-		logger.debug('Pi sessions paths are empty');
-	}
-	else {
-		try {
-			piEntries = await processPiSessions(piPaths, options);
+	if (sourceFilter == null || sourceFilter === 'pi') {
+		const piPaths = getPiPaths();
+		logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
+		if (piPaths.length === 0 || (piPaths.length === 1 && piPaths[0] === '')) {
+			logger.debug('Pi sessions paths are empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load pi sessions: ${String(error)}`);
+		else {
+			try {
+				piEntries = await processPiSessions(piPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load pi sessions: ${String(error)}`);
+			}
 		}
 	}
 
@@ -1335,18 +1337,20 @@ export async function loadSessionData(
 	}
 
 	// Also load pi/oh-my-pi usage from its JSONL sessions if available
-	const piPaths = getPiPaths();
-	logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
 	let piEntries: UsageData[] = [];
-	if (piPaths.length === 0 || (piPaths.length === 1 && piPaths[0] === '')) {
-		logger.debug('Pi sessions paths are empty');
-	}
-	else {
-		try {
-			piEntries = await processPiSessions(piPaths, options);
+	if (sourceFilter == null || sourceFilter === 'pi') {
+		const piPaths = getPiPaths();
+		logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
+		if (piPaths.length === 0 || (piPaths.length === 1 && piPaths[0] === '')) {
+			logger.debug('Pi sessions paths are empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load pi sessions: ${String(error)}`);
+		else {
+			try {
+				piEntries = await processPiSessions(piPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load pi sessions: ${String(error)}`);
+			}
 		}
 	}
 
@@ -2237,31 +2241,33 @@ export async function loadSessionBlockData(
 	}
 
 	// Also load pi/oh-my-pi usage from its JSONL sessions if available
-	const piPaths = getPiPaths();
-	logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
 	let piEntries: LoadedUsageEntry[] = [];
-	if (piPaths.length > 0 && !(piPaths.length === 1 && piPaths[0] === '')) {
-		try {
-			const rawPiEntries = await processPiSessions(piPaths, options);
-			piEntries = await Promise.all(rawPiEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
-				timestamp: new Date(entry.timestamp),
-				usage: {
-					inputTokens: entry.message.usage.input_tokens,
-					outputTokens: entry.message.usage.output_tokens,
-					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
-					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
-				},
-				costUSD: fetcher == null
-					? entry.costUSD ?? 0
-					: await calculateCostForEntry(entry, mode, fetcher),
-				model: entry.message.model ?? 'unknown',
-				version: entry.version ?? undefined,
-				usageLimitResetTime: undefined,
-				source: entry.source ?? 'pi',
-			})));
-		}
-		catch (error) {
-			logger.warn(`Failed to load pi sessions: ${String(error)}`);
+	if (sourceFilter == null || sourceFilter === 'pi') {
+		const piPaths = getPiPaths();
+		logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
+		if (piPaths.length > 0 && !(piPaths.length === 1 && piPaths[0] === '')) {
+			try {
+				const rawPiEntries = await processPiSessions(piPaths, options);
+				piEntries = await Promise.all(rawPiEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'pi',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load pi sessions: ${String(error)}`);
+			}
 		}
 	}
 
