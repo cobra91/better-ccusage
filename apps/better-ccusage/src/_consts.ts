@@ -45,6 +45,46 @@ export const USER_HOME_DIR = homedir();
 const XDG_CONFIG_DIR = xdgConfig ?? path.join(USER_HOME_DIR, '.config');
 
 /**
+ * Canonical order of usage data sources.
+ *
+ * Single source of truth for the source enumeration. Drives both
+ * `combineSources()` (canonical ordering of grouped labels) and the valibot
+ * `sourceSchema` picklist (via `SOURCE_SUBSETS`). Add a new source here and
+ * both the combiner and the schema pick up the extra atom automatically.
+ */
+export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode'] as const;
+
+/**
+ * All non-empty subsets of {@link SOURCE_ORDER}, joined by '/' in canonical
+ * order. Generated at module load so the list stays in sync with
+ * `SOURCE_ORDER` (2^n - 1 combinations for n sources).
+ *
+ * Enumeration order: for atoms [a, b, c, ...] we emit `a` and `a/` prepended
+ * to each subset of the tail first, then the subsets of the tail. This keeps
+ * every source's atom contiguous and matches the order the previous hand-
+ * written picklist used (all subsets containing the first atom, then those
+ * without), so existing snapshots/debug output are unchanged.
+ *
+ * The runtime array always contains the exact subset strings, so valibot's
+ * `picklist` still validates values precisely. Note the branded `Source` type
+ * widens to `string & Brand<'Source'>` (no literal union) because the
+ * generated array is not a literal tuple — no consumer relies on literal
+ * narrowing, and the validation boundary stays exact.
+ */
+function generateSourceSubsets(atoms: readonly string[]): readonly [string, ...string[]] {
+	if (atoms.length === 0) {
+		return [] as unknown as readonly [string, ...string[]];
+	}
+	const [first, ...rest] = atoms;
+	const tailSubsets = generateSourceSubsets(rest);
+	const withFirst = [first, ...tailSubsets.map(s => `${first}/${s}`)];
+	const result = [...withFirst, ...tailSubsets];
+	return result as unknown as readonly [string, ...string[]];
+}
+
+export const SOURCE_SUBSETS = generateSourceSubsets(SOURCE_ORDER);
+
+/**
  * Default Claude data directory path (~/.claude)
  * Used as base path for loading usage data from JSONL files
  */

@@ -28,7 +28,7 @@ import { createFixture } from 'fs-fixture';
 import { isDirectorySync } from 'path-type';
 import { glob } from 'tinyglobby';
 import * as v from 'valibot';
-import { CLAUDE_CONFIG_DIR_ENV, CLAUDE_PROJECTS_DIR_NAME, DEFAULT_CLAUDE_CODE_PATH, DEFAULT_CLAUDE_CONFIG_PATH, DEFAULT_LOCALE, USAGE_DATA_GLOB_PATTERN, USER_HOME_DIR } from './_consts.ts';
+import { CLAUDE_CONFIG_DIR_ENV, CLAUDE_PROJECTS_DIR_NAME, DEFAULT_CLAUDE_CODE_PATH, DEFAULT_CLAUDE_CONFIG_PATH, DEFAULT_LOCALE, SOURCE_ORDER, USAGE_DATA_GLOB_PATTERN, USER_HOME_DIR } from './_consts.ts';
 import {
 	filterByDateRange,
 	formatDate,
@@ -563,14 +563,12 @@ export function createUniqueHash(data: UsageData): string | null {
 /**
  * Build a combined source label from the set of tool sources present in a group.
  *
- * Sources are joined with '/' in a stable canonical order (claude, droid, zcode)
- * so grouped rows surface every contributing tool. Inputs may already be
- * combined labels (e.g. `claude/droid` from a daily rollup); those are split
- * first so the canonical ordering is preserved. An empty set defaults to
- * 'claude' for backward compatibility with Claude-only data.
+ * Sources are joined with '/' in a stable canonical order (see SOURCE_ORDER in
+ * _consts.ts) so grouped rows surface every contributing tool. Inputs may
+ * already be combined labels (e.g. `claude/droid` from a daily rollup); those
+ * are split first so the canonical ordering is preserved. An empty set defaults
+ * to 'claude' for backward compatibility with Claude-only data.
  */
-const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode'] as const;
-
 export function combineSources(sources: Set<string | undefined>): string {
 	const atoms = new Set<string>();
 	for (const source of sources) {
