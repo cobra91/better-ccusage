@@ -56,6 +56,20 @@ import {
 import { logger } from './logger.ts';
 
 /**
+ * Coerce a SQLite value (BigInt for INTEGER columns) or null/non-finite to a
+ * safe number. Mirrors the OpenCode/ZCode adapter helper.
+ */
+function toFiniteNumber(value: number | bigint | null | undefined): number {
+	if (value == null) {
+		return 0;
+	}
+	if (typeof value === 'bigint') {
+		return Number(value);
+	}
+	return Number.isFinite(value) ? value : 0;
+}
+
+/**
  * Normalize an ATIF timestamp value into an ISO string. Accepts either:
  *  - an epoch number: `< 1e10` is treated as seconds (multiplied by 1000),
  *    otherwise milliseconds (matches upstream's `format_sqlite_timestamp`);
@@ -214,24 +228,29 @@ type SessionRow = {
 	model: string | null;
 	created_at: number | bigint | string | null;
 	last_activity_at: number | bigint | string | null;
+	hidden: number | bigint | null;
 };
 
 const SESSIONS_SQL = `
-	SELECT id, working_directory, model, created_at, last_activity_at
+	SELECT id, working_directory, model, created_at, last_activity_at, hidden
 	FROM sessions
-	WHERE hidden = 0 OR hidden IS NULL
 `;
 
 /**
- * Load the Devin `sessions.db` enrichment map. Returns an empty map when the
- * DB is missing, unreadable, or the runtime lacks `node:sqlite`; never throws.
- * Hidden sessions (`hidden = 1`) are filtered at the SQL level so their
- * transcripts never reach the model/timestamp fallbacks.
+ * Load the Devin `sessions.db` enrichment map and the set of hidden session
+ * ids. Returns empty containers when the DB is missing, unreadable, or the
+ * runtime lacks `node:sqlite`; never throws.
+ *
+ * Hidden sessions (`hidden = 1`) are tracked separately so
+ * {@link processDevinSessions} can skip their transcripts entirely — relying
+ * only on omitting them from the map is insufficient because a transcript
+ * that carries its own model (the normal case) would still be emitted.
  */
-async function loadSessionInfo(dbPath: string): Promise<Map<string, SessionInfo>> {
+async function loadSessionInfo(dbPath: string): Promise<{ map: Map<string, SessionInfo>; hiddenIds: Set<string> }> {
 	const map = new Map<string, SessionInfo>();
+	const hiddenIds = new Set<string>();
 	if (!existsSync(dbPath)) {
-		return map;
+		return { map, hiddenIds };
 	}
 	let DatabaseSync: typeof import('node:sqlite').DatabaseSync;
 	try {
@@ -239,7 +258,7 @@ async function loadSessionInfo(dbPath: string): Promise<Map<string, SessionInfo>
 	}
 	catch (error) {
 		logger.warn(`node:sqlite is not available on this runtime; Devin sessions.db disabled. ${String(error)}`);
-		return map;
+		return { map, hiddenIds };
 	}
 	let db: InstanceType<typeof DatabaseSync>;
 	try {
@@ -247,7 +266,7 @@ async function loadSessionInfo(dbPath: string): Promise<Map<string, SessionInfo>
 	}
 	catch (error) {
 		logger.warn(`Failed to open Devin sessions.db at ${dbPath}: ${String(error)}`);
-		return map;
+		return { map, hiddenIds };
 	}
 	let rows: SessionRow[];
 	try {
@@ -256,13 +275,18 @@ async function loadSessionInfo(dbPath: string): Promise<Map<string, SessionInfo>
 	catch (error) {
 		logger.warn(`Failed to query Devin sessions table: ${String(error)}`);
 		db[Symbol.dispose]();
-		return map;
+		return { map, hiddenIds };
 	}
 	db[Symbol.dispose]();
 
 	for (const row of rows) {
 		const id = row.id?.trim();
 		if (id === undefined || id === '') {
+			continue;
+		}
+		// `hidden` is 0/1 (INTEGER); treat truthy non-zero as hidden.
+		if (toFiniteNumber(row.hidden) !== 0) {
+			hiddenIds.add(id);
 			continue;
 		}
 		map.set(id, {
@@ -272,7 +296,7 @@ async function loadSessionInfo(dbPath: string): Promise<Map<string, SessionInfo>
 			lastActivityAt: normalizeTimestamp(row.last_activity_at) ?? undefined,
 		});
 	}
-	return map;
+	return { map, hiddenIds };
 }
 
 // --- per-step resolution helpers -----------------------------------------
@@ -380,7 +404,7 @@ export async function processDevinSessions(
 
 	// Optional SQLite enrichment (never fatal when absent/unreadable).
 	const sessionsDb = path.join(dataDir, DEVIN_SESSIONS_DB_SUBPATH);
-	const sessionInfo = await loadSessionInfo(sessionsDb);
+	const { map: sessionInfo, hiddenIds } = await loadSessionInfo(sessionsDb);
 
 	const files = await glob(DEVIN_TRANSCRIPT_GLOB, {
 		cwd: transcriptsDir,
@@ -417,6 +441,15 @@ export async function processDevinSessions(
 		const filenameSessionId = path.basename(file, path.extname(file));
 		const sessionIdRaw = firstNonEmpty([transcript.session_id, filenameSessionId]);
 		const sessionId = sessionIdRaw ?? filenameSessionId;
+
+		// Skip hidden sessions: the sessions.db flags them with hidden = 1 and
+		// their transcripts must be dropped entirely (not just unenriched),
+		// since a transcript carrying its own model would otherwise still be
+		// emitted despite being hidden.
+		if (hiddenIds.has(sessionId)) {
+			continue;
+		}
+
 		const info = sessionInfo.get(sessionId);
 
 		// Transcript-level fallback model (shared by every step).
@@ -478,9 +511,11 @@ export async function processDevinSessions(
 			// separator. Fall back to the session id when no working dir is
 			// known so sessions stay distinguishable.
 			const workingDir = info?.workingDirectory;
-			const projectLabel = workingDir != null && workingDir !== ''
-				? (path.basename(workingDir) !== '' ? path.basename(workingDir) : sessionId)
-				: sessionId;
+			let projectLabel = sessionId;
+			if (workingDir != null && workingDir !== '') {
+				const base = path.basename(workingDir);
+				projectLabel = base !== '' ? base : sessionId;
+			}
 
 			const entry: UsageData = {
 				timestamp: createISOTimestamp(timestamp),
@@ -642,10 +677,17 @@ if (import.meta.vitest != null) {
 							},
 						],
 					}),
-					// A hidden session: filtered out by sessions.db (no enrichment
-					// row returned, and the step would lack a model anyway).
+					// A hidden session flagged hidden=1 in sessions.db. Critically
+					// this transcript CARRIES its own model (the normal case) so
+					// it would be emitted if we only dropped it from the
+					// enrichment map — it must be skipped by explicit id tracking.
 					'sess_hidden.json': JSON.stringify({
-						steps: [{ timestamp: '2026-07-03T10:00:00Z', metrics: { prompt_tokens: 5 } }],
+						agent: { model_name: 'sonnet-4-6' },
+						steps: [{
+							timestamp: '2026-07-03T10:00:00Z',
+							model_name: 'sonnet-4-6',
+							metrics: { prompt_tokens: 5, completion_tokens: 1 },
+						}],
 					}),
 				},
 			});
