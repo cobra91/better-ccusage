@@ -14,26 +14,32 @@ type BinField = string | Record<string, string> | undefined;
  * alongside this package (e.g. installed as a sibling workspace dep). Falls
  * back to the monorepo sibling source during development so the shim works
  * without a published build.
+ *
+ * The whole resolution block (resolve + read package.json + read bin field)
+ * is wrapped in a single `Result.try` so that ANY failure — missing package,
+ * corrupt package.json, missing/malformed bin field — falls back to the dev
+ * path rather than crashing the forwarder. This preserves the original
+ * try-catch safety net while following the coding guideline to prefer Result.
  */
 export async function resolveBinaryPath(): Promise<string> {
-	// Try the published workspace package first. We use Result.try per the
-	// coding guidelines (prefer Result over try-catch); resolution failures
-	// are expected on dev installs without the package hoisted.
-	const resolveResult = Result.try({
-		try: () => nodeRequire.resolve('better-ccusage/package.json'),
+	const resolved = Result.try({
+		try: (): string => {
+			const packageJsonPath = nodeRequire.resolve('better-ccusage/package.json');
+			const packageJson = nodeRequire(packageJsonPath) as { bin?: BinField; publishConfig?: { bin?: BinField } };
+			const binField: BinField = packageJson.bin ?? packageJson.publishConfig?.bin;
+			const binRelative = typeof binField === 'string'
+				? binField
+				: (binField != null ? (binField['better-ccusage'] ?? Object.values(binField)[0]) : undefined);
+			if (binRelative == null) {
+				throw new Error('better-ccusage package.json has no resolvable bin field');
+			}
+			return path.resolve(path.dirname(packageJsonPath), binRelative);
+		},
 		catch: error => error,
 	})();
 
-	if (Result.isSuccess(resolveResult)) {
-		const packageJsonPath = resolveResult.value;
-		const packageJson = nodeRequire(packageJsonPath) as { bin?: BinField; publishConfig?: { bin?: BinField } };
-		const binField: BinField = packageJson.bin ?? packageJson.publishConfig?.bin;
-		const binRelative = typeof binField === 'string'
-			? binField
-			: (binField != null ? (binField['better-ccusage'] ?? Object.values(binField)[0]) : undefined);
-		if (binRelative != null) {
-			return path.resolve(path.dirname(packageJsonPath), binRelative);
-		}
+	if (Result.isSuccess(resolved)) {
+		return resolved.value;
 	}
 
 	// Development fallback: monorepo sibling (apps/better-ccusage/src/index.ts).
