@@ -237,7 +237,17 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 	const staticData = loadLocalPricingDataset();
 	const staticCount = Object.keys(staticData).length;
 
-	// Step 2: Check cache (24h TTL). When fresh, skip the network entirely.
+	// Step 2: OFFLINE short-circuits everything. Must be checked BEFORE the
+	// cache so OFFLINE=true truly means "bundled dataset only" even when a
+	// fresh 24h cache exists on disk.
+	if (process.env.OFFLINE === 'true') {
+		console.warn(
+			`[better-ccusage] Pricing: OFFLINE mode, using bundled dataset only (${staticCount} models).`,
+		);
+		return staticData;
+	}
+
+	// Step 3: Check cache (24h TTL). When fresh, skip the network entirely.
 	const cache = readCacheFile();
 	if (cache != null) {
 		const cacheCount = Object.keys(cache.dataset).length;
@@ -246,18 +256,10 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 		const ageMin = Math.max(0, Math.round((Date.now() - cache.timestamp) / 60000));
 		console.warn(
 			`[better-ccusage] Pricing: using cached dataset (${ageMin}min old).`
-			+ ` ${cacheCount} cached + ${staticCount} bundled = ${mergedCount} models`
+			+ ` ${cacheCount} cached, ${staticCount} bundled, ${mergedCount} merged unique models`
 			+ ` (bundled entries take priority).`,
 		);
 		return merged;
-	}
-
-	// Step 3: Skip remote fetch if OFFLINE
-	if (process.env.OFFLINE === 'true') {
-		console.warn(
-			`[better-ccusage] Pricing: OFFLINE mode, using bundled dataset only (${staticCount} models).`,
-		);
-		return staticData;
 	}
 
 	// Step 4: Fetch remote (this runs at most once per 24h thanks to the cache)
@@ -269,7 +271,7 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 		const mergedCount = Object.keys(merged).length;
 		console.warn(
 			`[better-ccusage] Pricing: fetched ${remoteCount} models from LiteLLM.`
-			+ ` Merged with ${staticCount} bundled = ${mergedCount} models`
+			+ ` ${remoteCount} remote, ${staticCount} bundled, ${mergedCount} merged unique models`
 			+ ` (bundled entries take priority).`,
 		);
 
