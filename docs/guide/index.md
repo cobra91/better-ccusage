@@ -2,7 +2,7 @@
 
 ![better-ccusage daily report showing token usage and costs by date](/screenshot.png)
 
-**better-ccusage** (better-claude-code-usage) is a powerful CLI tool that analyzes your Claude Code/Droid/ZCode Usage from local files to help you understand your token consumption patterns and estimated costs with multi-provider support.
+**better-ccusage** (better-claude-code-usage) is a powerful CLI tool that analyzes token usage and estimated costs from **seven local AI coding tools** — Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi — aggregating them into a single report with multi-provider pricing support.
 
 ## The Problem
 
@@ -106,17 +106,14 @@ better-ccusage extends the original ccusage functionality with support for multi
 
 ## Why better-ccusage?
 
-better-ccusage was created to address a limitation in the original ccusage project: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external tools/providers that use Claude Code/Droid/ZCode with different providers like Zai, Dashscope and many models like GLM-xx (including GLM-5.2), kat-coder, kimi, MiniMax etc.
+better-ccusage is an enhanced fork of the [ccusage](https://github.com/ccusage/ccusage) project, extending it in two directions:
 
-The original ccusage project doesn't account for:
+- **Multi-source**: aggregates usage from seven local AI coding tools — Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi — into a single report. Devin and pi are ported from upstream ccusage's open PRs ([#1398](https://github.com/ccusage/ccusage/pull/1398), [#1338](https://github.com/ccusage/ccusage/pull/1338)) and ship here ahead of upstream.
+- **Multi-provider pricing**: accurate cost calculation for providers that run these tools with their own models — Anthropic, **Zai** (all GLM models including GLM-5-Turbo, GLM-5.2), **Dashscope**, **Kwaipilot** (kat-coder), **Moonshot** (kimi), **MiniMax**, **Qwen-Max**, and more.
 
-- **Zai** providers that use Claude Code infrastructure with their own models
-- **GLM-xx, kat-coder** models from other AI providers
-- **Moonshot AI** (kimi) models like kimi-for-coding, kimi-researcher
-- **MiniMax** models like MiniMax-M2
-- Multi-provider environments where organizations use different AI services through Claude Code
-
-better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
+::: tip Relationship to upstream ccusage
+better-ccusage and upstream ccusage have diverged significantly: better-ccusage is a TypeScript monorepo, upstream is a Rust workspace. They are maintained independently — feature ports go in both directions but are not kept in lockstep.
+:::
 
 ## Data Sources
 

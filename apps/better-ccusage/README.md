@@ -17,27 +17,42 @@
     <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/screenshot.png">
 </div>
 
-> Analyze your Claude Code, Droid, ZCode, Codex, OpenCode, and Devin token usage and costs from local JSONL/SQLite files with multi-provider support — incredibly fast and informative!
+> Analyze your Claude Code, Droid, ZCode, Codex, OpenCode, Devin, and pi/oh-my-pi token usage and costs from local JSONL/SQLite files with multi-provider support — incredibly fast and informative!
 
 ## About better-ccusage
 
-**better-ccusage** is a fork of the original ccusage project that addresses a critical limitation: while ccusage focuses exclusively on Claude Code usage with Anthropic models, better-ccusage extends support to external providers that use Claude Code with different providers like Anthropic, Zai, Dashscope and many models like GLM series from Zai, kat-coder from Kwaipilot, kimi from Moonshot, Minimax, sonnet-4, sonnet-4.5 and Qwen-Max etc.
+**better-ccusage** is an enhanced fork of the [ccusage](https://github.com/ccusage/ccusage) project. It aggregates token usage and costs across **seven local AI coding tools** into a single report, with broad multi-provider pricing support.
 
-### Why the Fork?
+### Supported data sources
 
-The original ccusage project is designed specifically for Anthropic's Claude Code and doesn't account for:
+better-ccusage reads usage data directly from each tool's local files (JSONL or SQLite), auto-detected from their default locations:
 
-- **Zai** providers that use Claude Code infrastructure with their own models
-- **All GLM models (including GLM-5-Turbo), kat-coder, minimax, moonshot** models from other AI providers
-- Multi-provider environments where organizations use different AI services through Claude Code
+| Source     | Tool                                                                                 | Data location                                                             |
+| ---------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `claude`   | [Claude Code](https://claude.com/claude-code)                                        | `~/.claude/projects/` (JSONL)                                             |
+| `droid`    | [Factory Droid](https://factory.ai)                                                  | `~/.factory/sessions/` (JSONL)                                            |
+| `zcode`    | [ZCode](https://z.ai) (Zai's coding tool)                                            | `~/.zcode/cli/db/db.sqlite`                                               |
+| `codex`    | [OpenAI Codex CLI](https://github.com/openai/codex)                                  | `~/.codex/sessions/` (JSONL)                                              |
+| `opencode` | [OpenCode](https://github.com/sst/opencode)                                          | `~/.local/share/opencode/opencode.db`                                     |
+| `devin`    | [Devin](https://devin.ai) (Cognition)                                                | `~/.local/share/devin/cli/transcripts/` + `sessions.db`                   |
+| `pi`       | [pi](https://github.com/anthropics/pi) + [oh-my-pi](https://github.com/oh-my-pi/omp) | `~/.pi/agent/sessions/` + `~/.omp/agent/sessions/` (auto-detected, JSONL) |
 
-better-ccusage maintains full compatibility with ccusage while adding comprehensive support for these additional providers and models.
+Filter to a single source with the positional syntax: `better-ccusage <source> <report>` (e.g. `better-ccusage devin daily`).
+
+### Why the fork?
+
+The original ccusage project focused exclusively on Claude Code usage with Anthropic models. better-ccusage extends this in two directions:
+
+- **Multi-source**: added ZCode (SQLite), Droid, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi on top of Claude Code — all aggregated in one report. (Devin and pi are ported from upstream ccusage's open PRs [#1398](https://github.com/ccusage/ccusage/pull/1398) and [#1338](https://github.com/ccusage/ccusage/pull/1338); better-ccusage ships them ahead of upstream.)
+- **Multi-provider pricing**: accurate cost calculation for external providers that run Claude Code with their own models — Anthropic, Zai (all GLM models including GLM-5-Turbo, GLM-5.2), Dashscope, Kwaipilot (kat-coder), Moonshot (kimi), Minimax, Qwen-Max, and more.
+
+> **Note:** better-ccusage and upstream ccusage have diverged significantly in architecture and scope. better-ccusage is a TypeScript monorepo; upstream ccusage is a Rust workspace. They are maintained independently — feature ports go in both directions but are not kept in lockstep.
 
 ## better-ccusage Family
 
-### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode/Devin Usage Analyzer with Multi-Provider Support
+### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode/Devin/pi Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, and Devin usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, and Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`).
+The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`), and pi/oh-my-pi usage from JSONL sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (auto-detected).
 
 > 💡 The standalone `@better-ccusage/codex` and `@better-ccusage/opencode` packages are now deprecated forwarders — Codex and OpenCode support is built directly into `better-ccusage`. Run `npx better-ccusage` to see all sources in one report.
 
@@ -110,13 +125,14 @@ npx better-ccusage daily --instances --project myproject --json  # Combined usag
 npx better-ccusage --compact  # Force compact table mode
 npx better-ccusage monthly --compact  # Compact monthly report
 
-# Focus on a single data source (Claude, Droid, ZCode, Codex, OpenCode, Devin)
+# Focus on a single data source (Claude, Droid, ZCode, Codex, OpenCode, Devin, pi)
 # By default every report aggregates all detected sources. Prefix the command
 # with a source name to see usage for that tool only:
 npx better-ccusage codex daily          # Codex-only daily report
 npx better-ccusage opencode blocks      # OpenCode-only billing blocks
 npx better-ccusage droid session        # Droid-only session report
 npx better-ccusage devin daily          # Devin-only daily report
+npx better-ccusage pi daily             # pi/oh-my-pi-only daily report
 npx better-ccusage zcode monthly        # ZCode-only monthly report
 npx better-ccusage codex                # shorthand for "codex daily"
 # Equivalent explicit form (the positional form above is preferred):

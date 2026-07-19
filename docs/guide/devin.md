@@ -1,6 +1,6 @@
 # Devin Usage Tracking
 
-better-ccusage provides usage tracking for [Devin](https://devin.ai) (Cognition), reading the ATIF trajectory transcripts that the Devin CLI writes locally. This lets you monitor token usage and costs across your Devin sessions alongside Claude Code, Droid, ZCode, Codex, and OpenCode — all in one report.
+better-ccusage provides usage tracking for [Devin](https://devin.ai) (Cognition), reading the ATIF trajectory transcripts that the Devin CLI writes locally. This lets you monitor token usage and costs across your Devin sessions alongside Claude Code, Droid, ZCode, Codex, OpenCode, and pi/oh-my-pi — all in one report.
 
 Devin support is **built into `better-ccusage`** — there is no separate package to install.
 

@@ -72,6 +72,7 @@ import { getDevinPath, processDevinSessions } from './devin-adapter.ts';
 import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
 import { logger } from './logger.ts';
 import { getOpenCodeDbPath, processOpenCodeSessions } from './opencode-adapter.ts';
+import { getPiPaths, processPiSessions } from './pi-adapter.ts';
 import { getZcodeDbPath, processZcodeSessions } from './zcode-adapter.ts';
 
 /**
@@ -906,7 +907,25 @@ export async function loadDailyUsageData(
 		}
 	}
 
-	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0) {
+	// Also load pi/oh-my-pi usage from its JSONL sessions if available
+	let piEntries: UsageData[] = [];
+	if (sourceFilter == null || sourceFilter === 'pi') {
+		const piPaths = getPiPaths();
+		logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
+		if (piPaths.length === 0 || (piPaths.length === 1 && piPaths[0] === '')) {
+			logger.debug('Pi sessions paths are empty');
+		}
+		else {
+			try {
+				piEntries = await processPiSessions(piPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load pi sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0 && piEntries.length === 0) {
 		return [];
 	}
 
@@ -1111,6 +1130,30 @@ export async function loadDailyUsageData(
 		});
 	}
 
+	// Add pi entries to the collection
+	for (const piData of piEntries) {
+		piData.source ??= createSource('pi');
+
+		const uniqueHash = createUniqueHash(piData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(piData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? piData.costUSD ?? 0
+			: await calculateCostForEntry(piData, mode, fetcher);
+
+		allEntries.push({
+			data: piData,
+			date,
+			cost,
+			model: piData.message.model,
+			project: piData.cwd ?? path.join('pi', 'unknown'),
+		});
+	}
+
 	// Group by date, optionally including project
 	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
@@ -1293,7 +1336,25 @@ export async function loadSessionData(
 		}
 	}
 
-	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0) {
+	// Also load pi/oh-my-pi usage from its JSONL sessions if available
+	let piEntries: UsageData[] = [];
+	if (sourceFilter == null || sourceFilter === 'pi') {
+		const piPaths = getPiPaths();
+		logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
+		if (piPaths.length === 0 || (piPaths.length === 1 && piPaths[0] === '')) {
+			logger.debug('Pi sessions paths are empty');
+		}
+		else {
+			try {
+				piEntries = await processPiSessions(piPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load pi sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0 && piEntries.length === 0) {
 		return [];
 	}
 
@@ -1489,6 +1550,26 @@ export async function loadSessionData(
 			cost,
 			timestamp: devinData.timestamp,
 			model: devinData.message.model,
+		});
+	}
+
+	// Add pi entries to the collection
+	for (const piData of piEntries) {
+		piData.source ??= createSource('pi');
+
+		const sessionKey = path.join('pi', piData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? piData.costUSD ?? 0
+			: await calculateCostForEntry(piData, mode, fetcher);
+
+		allEntries.push({
+			data: piData,
+			sessionKey,
+			sessionId: piData.sessionId ?? 'unknown-session',
+			projectPath: piData.cwd ?? path.join('pi', 'unknown'),
+			cost,
+			timestamp: piData.timestamp,
+			model: piData.message.model,
 		});
 	}
 
@@ -2159,8 +2240,39 @@ export async function loadSessionBlockData(
 		}
 	}
 
+	// Also load pi/oh-my-pi usage from its JSONL sessions if available
+	let piEntries: LoadedUsageEntry[] = [];
+	if (sourceFilter == null || sourceFilter === 'pi') {
+		const piPaths = getPiPaths();
+		logger.debug(`Pi sessions paths: ${piPaths.join(', ')}`);
+		if (piPaths.length > 0 && !(piPaths.length === 1 && piPaths[0] === '')) {
+			try {
+				const rawPiEntries = await processPiSessions(piPaths, options);
+				piEntries = await Promise.all(rawPiEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'pi',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load pi sessions: ${String(error)}`);
+			}
+		}
+	}
+
 	// Combine Claude, droid, zcode, codex, and opencode entries
-	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries, ...devinEntries];
+	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries, ...devinEntries, ...piEntries];
 
 	// Identify session blocks
 	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);
