@@ -31,6 +31,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
+    "@praha/byethrow": "catalog:runtime",
     "@ryoppippi/eslint-config": "catalog:lint",
     "@typescript/native-preview": "catalog:types",
     "better-ccusage": "workspace:*",

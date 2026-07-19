@@ -409,6 +409,9 @@ importers:
 
   apps/opencode:
     devDependencies:
+      '@praha/byethrow':
+        specifier: catalog:runtime
+        version: 0.6.3
       '@ryoppippi/eslint-config':
         specifier: catalog:lint
         version: 0.4.0(@vue/compiler-sfc@3.5.25)(eslint-plugin-format@1.0.2(eslint@9.39.1(jiti@2.6.1)))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.10.1)(happy-dom@16.8.1)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
