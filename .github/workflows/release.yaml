@@ -5,8 +5,29 @@ on:
     tags:
       - "*"
 
+# Serialize ALL release runs globally. A static group name (rather than one
+# per tag via github.ref) ensures that two different tags pushed close
+# together queue instead of racing on npm publish / GitHub release creation.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  npm:
+  # Job 1: publish the core `better-ccusage` package first.
+  #
+  # Why split: the core prepack runs `clean-pkg-json`, which strips the dev
+  # `exports` (./src/data-loader, ./src/logger, ...) from
+  # apps/better-ccusage/package.json on disk. If dependent apps (mcp) were
+  # published in the same checkout afterwards, their build would fail with
+  # RESOLVE_ERROR on `better-ccusage/*` imports, because the source package.json
+  # no longer exposes those subpaths. Splitting into two jobs gives the
+  # dependent-apps job a fresh checkout.
+  #
+  # Why idempotent: on retry (e.g. publish-apps failed mid-way), publish-core
+  # would otherwise fail with `npm 403 cannot publish over`. We pre-check
+  # `npm view <pkg>@<version>` and skip publishing if the version already
+  # exists, so a retry only publishes what is missing.
+  publish-core:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -23,14 +44,82 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           node-version: lts/*
       - run: pnpm install --no-frozen-lockfile
-      - run: pnpm --filter='./apps/**' publish --provenance --no-git-checks --access public
+      - name: Check if better-ccusage@<version> already on npm
+        id: check-core
+        run: |
+          VERSION=$(node -p "require('./apps/better-ccusage/package.json').version")
+          if npm view "better-ccusage@${VERSION}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "better-ccusage@${VERSION} already published, skipping publish-core."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish better-ccusage (core)
+        if: steps.check-core.outputs.exists != 'true'
+        run: pnpm --filter='better-ccusage' publish --provenance --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Job 2: publish the dependent apps in a fresh checkout. The core package.json
+  # here is the unmodified source, so clean-pkg-json hasn't stripped its dev
+  # exports. The apps resolve `better-ccusage/*` via the pnpm workspace symlink
+  # (workspace:* protocol), NOT from the npm registry, so publish-core running
+  # first is a release-ordering concern for end users, not a build-time
+  # requirement.
+  #
+  # Like publish-core, this job is idempotent: it checks each app's version on
+  # npm and only publishes the ones that are missing, so a retry after a
+  # partial failure does not crash on already-published versions.
+  publish-apps:
+    needs: publish-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          registry-url: "https://registry.npmjs.org"
+          node-version: lts/*
+      - run: pnpm install --no-frozen-lockfile
+      - name: Publish each missing dependent app
+        # Publish the three dependent apps. We list them explicitly rather than
+        # using `@better-ccusage/*` because that glob also matches
+        # @better-ccusage/{internal, terminal, docs} (all private). Caveat:
+        # `pnpm --filter` does NOT fail when a name is unknown, so this list
+        # must be kept in sync manually with the actual app package names.
+        # For each app we first check `npm view` to skip already-published
+        # versions, making this job safe to retry.
+        # NB: GitHub Actions runs `run: |` with `set -e` by default, so a single
+        # failed publish aborts the whole step (fail-fast). The remaining apps
+        # will be retried on the next run thanks to the per-app `npm view` skip.
+        run: |
+          for app in codex mcp opencode; do
+            pkg="@better-ccusage/${app}"
+            dir="apps/${app}"
+            version=$(node -p "require('./${dir}/package.json').version")
+            if npm view "${pkg}@${version}" version >/dev/null 2>&1; then
+              echo "${pkg}@${version} already published, skipping."
+              continue
+            fi
+            echo "Publishing ${pkg}@${version}..."
+            pnpm --filter="${pkg}" publish --provenance --no-git-checks --access public
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   release:
     needs:
-      - npm
+      - publish-core
+      - publish-apps
     runs-on: ubuntu-slim
+    timeout-minutes: 5
     permissions:
       contents: write
     steps:
