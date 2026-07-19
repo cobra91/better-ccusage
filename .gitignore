@@ -22,6 +22,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.production.local
 .env.local
 
+# npm credentials (never commit auth tokens)
+.npmrc
+
 # caches
 .eslintcache
 .cache
@@ -45,3 +48,6 @@ settings.local.json
 
 # temporary LiteLLM pricing snapshot (used for ad-hoc pricing research)
 .litellm-latest.json
+
+# local ZCode agent artifacts (plans, scratch, etc.)
+.zcode/
