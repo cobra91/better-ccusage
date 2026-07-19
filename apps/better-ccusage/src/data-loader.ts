@@ -1845,7 +1845,11 @@ export async function loadSessionBlockData(
 	else {
 		try {
 			const rawCodexEntries = await processCodexSessions(codexPath, options);
-			codexEntries = rawCodexEntries.map((entry): LoadedUsageEntry => ({
+			// Codex entries do not carry a pre-computed costUSD (the adapter
+			// delegates pricing to the shared engine), so we must compute it
+			// here with the same fetcher/mode as the Claude path. Without this,
+			// every Codex session block would report $0.
+			codexEntries = await Promise.all(rawCodexEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
 				timestamp: new Date(entry.timestamp),
 				usage: {
 					inputTokens: entry.message.usage.input_tokens,
@@ -1853,12 +1857,14 @@ export async function loadSessionBlockData(
 					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
 					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
 				},
-				costUSD: entry.costUSD ?? 0,
+				costUSD: fetcher == null
+					? entry.costUSD ?? 0
+					: await calculateCostForEntry(entry, mode, fetcher),
 				model: entry.message.model ?? 'unknown',
 				version: entry.version ?? undefined,
 				usageLimitResetTime: undefined,
 				source: entry.source ?? 'codex',
-			}));
+			})));
 		}
 		catch (error) {
 			logger.warn(`Failed to load codex sessions for blocks: ${String(error)}`);

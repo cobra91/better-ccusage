@@ -121,10 +121,18 @@ function subtractRawUsage(current: RawUsage, previous: RawUsage | null): RawUsag
 }
 
 /**
- * Map a normalized Codex delta onto the Claude token model. `cached_input_tokens`
- * is a subset of `input_tokens` in Codex logs, so it is clamped to `input` and
- * emitted as `cache_read_input_tokens`. Reasoning tokens have no Claude
- * equivalent and are dropped (they are already included in output for billing).
+ * Map a normalized Codex delta onto the Claude token model.
+ *
+ * Codex/OpenAI reports `cached_input_tokens` as a **subset of** `input_tokens`,
+ * but the shared Claude cost engine (`calculateCostFromPricing`) treats
+ * `input_tokens` and `cache_read_input_tokens` as **separate additive buckets**
+ * (mirroring the Anthropic billing shape). To avoid double-charging cached
+ * tokens — once at the full input rate, once at the cache-read rate — we must
+ * subtract `cached` from `input_tokens` so the additive sum matches real
+ * Codex/OpenAI billing: `(input − cached) × input_price + cached × cache_read_price`.
+ *
+ * Reasoning tokens have no Claude equivalent and are dropped (they are already
+ * included in output for billing).
  */
 function toClaudeUsage(raw: RawUsage): {
 	input_tokens: number;
@@ -134,7 +142,10 @@ function toClaudeUsage(raw: RawUsage): {
 } {
 	const cached = Math.min(raw.cached_input_tokens, raw.input_tokens);
 	return {
-		input_tokens: raw.input_tokens,
+		// Subtract cached tokens so the additive cost engine does not charge
+		// them twice (full input rate + cache-read rate). Without this, Codex
+		// costs would be inflated in proportion to the cache-hit ratio.
+		input_tokens: Math.max(raw.input_tokens - cached, 0),
 		output_tokens: raw.output_tokens,
 		cache_creation_input_tokens: 0,
 		cache_read_input_tokens: cached,
@@ -304,7 +315,7 @@ export async function processCodexSessions(
 		let currentModelIsFallback = false;
 		const lines = fileContentResult.value.split(/\r?\n/);
 
-		for (const line of lines) {
+		for (const [lineIndex, line] of lines.entries()) {
 			const trimmed = line.trim();
 			if (trimmed === '') {
 				continue;
@@ -400,9 +411,10 @@ export async function processCodexSessions(
 
 			const usage = toClaudeUsage(raw);
 			// Unique-per-event id so createUniqueHash does not collapse multiple
-			// events from the same session. The timestamp makes it unique even
-			// within a session that emits several token_count entries.
-			const uniqueId = `${sessionId}#${timestamp}`;
+			// events from the same session. The line index disambiguates records
+			// that share a timestamp (Codex can emit several token_count entries
+			// with the same timestamp in a single turn).
+			const uniqueId = `${sessionId}#${timestamp}#${lineIndex}`;
 
 			const entry: UsageData = {
 				timestamp: createISOTimestamp(timestamp),
@@ -491,16 +503,19 @@ if (import.meta.vitest != null) {
 
 			expect(results).toHaveLength(2);
 
-			// First event uses last_token_usage directly.
+			// First event uses last_token_usage directly. input_tokens excludes
+			// the cached portion (1200 raw - 200 cached) so the additive cost
+			// engine does not double-charge cached tokens.
 			expect(results[0]!.message.model).toBe('gpt-5');
-			expect(results[0]!.message.usage.input_tokens).toBe(1_200);
+			expect(results[0]!.message.usage.input_tokens).toBe(1_000);
 			expect(results[0]!.message.usage.cache_read_input_tokens).toBe(200);
 			expect(results[0]!.message.usage.output_tokens).toBe(500);
 			expect(results[0]!.source).toBe('codex');
 
 			// Second event is a delta from the cumulative total (2000-1200, 300-200).
+			// input = 800 raw - 100 cached = 700 billable at the input rate.
 			expect(results[1]!.message.model).toBe('gpt-5');
-			expect(results[1]!.message.usage.input_tokens).toBe(800);
+			expect(results[1]!.message.usage.input_tokens).toBe(700);
 			expect(results[1]!.message.usage.cache_read_input_tokens).toBe(100);
 			expect(results[1]!.message.usage.output_tokens).toBe(300);
 		});
