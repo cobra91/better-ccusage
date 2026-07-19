@@ -4,7 +4,7 @@ import { addEmptySeparatorRow, createUsageReportTable, formatTotalsRow, formatUs
 import { Result } from '@praha/byethrow';
 import { define } from 'gunshi';
 import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
-import { DEFAULT_LOCALE } from '../_consts.ts';
+import { DEFAULT_LOCALE, sourceLabel } from '../_consts.ts';
 import { formatDateCompact } from '../_date-utils.ts';
 import { processWithJq } from '../_jq-processor.ts';
 import { sharedCommandConfig } from '../_shared-args.ts';
@@ -65,6 +65,7 @@ export const sessionCommand = define({
 			mode: ctx.values.mode,
 			timezone: ctx.values.timezone,
 			locale: ctx.values.locale,
+			source: ctx.values.source,
 		});
 
 		if (sessionData.length === 0) {
@@ -72,7 +73,7 @@ export const sessionCommand = define({
 				log(JSON.stringify([]));
 			}
 			else {
-				logger.warn('No Claude usage data found.');
+				logger.warn(`No ${sourceLabel(mergedOptions.source)} usage data found.`);
 			}
 			process.exit(0);
 		}

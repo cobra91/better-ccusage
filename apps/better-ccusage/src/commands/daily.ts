@@ -5,6 +5,7 @@ import { Result } from '@praha/byethrow';
 import { define } from 'gunshi';
 import pc from 'picocolors';
 import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
+import { sourceLabel } from '../_consts.ts';
 import { groupByProject, groupDataByProject } from '../_daily-grouping.ts';
 import { formatDateCompact } from '../_date-utils.ts';
 import { processWithJq } from '../_jq-processor.ts';
@@ -79,7 +80,7 @@ export const dailyCommand = define({
 				log(JSON.stringify([]));
 			}
 			else {
-				logger.warn('No Claude usage data found.');
+				logger.warn(`No ${sourceLabel(mergedOptions.source)} usage data found.`);
 			}
 			process.exit(0);
 		}

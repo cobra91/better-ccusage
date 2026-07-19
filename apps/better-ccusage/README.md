@@ -17,7 +17,7 @@
     <img src="https://cdn.jsdelivr.net/gh/cobra91/better-ccusage@main/docs/public/screenshot.png">
 </div>
 
-> Analyze your Claude Code, Droid, or ZCode token usage and costs from local JSONL/SQLite files with multi-provider support — incredibly fast and informative!
+> Analyze your Claude Code, Droid, ZCode, Codex, OpenCode, and Devin token usage and costs from local JSONL/SQLite files with multi-provider support — incredibly fast and informative!
 
 ## About better-ccusage
 
@@ -109,7 +109,22 @@ npx better-ccusage daily --instances --project myproject --json  # Combined usag
 # Compact mode for screenshots/sharing
 npx better-ccusage --compact  # Force compact table mode
 npx better-ccusage monthly --compact  # Compact monthly report
+
+# Focus on a single data source (Claude, Droid, ZCode, Codex, OpenCode, Devin)
+# By default every report aggregates all detected sources. Prefix the command
+# with a source name to see usage for that tool only:
+npx better-ccusage codex daily          # Codex-only daily report
+npx better-ccusage opencode blocks      # OpenCode-only billing blocks
+npx better-ccusage droid session        # Droid-only session report
+npx better-ccusage devin daily          # Devin-only daily report
+npx better-ccusage zcode monthly        # ZCode-only monthly report
+npx better-ccusage codex                # shorthand for "codex daily"
+# Equivalent explicit form (the positional form above is preferred):
+npx better-ccusage daily --source codex
 ```
+
+> 💡 **Tip**: Running `better-ccusage <source>` (e.g. `better-ccusage codex`) with no
+> report defaults to `daily`, the same shorthand upstream `ccusage` uses.
 
 ## Multi-Provider Support
 
@@ -203,6 +218,10 @@ better-ccusage extends the original ccusage functionality with automatic support
 | Show prompt usage for Coding     | ❌      | ✅             |
 | Droid usage                      | ❌      | ✅             |
 | ZCode usage                      | ❌      | ✅             |
+| Codex usage                      | ❌      | ✅             |
+| OpenCode usage                   | ❌      | ✅             |
+| Devin usage                      | ❌      | ✅             |
+| Per-source filtering             | ❌      | ✅             |
 
 ## Star History
 

@@ -1,6 +1,5 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Result } from '@praha/byethrow';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -10,16 +9,16 @@ type BinField = string | Record<string, string> | undefined;
 /**
  * Resolve the `better-ccusage` binary entry path.
  *
- * In a published install, `better-ccusage` is expected to be resolvable
- * alongside this package (e.g. installed as a sibling workspace dep). Falls
- * back to the monorepo sibling source during development so the shim works
- * without a published build.
+ * `better-ccusage` must be resolvable alongside this package: it is declared
+ * as a runtime `dependency` in package.json, so in a published install it is a
+ * sibling under `node_modules/better-ccusage`, and in the monorepo it resolves
+ * through the pnpm workspace symlink. There is intentionally no fallback: a
+ * previous hardcoded `../../better-ccusage/src/index.ts` path shipped to npm
+ * and caused a silent `MODULE_NOT_FOUND` because `src/` is not published. Fail
+ * loudly instead so misconfiguration is obvious.
  *
- * The whole resolution block (resolve + read package.json + read bin field)
- * is wrapped in a single `Result.try` so that ANY failure — missing package,
- * corrupt package.json, missing/malformed bin field — falls back to the dev
- * path rather than crashing the forwarder. This preserves the original
- * try-catch safety net while following the coding guideline to prefer Result.
+ * The resolution block is wrapped in `Result.try` to follow the repo's Result
+ * convention, then unwrapped: a failure here is unrecoverable for the shim.
  */
 export async function resolveBinaryPath(): Promise<string> {
 	const resolved = Result.try({
@@ -31,18 +30,19 @@ export async function resolveBinaryPath(): Promise<string> {
 				? binField
 				: (binField != null ? (binField['better-ccusage'] ?? Object.values(binField)[0]) : undefined);
 			if (binRelative == null) {
-				throw new Error('better-ccusage package.json has no resolvable bin field');
+				throw new Error(`better-ccusage package.json at ${packageJsonPath} has no resolvable bin field`);
 			}
 			return path.resolve(path.dirname(packageJsonPath), binRelative);
 		},
 		catch: error => error,
 	})();
 
-	if (Result.isSuccess(resolved)) {
-		return resolved.value;
+	if (Result.isFailure(resolved)) {
+		// No silent fallback: surface the resolution failure so it can be fixed.
+		throw new Error(
+			`Could not resolve better-ccusage. Ensure the 'better-ccusage' package is installed (declared as a dependency of @better-ccusage/opencode). Underlying error: ${String(resolved.error)}`,
+		);
 	}
 
-	// Development fallback: monorepo sibling (apps/better-ccusage/src/index.ts).
-	const currentDir = path.dirname(fileURLToPath(import.meta.url));
-	return path.resolve(currentDir, '..', '..', 'better-ccusage', 'src', 'index.ts');
+	return resolved.value;
 }

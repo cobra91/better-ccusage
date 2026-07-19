@@ -90,6 +90,43 @@ ZCode (the official GLM coding tool) records every model request in this databas
 Reading the ZCode database requires Node.js `>=22.13.0` (when the built-in `node:sqlite` module stopped requiring the `--experimental-sqlite` flag). On older Node versions or alternative runtimes (e.g. Bun), ZCode data is silently skipped and Claude/Droid usage continues to work normally.
 :::
 
+## DROID_SESSIONS_DIR
+
+Specifies the directory where Factory/Droid stores its session data.
+
+```bash
+export DROID_SESSIONS_DIR="/path/to/your/factory/sessions"
+better-ccusage daily
+```
+
+When not set, better-ccusage looks in `~/.factory/sessions` by default.
+
+## CODEX_HOME
+
+Overrides the OpenAI Codex CLI home directory. `better-ccusage` reads session JSONL logs from `<CODEX_HOME>/sessions` (recursively, matching `**/*.jsonl`).
+
+```bash
+export CODEX_HOME="/path/to/your/codex/home"
+better-ccusage daily
+```
+
+When not set, the default is `~/.codex` (so sessions are read from `~/.codex/sessions`).
+
+::: tip
+Interactive Codex TUI sessions do not write per-turn `token_count` events to disk — only `codex exec` (non-interactive) does. If your Codex usage is missing, run `better-ccusage codex daily` and check the diagnostic warning. See [openai/codex#9660](https://github.com/openai/codex/issues/9660) for background.
+:::
+
+## OPENCODE_DATA_DIR
+
+Overrides the OpenCode data directory. `better-ccusage` reads the `opencode.db` SQLite database from this directory.
+
+```bash
+export OPENCODE_DATA_DIR="/path/to/your/opencode"
+better-ccusage daily
+```
+
+When not set, the default is `~/.local/share/opencode`.
+
 ## DEVIN_DATA_DIR
 
 Specifies the Devin CLI data directory where better-ccusage should look for ATIF trajectory transcripts (`transcripts/*.json`) and the optional `sessions.db` enrichment database.

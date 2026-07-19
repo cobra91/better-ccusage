@@ -384,21 +384,27 @@ export function getDevinPath(): string {
  * hidden sessions. User-input steps and zero-token steps are skipped.
  *
  * @param dataDir - Absolute path to the Devin CLI data directory
- * @param _options - Load options (kept for parity with the other adapters)
+ * @param options - Load options. `options.source` gates the "transcripts
+ *   directory not found" warning so it only fires when the user explicitly
+ *   asked for devin.
  * @returns Transformed usage entries (one per billable step)
  */
 export async function processDevinSessions(
 	dataDir: string,
-	_options: LoadOptions = {},
+	options: LoadOptions = {},
 ): Promise<UsageData[]> {
 	if (dataDir === '') {
 		logger.debug('Devin data directory is empty, skipping');
 		return [];
 	}
 
+	// Warn loudly only when the user explicitly asked for devin; in aggregate
+	// mode a machine that doesn't use Devin must stay quiet.
+	const optedIn = options.source === 'devin';
+
 	const transcriptsDir = path.join(dataDir, DEVIN_TRANSCRIPTS_SUBPATH);
 	if (!existsSync(transcriptsDir)) {
-		logger.debug(`Devin transcripts directory not found at ${transcriptsDir}`);
+		(optedIn ? logger.warn : logger.debug)(`Devin transcripts directory not found at ${transcriptsDir}`);
 		return [];
 	}
 
@@ -544,7 +550,16 @@ export async function processDevinSessions(
 		}
 	}
 
-	logger.info(`Loaded ${results.length} Devin usage entries from ${transcriptsDir}`);
+	logger.info(`Loaded ${results.length} Devin usage entries from ${transcriptsDir} (${files.length} transcript file${files.length === 1 ? '' : 's'})`);
+
+	// Surface the "transcripts exist but nothing extracted" case so Devin being
+	// invisible in reports is diagnosable instead of silent.
+	if (results.length === 0 && files.length > 0) {
+		logger.warn(
+			`Devin transcripts directory at ${transcriptsDir} had ${files.length} file(s) but none yielded usage entries. Transcripts without token/step data or with an unrecognized schema are skipped.`,
+		);
+	}
+
 	return results;
 }
 

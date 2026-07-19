@@ -55,6 +55,30 @@ const XDG_CONFIG_DIR = xdgConfig ?? path.join(USER_HOME_DIR, '.config');
 export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode', 'devin'] as const;
 
 /**
+ * Display labels for each source atom, matching the canonical capitalization
+ * used across the README, adapter logs, and docs (e.g. "OpenCode", "ZCode" —
+ * not "Opencode"/"Zcode"). Used for user-facing messages such as the
+ * "No <Source> usage data found." empty-result warning.
+ */
+const SOURCE_LABELS: Record<string, string> = {
+	claude: 'Claude',
+	droid: 'Droid',
+	zcode: 'ZCode',
+	codex: 'Codex',
+	opencode: 'OpenCode',
+	devin: 'Devin',
+};
+
+/**
+ * Return the display label for a source atom, defaulting to "Claude" when no
+ * source filter is set (the aggregate case). Unknown values pass through
+ * unchanged so a typo never produces an empty label.
+ */
+export function sourceLabel(source?: string): string {
+	return source != null ? (SOURCE_LABELS[source] ?? source) : 'Claude';
+}
+
+/**
  * All non-empty subsets of {@link SOURCE_ORDER}, joined by '/' in canonical
  * order. Generated at module load so the list stays in sync with
  * `SOURCE_ORDER` (2^n - 1 combinations for n sources).

@@ -165,20 +165,25 @@ const MESSAGES_SQL = `
  * recomputes from tokens via the shared engine.
  *
  * @param dbPath - Absolute path to the OpenCode SQLite database
- * @param _options - Load options (kept for parity with the other adapters)
+ * @param options - Load options. `options.source` gates the "database not
+ *   found" warning so it only fires when the user explicitly asked for opencode.
  * @returns Transformed usage entries (one per assistant message with tokens)
  */
 export async function processOpenCodeSessions(
 	dbPath: string,
-	_options: LoadOptions = {},
+	options: LoadOptions = {},
 ): Promise<UsageData[]> {
 	if (dbPath === '') {
 		logger.debug('OpenCode database path is empty, skipping');
 		return [];
 	}
 
+	// Warn loudly only when the user explicitly asked for opencode; in aggregate
+	// mode a machine that doesn't use OpenCode must stay quiet.
+	const optedIn = options.source === 'opencode';
+
 	if (!existsSync(dbPath)) {
-		logger.debug(`OpenCode database not found at ${dbPath}`);
+		(optedIn ? logger.warn : logger.debug)(`OpenCode database not found at ${dbPath}`);
 		return [];
 	}
 
@@ -306,7 +311,16 @@ export async function processOpenCodeSessions(
 		results.push(entry);
 	}
 
-	logger.info(`Loaded ${results.length} OpenCode usage entries from ${dbPath}`);
+	logger.info(`Loaded ${results.length} OpenCode usage entries from ${dbPath} (${rows.length} message row${rows.length === 1 ? '' : 's'})`);
+
+	// Surface the "data exists but nothing extracted" case so OpenCode being
+	// invisible in reports is diagnosable instead of silent.
+	if (results.length === 0 && rows.length > 0) {
+		logger.warn(
+			`OpenCode database at ${dbPath} had ${rows.length} message row(s) but none yielded usage entries. Rows without token usage, with all-zero tokens, or without a model id are skipped.`,
+		);
+	}
+
 	return results;
 }
 

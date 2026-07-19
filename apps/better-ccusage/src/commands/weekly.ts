@@ -4,7 +4,7 @@ import { addEmptySeparatorRow, createUsageReportTable, formatTotalsRow, formatUs
 import { Result } from '@praha/byethrow';
 import { define } from 'gunshi';
 import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
-import { WEEK_DAYS } from '../_consts.ts';
+import { sourceLabel, WEEK_DAYS } from '../_consts.ts';
 import { formatDateCompact } from '../_date-utils.ts';
 import { processWithJq } from '../_jq-processor.ts';
 import { sharedArgs } from '../_shared-args.ts';
@@ -60,7 +60,7 @@ export const weeklyCommand = define({
 				log(JSON.stringify(emptyOutput, null, 2));
 			}
 			else {
-				logger.warn('No Claude usage data found.');
+				logger.warn(`No ${sourceLabel(mergedOptions.source)} usage data found.`);
 			}
 			process.exit(0);
 		}

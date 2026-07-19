@@ -68,15 +68,11 @@ export default defineConfig({
 					],
 				},
 				{
-					text: 'Codex Source',
+					text: 'Data Sources',
 					items: [
-						{ text: 'Overview', link: '/guide/codex/' },
-					],
-				},
-				{
-					text: 'Devin Source',
-					items: [
-						{ text: 'Overview', link: '/guide/devin' },
+						{ text: 'Codex', link: '/guide/codex/' },
+						{ text: 'OpenCode', link: '/guide/opencode' },
+						{ text: 'Devin', link: '/guide/devin' },
 					],
 				},
 				{

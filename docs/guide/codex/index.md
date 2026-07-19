@@ -15,6 +15,16 @@ npx better-ccusage session
 
 Codex rows are labeled with the `codex` source in combined reports. You get the same Daily / Weekly / Monthly / Session / Blocks commands as for every other source.
 
+### Codex-only reports
+
+To see Codex usage on its own (excluding Claude, Droid, etc.), use the `<source> <report>` syntax:
+
+```bash
+npx better-ccusage codex daily       # Codex-only daily report
+npx better-ccusage codex blocks      # Codex-only billing blocks
+npx better-ccusage codex             # shorthand for "codex daily"
+```
+
 ## Backward compatibility
 
 The `@better-ccusage/codex` package still works as a thin forwarder:
