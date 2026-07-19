@@ -311,15 +311,13 @@ export async function processOpenCodeSessions(
 }
 
 if (import.meta.vitest != null) {
-	// Hoist the sqlite import once for all tests (CLAUDE.md discourages
-	// repeated `await import()` in test bodies; the runtime-detection
-	// justification from the production code does not apply under vitest).
-	// eslint-disable-next-line antfu/no-top-level-await -- test-only hoisted import inside the vitest guard
-	const { DatabaseSync } = await import('node:sqlite');
-
 	describe('processOpenCodeSessions', () => {
 		it('parses messages with tokens into UsageData (additive, no cache subtraction)', async () => {
 			// Build a tiny in-memory SQLite DB matching the OpenCode schema.
+			// node:sqlite is lazy-imported per test (same pattern as the
+			// production code) because a static top-level import would break
+			// runtimes where node:sqlite is unavailable (Bun, Node < 22.13).
+			const { DatabaseSync } = await import('node:sqlite');
 			await using fixture = await createFixture({});
 			const dbPath = `${fixture.path}/opencode.db`;
 			const db = new DatabaseSync(dbPath);
@@ -374,6 +372,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('resolves gemini-3-pro-high alias to gemini-3-pro-preview', async () => {
+			const { DatabaseSync } = await import('node:sqlite');
 			await using fixture = await createFixture({});
 			const dbPath = `${fixture.path}/opencode.db`;
 			const db = new DatabaseSync(dbPath);
@@ -392,6 +391,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('handles cache: 0 (non-object) without dropping the message', async () => {
+			const { DatabaseSync } = await import('node:sqlite');
 			await using fixture = await createFixture({});
 			const dbPath = `${fixture.path}/opencode.db`;
 			const db = new DatabaseSync(dbPath);
@@ -412,6 +412,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('skips messages without tokens or with all-zero tokens', async () => {
+			const { DatabaseSync } = await import('node:sqlite');
 			await using fixture = await createFixture({});
 			const dbPath = `${fixture.path}/opencode.db`;
 			const db = new DatabaseSync(dbPath);
@@ -428,6 +429,7 @@ if (import.meta.vitest != null) {
 		});
 
 		it('skips messages without a modelID (cannot price, avoids mispricing)', async () => {
+			const { DatabaseSync } = await import('node:sqlite');
 			await using fixture = await createFixture({});
 			const dbPath = `${fixture.path}/opencode.db`;
 			const db = new DatabaseSync(dbPath);
