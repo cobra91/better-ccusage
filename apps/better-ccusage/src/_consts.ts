@@ -52,7 +52,7 @@ const XDG_CONFIG_DIR = xdgConfig ?? path.join(USER_HOME_DIR, '.config');
  * `sourceSchema` picklist (via `SOURCE_SUBSETS`). Add a new source here and
  * both the combiner and the schema pick up the extra atom automatically.
  */
-export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode'] as const;
+export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode', 'devin'] as const;
 
 /**
  * All non-empty subsets of {@link SOURCE_ORDER}, joined by '/' in canonical
@@ -172,6 +172,45 @@ export const DEFAULT_OPENCODE_HOME_PATH = path.join('.local', 'share', 'opencode
  * relative to the OpenCode data directory.
  */
 export const DEFAULT_OPENCODE_DB_SUBPATH = 'opencode.db';
+
+/**
+ * Environment variable for overriding the Devin CLI data directory.
+ *
+ * Devin stores ATIF trajectory transcripts under `<data dir>/transcripts/`
+ * and an optional `sessions.db` (SQLite) at the data dir root. When set, both
+ * are resolved relative to this directory.
+ */
+export const DEVIN_DATA_DIR_ENV = 'DEVIN_DATA_DIR';
+
+/**
+ * Default Devin data directory on Linux/macOS (XDG-style share path):
+ * `~/.local/share/devin/cli`.
+ */
+export const DEFAULT_DEVIN_HOME_PATH = path.join('.local', 'share', 'devin', 'cli');
+
+/**
+ * Devin data directory on Windows, relative to `%APPDATA%`: `devin\cli`.
+ * Used only when `APPDATA` is set; otherwise the Linux/macOS default applies.
+ */
+export const DEFAULT_DEVIN_HOME_PATH_WIN = path.join('devin', 'cli');
+
+/**
+ * Subpath of the directory holding ATIF trajectory transcripts (whole-file
+ * JSON, one document per `.json` file), relative to the Devin data directory.
+ */
+export const DEVIN_TRANSCRIPTS_SUBPATH = 'transcripts';
+
+/**
+ * Subpath of the SQLite database that enriches Devin transcripts with the
+ * session's working directory, model fallback, and timestamps, and filters
+ * hidden sessions. Relative to the Devin data directory.
+ */
+export const DEVIN_SESSIONS_DB_SUBPATH = 'sessions.db';
+
+/**
+ * JSON file glob pattern for finding Devin ATIF transcript files (recursive).
+ */
+export const DEVIN_TRANSCRIPT_GLOB = '**/*.json';
 
 /**
  * Claude projects directory name within the data directory
