@@ -384,23 +384,27 @@ export function getDevinPath(): string {
  * hidden sessions. User-input steps and zero-token steps are skipped.
  *
  * @param dataDir - Absolute path to the Devin CLI data directory
- * @param _options - Load options (kept for parity with the other adapters)
+ * @param options - Load options. `options.source` gates the "transcripts
+ *   directory not found" warning so it only fires when the user explicitly
+ *   asked for devin.
  * @returns Transformed usage entries (one per billable step)
  */
 export async function processDevinSessions(
 	dataDir: string,
-	_options: LoadOptions = {},
+	options: LoadOptions = {},
 ): Promise<UsageData[]> {
 	if (dataDir === '') {
 		logger.debug('Devin data directory is empty, skipping');
 		return [];
 	}
 
+	// Warn loudly only when the user explicitly asked for devin; in aggregate
+	// mode a machine that doesn't use Devin must stay quiet.
+	const optedIn = options.source === 'devin';
+
 	const transcriptsDir = path.join(dataDir, DEVIN_TRANSCRIPTS_SUBPATH);
 	if (!existsSync(transcriptsDir)) {
-		// warn (not debug): a missing transcripts dir is the most common reason
-		// Devin data is invisible in reports, and debug is hidden by default.
-		logger.warn(`Devin transcripts directory not found at ${transcriptsDir}`);
+		(optedIn ? logger.warn : logger.debug)(`Devin transcripts directory not found at ${transcriptsDir}`);
 		return [];
 	}
 

@@ -185,7 +185,11 @@ export const blocksCommand = define({
 				log(JSON.stringify({ blocks: [] }));
 			}
 			else {
-				logger.warn('No Claude usage data found.');
+				const src = ctx.values.source;
+				const srcLabel = src != null
+					? `${src[0]!.toUpperCase()}${src.slice(1)}`
+					: 'Claude';
+				logger.warn(`No ${srcLabel} usage data found.`);
 			}
 			process.exit(0);
 		}

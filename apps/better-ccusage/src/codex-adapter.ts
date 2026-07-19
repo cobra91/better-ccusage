@@ -267,27 +267,32 @@ export function getCodexPath(): string {
  * logged at debug/warn level and skipped rather than thrown.
  *
  * @param codexPath - Absolute path to the Codex sessions directory
- * @param _options - Load options (currently unused, kept for parity with the
- *   other adapters so the loaders can call it uniformly)
+ * @param options - Load options. `options.source` gates the "directory not
+ *   found" warning so it only fires when the user explicitly asked for codex.
  * @returns Transformed usage entries (one per `token_count` event delta)
  */
 export async function processCodexSessions(
 	codexPath: string,
-	_options: LoadOptions = {},
+	options: LoadOptions = {},
 ): Promise<UsageData[]> {
 	if (codexPath === '') {
 		logger.debug('Codex sessions path is empty, skipping');
 		return [];
 	}
 
+	// When the user explicitly asked for codex (e.g. `better-ccusage codex daily`),
+	// a missing directory is the #1 reason for "no data", so warn loudly. When
+	// aggregating all sources (default), a machine that simply doesn't use Codex
+	// must stay quiet — otherwise every Claude-only user sees a spurious warn.
+	const optedIn = options.source === 'codex';
+	const dirMissingLog = optedIn ? logger.warn : logger.debug;
+
 	const dirStat = await Result.try({
 		try: async () => stat(codexPath),
 		catch: error => error,
 	})();
 	if (Result.isFailure(dirStat) || !dirStat.value.isDirectory()) {
-		// warn (not debug): a missing Codex directory is the most common reason
-		// Codex data is invisible in reports, and debug is hidden by default.
-		logger.warn(`Codex sessions directory not found or not a directory: ${codexPath}`);
+		dirMissingLog(`Codex sessions directory not found or not a directory: ${codexPath}`);
 		return [];
 	}
 
@@ -297,8 +302,9 @@ export async function processCodexSessions(
 	});
 
 	if (files.length === 0) {
-		// Directory exists but has no .jsonl session files — surface it so the
-		// user can tell an empty dir apart from a misconfigured CODEX_HOME.
+		// Directory exists but has no .jsonl session files. This only fires when
+		// the dir genuinely exists (so the user likely uses Codex) — safe to warn
+		// regardless of opt-in.
 		logger.warn(`Codex sessions directory exists but contains no .jsonl files: ${codexPath}`);
 		return [];
 	}

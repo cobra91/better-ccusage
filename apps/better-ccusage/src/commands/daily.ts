@@ -79,7 +79,10 @@ export const dailyCommand = define({
 				log(JSON.stringify([]));
 			}
 			else {
-				logger.warn('No Claude usage data found.');
+				const srcLabel = mergedOptions.source != null
+					? `${mergedOptions.source[0]!.toUpperCase()}${mergedOptions.source.slice(1)}`
+					: 'Claude';
+				logger.warn(`No ${srcLabel} usage data found.`);
 			}
 			process.exit(0);
 		}

@@ -165,22 +165,25 @@ const MESSAGES_SQL = `
  * recomputes from tokens via the shared engine.
  *
  * @param dbPath - Absolute path to the OpenCode SQLite database
- * @param _options - Load options (kept for parity with the other adapters)
+ * @param options - Load options. `options.source` gates the "database not
+ *   found" warning so it only fires when the user explicitly asked for opencode.
  * @returns Transformed usage entries (one per assistant message with tokens)
  */
 export async function processOpenCodeSessions(
 	dbPath: string,
-	_options: LoadOptions = {},
+	options: LoadOptions = {},
 ): Promise<UsageData[]> {
 	if (dbPath === '') {
 		logger.debug('OpenCode database path is empty, skipping');
 		return [];
 	}
 
+	// Warn loudly only when the user explicitly asked for opencode; in aggregate
+	// mode a machine that doesn't use OpenCode must stay quiet.
+	const optedIn = options.source === 'opencode';
+
 	if (!existsSync(dbPath)) {
-		// warn (not debug): a missing DB is the most common reason OpenCode
-		// data is invisible in reports, and debug is hidden by default.
-		logger.warn(`OpenCode database not found at ${dbPath}`);
+		(optedIn ? logger.warn : logger.debug)(`OpenCode database not found at ${dbPath}`);
 		return [];
 	}
 

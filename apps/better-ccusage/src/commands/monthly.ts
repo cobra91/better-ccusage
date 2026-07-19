@@ -50,7 +50,10 @@ export const monthlyCommand = define({
 				log(JSON.stringify(emptyOutput, null, 2));
 			}
 			else {
-				logger.warn('No Claude usage data found.');
+				const srcLabel = mergedOptions.source != null
+					? `${mergedOptions.source[0]!.toUpperCase()}${mergedOptions.source.slice(1)}`
+					: 'Claude';
+				logger.warn(`No ${srcLabel} usage data found.`);
 			}
 			process.exit(0);
 		}
