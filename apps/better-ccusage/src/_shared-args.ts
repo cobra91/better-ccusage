@@ -1,7 +1,7 @@
 import type { Args } from 'gunshi';
 import type { CostMode, SortOrder } from './_types.ts';
 import * as v from 'valibot';
-import { DEFAULT_LOCALE } from './_consts.ts';
+import { DEFAULT_LOCALE, SOURCE_ORDER } from './_consts.ts';
 import { CostModes, filterDateSchema, SortOrders } from './_types.ts';
 
 /**
@@ -100,6 +100,11 @@ export const sharedArgs = {
 		type: 'boolean',
 		description: 'Force compact mode for narrow displays (better for screenshots)',
 		default: false,
+	},
+	source: {
+		type: 'enum',
+		description: `Filter to a single data source (${SOURCE_ORDER.join(', ')}). Prefer the positional form: \`better-ccusage <source> <report>\` (e.g. \`better-ccusage codex daily\`).`,
+		choices: SOURCE_ORDER as unknown as readonly [string, ...string[]],
 	},
 } as const satisfies Args;
 

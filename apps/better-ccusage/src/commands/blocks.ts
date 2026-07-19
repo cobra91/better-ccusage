@@ -177,6 +177,7 @@ export const blocksCommand = define({
 			sessionDurationHours: ctx.values.sessionLength,
 			timezone: ctx.values.timezone,
 			locale: ctx.values.locale,
+			source: ctx.values.source,
 		});
 
 		if (blocks.length === 0) {

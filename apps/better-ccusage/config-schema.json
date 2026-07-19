@@ -98,6 +98,19 @@
 							"description": "Force compact mode for narrow displays (better for screenshots)",
 							"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 							"default": false
+						},
+						"source": {
+							"type": "string",
+							"enum": [
+								"claude",
+								"droid",
+								"zcode",
+								"codex",
+								"opencode",
+								"devin"
+							],
+							"description": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`).",
+							"markdownDescription": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`)."
 						}
 					},
 					"additionalProperties": false,
@@ -196,6 +209,19 @@
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
+								},
+								"source": {
+									"type": "string",
+									"enum": [
+										"claude",
+										"droid",
+										"zcode",
+										"codex",
+										"opencode",
+										"devin"
+									],
+									"description": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`).",
+									"markdownDescription": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`)."
 								},
 								"instances": {
 									"type": "boolean",
@@ -305,6 +331,19 @@
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
+								},
+								"source": {
+									"type": "string",
+									"enum": [
+										"claude",
+										"droid",
+										"zcode",
+										"codex",
+										"opencode",
+										"devin"
+									],
+									"description": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`).",
+									"markdownDescription": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`)."
 								}
 							},
 							"additionalProperties": false
@@ -398,6 +437,19 @@
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
+								},
+								"source": {
+									"type": "string",
+									"enum": [
+										"claude",
+										"droid",
+										"zcode",
+										"codex",
+										"opencode",
+										"devin"
+									],
+									"description": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`).",
+									"markdownDescription": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`)."
 								},
 								"startOfWeek": {
 									"type": "string",
@@ -497,6 +549,19 @@
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
 								},
+								"source": {
+									"type": "string",
+									"enum": [
+										"claude",
+										"droid",
+										"zcode",
+										"codex",
+										"opencode",
+										"devin"
+									],
+									"description": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`).",
+									"markdownDescription": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`)."
+								},
 								"id": {
 									"type": "string",
 									"description": "Load usage data for a specific session ID",
@@ -594,6 +659,19 @@
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
+								},
+								"source": {
+									"type": "string",
+									"enum": [
+										"claude",
+										"droid",
+										"zcode",
+										"codex",
+										"opencode",
+										"devin"
+									],
+									"description": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`).",
+									"markdownDescription": "Filter to a single data source (claude, droid, zcode, codex, opencode, devin). Prefer the positional form: `better-ccusage <source> <report>` (e.g. `better-ccusage codex daily`)."
 								},
 								"active": {
 									"type": "boolean",

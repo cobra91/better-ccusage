@@ -773,6 +773,18 @@ export type LoadOptions = {
 	startOfWeek?: WeekDay; // Start of week for weekly aggregation
 	timezone?: string; // Timezone for date grouping (e.g., 'UTC', 'America/New_York'). Defaults to system timezone
 	locale?: string; // Locale for date/time formatting (e.g., 'en-US', 'ja-JP'). Defaults to 'en-US'
+	/**
+	 * Restrict loading to a single data source atom ('claude' | 'droid' |
+	 * 'zcode' | 'codex' | 'opencode' | 'devin'). When unset, all sources are
+	 * loaded and aggregated (the default behavior). Set by the
+	 * `better-ccusage <source> <report>` subcommand syntax via the argv rewrite
+	 * in commands/index.ts; also accepted as the internal `--source` flag.
+	 *
+	 * Typed as `string` (not a literal union) because gunshi widens enum args
+	 * to `string`; the CLI `choices` constraint enforces valid values at the
+	 * boundary. Any non-matching string simply matches no adapter, yielding [].
+	 */
+	source?: string;
 } & DateFilter;
 
 /**
@@ -788,92 +800,109 @@ export type LoadOptions = {
 export async function loadDailyUsageData(
 	options?: LoadOptions,
 ): Promise<DailyUsage[]> {
-	// Get all Claude paths or use the specific one from options
-	const claudePaths = toArray(options?.claudePath ?? getClaudePaths());
+	const sourceFilter = options?.source;
+
+	// Get all Claude paths or use the specific one from options.
+	// Skip Claude entirely when filtering to a different source: getClaudePaths()
+	// throws when no Claude data dir exists, which would break
+	// `better-ccusage codex daily` on a machine with no Claude data.
+	const claudePaths = sourceFilter != null && sourceFilter !== 'claude'
+		? []
+		: toArray(options?.claudePath ?? getClaudePaths());
 
 	// Collect files from all paths in parallel
 	const allFiles = await globUsageFiles(claudePaths);
 	const fileList = allFiles.map(f => f.file);
 
 	// Also load droid sessions if available
-	const droidPath = getDroidPath();
-	logger.debug(`Droid path: ${droidPath}`);
 	let droidEntries: UsageData[] = [];
-	if (droidPath === '') {
-		logger.debug('Droid path is null or undefined');
-	}
-	else {
-		try {
-			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
-			droidEntries = await processDroidSessions(droidPath, options);
-			logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
+	if (sourceFilter == null || sourceFilter === 'droid') {
+		const droidPath = getDroidPath();
+		logger.debug(`Droid path: ${droidPath}`);
+		if (droidPath === '') {
+			logger.debug('Droid path is null or undefined');
 		}
-		catch (error) {
-			logger.warn(`Failed to load droid sessions: ${String(error)}`);
+		else {
+			try {
+				logger.debug(`Attempting to load droid sessions from ${droidPath}`);
+				droidEntries = await processDroidSessions(droidPath, options);
+				logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
+			}
+			catch (error) {
+				logger.warn(`Failed to load droid sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load zcode usage from its SQLite database if available
-	const zcodeDbPath = getZcodeDbPath();
-	logger.debug(`ZCode database path: ${zcodeDbPath}`);
 	let zcodeEntries: UsageData[] = [];
-	if (zcodeDbPath === '') {
-		logger.debug('ZCode database path is empty');
-	}
-	else {
-		try {
-			zcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+	if (sourceFilter == null || sourceFilter === 'zcode') {
+		const zcodeDbPath = getZcodeDbPath();
+		logger.debug(`ZCode database path: ${zcodeDbPath}`);
+		if (zcodeDbPath === '') {
+			logger.debug('ZCode database path is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load zcode sessions: ${String(error)}`);
+		else {
+			try {
+				zcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load zcode sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load Codex usage from its session JSONL logs if available
-	const codexPath = getCodexPath();
-	logger.debug(`Codex sessions path: ${codexPath}`);
 	let codexEntries: UsageData[] = [];
-	if (codexPath === '') {
-		logger.debug('Codex sessions path is empty');
-	}
-	else {
-		try {
-			codexEntries = await processCodexSessions(codexPath, options);
+	if (sourceFilter == null || sourceFilter === 'codex') {
+		const codexPath = getCodexPath();
+		logger.debug(`Codex sessions path: ${codexPath}`);
+		if (codexPath === '') {
+			logger.debug('Codex sessions path is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load codex sessions: ${String(error)}`);
+		else {
+			try {
+				codexEntries = await processCodexSessions(codexPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load codex sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load OpenCode usage from its SQLite database if available
-	const opencodeDbPath = getOpenCodeDbPath();
-	logger.debug(`OpenCode database path: ${opencodeDbPath}`);
 	let opencodeEntries: UsageData[] = [];
-	if (opencodeDbPath === '') {
-		logger.debug('OpenCode database path is empty');
-	}
-	else {
-		try {
-			opencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+	if (sourceFilter == null || sourceFilter === 'opencode') {
+		const opencodeDbPath = getOpenCodeDbPath();
+		logger.debug(`OpenCode database path: ${opencodeDbPath}`);
+		if (opencodeDbPath === '') {
+			logger.debug('OpenCode database path is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load opencode sessions: ${String(error)}`);
+		else {
+			try {
+				opencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load opencode sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load Devin usage from its ATIF transcripts if available
-	const devinPath = getDevinPath();
-	logger.debug(`Devin data directory: ${devinPath}`);
 	let devinEntries: UsageData[] = [];
-	if (devinPath === '') {
-		logger.debug('Devin data directory is empty');
-	}
-	else {
-		try {
-			devinEntries = await processDevinSessions(devinPath, options);
+	if (sourceFilter == null || sourceFilter === 'devin') {
+		const devinPath = getDevinPath();
+		logger.debug(`Devin data directory: ${devinPath}`);
+		if (devinPath === '') {
+			logger.debug('Devin data directory is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load devin sessions: ${String(error)}`);
+		else {
+			try {
+				devinEntries = await processDevinSessions(devinPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load devin sessions: ${String(error)}`);
+			}
 		}
 	}
 
@@ -1160,91 +1189,107 @@ export async function loadDailyUsageData(
 export async function loadSessionData(
 	options?: LoadOptions,
 ): Promise<SessionUsage[]> {
-	// Get all Claude paths or use the specific one from options
-	const claudePaths = toArray(options?.claudePath ?? getClaudePaths());
+	const sourceFilter = options?.source;
+
+	// Get all Claude paths or use the specific one from options.
+	// Skip Claude entirely when filtering to a different source (see
+	// loadDailyUsageData for the getClaudePaths() throw rationale).
+	const claudePaths = sourceFilter != null && sourceFilter !== 'claude'
+		? []
+		: toArray(options?.claudePath ?? getClaudePaths());
 
 	// Collect files from all paths with their base directories in parallel
 	const filesWithBase = await globUsageFiles(claudePaths);
 
 	// Also load droid sessions if available
-	const droidPath = getDroidPath();
-	logger.debug(`Droid path: ${droidPath}`);
 	let droidEntries: UsageData[] = [];
-	if (droidPath === '') {
-		logger.debug('Droid path is null or undefined');
-	}
-	else {
-		try {
-			logger.debug(`Attempting to load droid sessions from ${droidPath}`);
-			droidEntries = await processDroidSessions(droidPath, options);
-			logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
+	if (sourceFilter == null || sourceFilter === 'droid') {
+		const droidPath = getDroidPath();
+		logger.debug(`Droid path: ${droidPath}`);
+		if (droidPath === '') {
+			logger.debug('Droid path is null or undefined');
 		}
-		catch (error) {
-			logger.warn(`Failed to load droid sessions: ${String(error)}`);
+		else {
+			try {
+				logger.debug(`Attempting to load droid sessions from ${droidPath}`);
+				droidEntries = await processDroidSessions(droidPath, options);
+				logger.info(`Loaded ${droidEntries.length} droid sessions from ${droidPath}`);
+			}
+			catch (error) {
+				logger.warn(`Failed to load droid sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load zcode usage from its SQLite database if available
-	const zcodeDbPath = getZcodeDbPath();
-	logger.debug(`ZCode database path: ${zcodeDbPath}`);
 	let zcodeEntries: UsageData[] = [];
-	if (zcodeDbPath === '') {
-		logger.debug('ZCode database path is empty');
-	}
-	else {
-		try {
-			zcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+	if (sourceFilter == null || sourceFilter === 'zcode') {
+		const zcodeDbPath = getZcodeDbPath();
+		logger.debug(`ZCode database path: ${zcodeDbPath}`);
+		if (zcodeDbPath === '') {
+			logger.debug('ZCode database path is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load zcode sessions: ${String(error)}`);
+		else {
+			try {
+				zcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load zcode sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load Codex usage from its session JSONL logs if available
-	const codexPath = getCodexPath();
-	logger.debug(`Codex sessions path: ${codexPath}`);
 	let codexEntries: UsageData[] = [];
-	if (codexPath === '') {
-		logger.debug('Codex sessions path is empty');
-	}
-	else {
-		try {
-			codexEntries = await processCodexSessions(codexPath, options);
+	if (sourceFilter == null || sourceFilter === 'codex') {
+		const codexPath = getCodexPath();
+		logger.debug(`Codex sessions path: ${codexPath}`);
+		if (codexPath === '') {
+			logger.debug('Codex sessions path is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load codex sessions: ${String(error)}`);
+		else {
+			try {
+				codexEntries = await processCodexSessions(codexPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load codex sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load OpenCode usage from its SQLite database if available
-	const opencodeDbPath = getOpenCodeDbPath();
-	logger.debug(`OpenCode database path: ${opencodeDbPath}`);
 	let opencodeEntries: UsageData[] = [];
-	if (opencodeDbPath === '') {
-		logger.debug('OpenCode database path is empty');
-	}
-	else {
-		try {
-			opencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+	if (sourceFilter == null || sourceFilter === 'opencode') {
+		const opencodeDbPath = getOpenCodeDbPath();
+		logger.debug(`OpenCode database path: ${opencodeDbPath}`);
+		if (opencodeDbPath === '') {
+			logger.debug('OpenCode database path is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load opencode sessions: ${String(error)}`);
+		else {
+			try {
+				opencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load opencode sessions: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load Devin usage from its ATIF transcripts if available
-	const devinPath = getDevinPath();
-	logger.debug(`Devin data directory: ${devinPath}`);
 	let devinEntries: UsageData[] = [];
-	if (devinPath === '') {
-		logger.debug('Devin data directory is empty');
-	}
-	else {
-		try {
-			devinEntries = await processDevinSessions(devinPath, options);
+	if (sourceFilter == null || sourceFilter === 'devin') {
+		const devinPath = getDevinPath();
+		logger.debug(`Devin data directory: ${devinPath}`);
+		if (devinPath === '') {
+			logger.debug('Devin data directory is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load devin sessions: ${String(error)}`);
+		else {
+			try {
+				devinEntries = await processDevinSessions(devinPath, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load devin sessions: ${String(error)}`);
+			}
 		}
 	}
 
@@ -1816,8 +1861,14 @@ export async function calculateContextTokens(transcriptPath: string, modelId?: s
 export async function loadSessionBlockData(
 	options?: LoadOptions,
 ): Promise<SessionBlock[]> {
-	// Get all Claude paths or use the specific one from options
-	const claudePaths = toArray(options?.claudePath ?? getClaudePaths());
+	const sourceFilter = options?.source;
+
+	// Get all Claude paths or use the specific one from options.
+	// Skip Claude entirely when filtering to a different source (see
+	// loadDailyUsageData for the getClaudePaths() throw rationale).
+	const claudePaths = sourceFilter != null && sourceFilter !== 'claude'
+		? []
+		: toArray(options?.claudePath ?? getClaudePaths());
 
 	// Collect files from all paths
 	const allFiles: string[] = [];
@@ -1924,113 +1975,119 @@ export async function loadSessionBlockData(
 	}
 
 	// Also load droid sessions if available
-	const droidPath = getDroidPath();
-	logger.debug(`Droid path for blocks: ${droidPath}`);
 	let droidEntries: LoadedUsageEntry[] = [];
-	if (droidPath === '') {
-		logger.debug('Droid path for blocks is null or undefined');
-	}
-	else {
-		try {
-			logger.debug(`Attempting to load droid sessions for blocks from ${droidPath}`);
-			const rawDroidEntries = await processDroidSessions(droidPath, options);
-			// Convert droid entries to LoadedUsageEntry format with Date timestamps
-			droidEntries = await Promise.all(rawDroidEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
-				timestamp: new Date(entry.timestamp),
-				usage: {
-					inputTokens: entry.message.usage.input_tokens,
-					outputTokens: entry.message.usage.output_tokens,
-					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
-					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
-				},
-				// Droid entries do not carry a pre-computed costUSD (the adapter
-				// delegates pricing to the shared engine), so we must compute it
-				// here with the same fetcher/mode as the Claude path. Without
-				// this, every droid session block would report $0.
-				costUSD: fetcher == null
-					? entry.costUSD ?? 0
-					: await calculateCostForEntry(entry, mode, fetcher),
-				model: entry.message.model ?? 'unknown',
-				version: entry.version ?? undefined,
-				usageLimitResetTime: undefined,
-				source: entry.source ?? 'droid',
-			})));
-			logger.info(`Loaded ${droidEntries.length} droid entries for blocks from ${droidPath}`);
+	if (sourceFilter == null || sourceFilter === 'droid') {
+		const droidPath = getDroidPath();
+		logger.debug(`Droid path for blocks: ${droidPath}`);
+		if (droidPath === '') {
+			logger.debug('Droid path for blocks is null or undefined');
 		}
-		catch (error) {
-			logger.warn(`Failed to load droid sessions for blocks: ${String(error)}`);
+		else {
+			try {
+				logger.debug(`Attempting to load droid sessions for blocks from ${droidPath}`);
+				const rawDroidEntries = await processDroidSessions(droidPath, options);
+				// Convert droid entries to LoadedUsageEntry format with Date timestamps
+				droidEntries = await Promise.all(rawDroidEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					// Droid entries do not carry a pre-computed costUSD (the adapter
+					// delegates pricing to the shared engine), so we must compute it
+					// here with the same fetcher/mode as the Claude path. Without
+					// this, every droid session block would report $0.
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'droid',
+				})));
+				logger.info(`Loaded ${droidEntries.length} droid entries for blocks from ${droidPath}`);
+			}
+			catch (error) {
+				logger.warn(`Failed to load droid sessions for blocks: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load zcode usage from its SQLite database if available
-	const zcodeDbPath = getZcodeDbPath();
-	logger.debug(`ZCode database path for blocks: ${zcodeDbPath}`);
 	let zcodeEntries: LoadedUsageEntry[] = [];
-	if (zcodeDbPath === '') {
-		logger.debug('ZCode database path for blocks is empty');
-	}
-	else {
-		try {
-			const rawZcodeEntries = await processZcodeSessions(zcodeDbPath, options);
-			// ZCode entries do not carry a pre-computed costUSD (the adapter
-			// delegates pricing to the shared engine), so we must compute it
-			// here with the same fetcher/mode as the Claude path. Without
-			// this, every zcode session block would report $0.
-			zcodeEntries = await Promise.all(rawZcodeEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
-				timestamp: new Date(entry.timestamp),
-				usage: {
-					inputTokens: entry.message.usage.input_tokens,
-					outputTokens: entry.message.usage.output_tokens,
-					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
-					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
-				},
-				costUSD: fetcher == null
-					? entry.costUSD ?? 0
-					: await calculateCostForEntry(entry, mode, fetcher),
-				model: entry.message.model ?? 'unknown',
-				version: entry.version ?? undefined,
-				usageLimitResetTime: undefined,
-				source: entry.source ?? 'zcode',
-			})));
+	if (sourceFilter == null || sourceFilter === 'zcode') {
+		const zcodeDbPath = getZcodeDbPath();
+		logger.debug(`ZCode database path for blocks: ${zcodeDbPath}`);
+		if (zcodeDbPath === '') {
+			logger.debug('ZCode database path for blocks is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load zcode sessions for blocks: ${String(error)}`);
+		else {
+			try {
+				const rawZcodeEntries = await processZcodeSessions(zcodeDbPath, options);
+				// ZCode entries do not carry a pre-computed costUSD (the adapter
+				// delegates pricing to the shared engine), so we must compute it
+				// here with the same fetcher/mode as the Claude path. Without
+				// this, every zcode session block would report $0.
+				zcodeEntries = await Promise.all(rawZcodeEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'zcode',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load zcode sessions for blocks: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load Codex usage from its session JSONL logs if available
-	const codexPath = getCodexPath();
-	logger.debug(`Codex sessions path for blocks: ${codexPath}`);
 	let codexEntries: LoadedUsageEntry[] = [];
-	if (codexPath === '') {
-		logger.debug('Codex sessions path for blocks is empty');
-	}
-	else {
-		try {
-			const rawCodexEntries = await processCodexSessions(codexPath, options);
-			// Codex entries do not carry a pre-computed costUSD (the adapter
-			// delegates pricing to the shared engine), so we must compute it
-			// here with the same fetcher/mode as the Claude path. Without this,
-			// every Codex session block would report $0.
-			codexEntries = await Promise.all(rawCodexEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
-				timestamp: new Date(entry.timestamp),
-				usage: {
-					inputTokens: entry.message.usage.input_tokens,
-					outputTokens: entry.message.usage.output_tokens,
-					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
-					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
-				},
-				costUSD: fetcher == null
-					? entry.costUSD ?? 0
-					: await calculateCostForEntry(entry, mode, fetcher),
-				model: entry.message.model ?? 'unknown',
-				version: entry.version ?? undefined,
-				usageLimitResetTime: undefined,
-				source: entry.source ?? 'codex',
-			})));
+	if (sourceFilter == null || sourceFilter === 'codex') {
+		const codexPath = getCodexPath();
+		logger.debug(`Codex sessions path for blocks: ${codexPath}`);
+		if (codexPath === '') {
+			logger.debug('Codex sessions path for blocks is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load codex sessions for blocks: ${String(error)}`);
+		else {
+			try {
+				const rawCodexEntries = await processCodexSessions(codexPath, options);
+				// Codex entries do not carry a pre-computed costUSD (the adapter
+				// delegates pricing to the shared engine), so we must compute it
+				// here with the same fetcher/mode as the Claude path. Without this,
+				// every Codex session block would report $0.
+				codexEntries = await Promise.all(rawCodexEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'codex',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load codex sessions for blocks: ${String(error)}`);
+			}
 		}
 	}
 
@@ -2038,63 +2095,67 @@ export async function loadSessionBlockData(
 	// OpenCode messages carry a pre-calculated `cost` (emitted as costUSD by
 	// the adapter), so we honor it in `auto`/`display` mode; `calculate` mode
 	// recomputes from tokens.
-	const opencodeDbPath = getOpenCodeDbPath();
-	logger.debug(`OpenCode database path for blocks: ${opencodeDbPath}`);
 	let opencodeEntries: LoadedUsageEntry[] = [];
-	if (opencodeDbPath === '') {
-		logger.debug('OpenCode database path for blocks is empty');
-	}
-	else {
-		try {
-			const rawOpencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
-			opencodeEntries = await Promise.all(rawOpencodeEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
-				timestamp: new Date(entry.timestamp),
-				usage: {
-					inputTokens: entry.message.usage.input_tokens,
-					outputTokens: entry.message.usage.output_tokens,
-					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
-					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
-				},
-				costUSD: fetcher == null
-					? entry.costUSD ?? 0
-					: await calculateCostForEntry(entry, mode, fetcher),
-				model: entry.message.model ?? 'unknown',
-				version: entry.version ?? undefined,
-				usageLimitResetTime: undefined,
-				source: entry.source ?? 'opencode',
-			})));
+	if (sourceFilter == null || sourceFilter === 'opencode') {
+		const opencodeDbPath = getOpenCodeDbPath();
+		logger.debug(`OpenCode database path for blocks: ${opencodeDbPath}`);
+		if (opencodeDbPath === '') {
+			logger.debug('OpenCode database path for blocks is empty');
 		}
-		catch (error) {
-			logger.warn(`Failed to load opencode sessions for blocks: ${String(error)}`);
+		else {
+			try {
+				const rawOpencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+				opencodeEntries = await Promise.all(rawOpencodeEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'opencode',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load opencode sessions for blocks: ${String(error)}`);
+			}
 		}
 	}
 
 	// Also load Devin usage from its ATIF transcripts if available
-	const devinPath = getDevinPath();
-	logger.debug(`Devin data directory: ${devinPath}`);
 	let devinEntries: LoadedUsageEntry[] = [];
-	if (devinPath !== '') {
-		try {
-			const rawDevinEntries = await processDevinSessions(devinPath, options);
-			devinEntries = await Promise.all(rawDevinEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
-				timestamp: new Date(entry.timestamp),
-				usage: {
-					inputTokens: entry.message.usage.input_tokens,
-					outputTokens: entry.message.usage.output_tokens,
-					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
-					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
-				},
-				costUSD: fetcher == null
-					? entry.costUSD ?? 0
-					: await calculateCostForEntry(entry, mode, fetcher),
-				model: entry.message.model ?? 'unknown',
-				version: entry.version ?? undefined,
-				usageLimitResetTime: undefined,
-				source: entry.source ?? 'devin',
-			})));
-		}
-		catch (error) {
-			logger.warn(`Failed to load devin sessions: ${String(error)}`);
+	if (sourceFilter == null || sourceFilter === 'devin') {
+		const devinPath = getDevinPath();
+		logger.debug(`Devin data directory: ${devinPath}`);
+		if (devinPath !== '') {
+			try {
+				const rawDevinEntries = await processDevinSessions(devinPath, options);
+				devinEntries = await Promise.all(rawDevinEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'devin',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load devin sessions: ${String(error)}`);
+			}
 		}
 	}
 

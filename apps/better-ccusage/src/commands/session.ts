@@ -65,6 +65,7 @@ export const sessionCommand = define({
 			mode: ctx.values.mode,
 			timezone: ctx.values.timezone,
 			locale: ctx.values.locale,
+			source: ctx.values.source,
 		});
 
 		if (sessionData.length === 0) {
