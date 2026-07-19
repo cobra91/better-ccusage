@@ -1,11 +1,11 @@
 # Getting Started
 
-Welcome to better-ccusage! This guide will help you get up and running with analyzing your Claude Code/Droid/ZCode Usage data.
+Welcome to better-ccusage! This guide will help you get up and running with analyzing usage data from your local AI coding tools (Claude Code, Droid, ZCode, Codex, OpenCode, Devin, and pi/oh-my-pi).
 
 ## Prerequisites
 
-- Claude Code, Droid, or ZCode installed and used
-- Node.js 22.13+ or Bun runtime (ZCode usage requires Node.js 22.13+ for the built-in SQLite reader; Claude/Droid work on Node.js 20+)
+- At least one supported tool installed and used (Claude Code, Droid, ZCode, Codex, OpenCode, Devin, or pi/oh-my-pi)
+- Node.js 22.13+ or Bun runtime (ZCode/OpenCode/Devin usage requires Node.js 22.13+ for the built-in SQLite reader; the JSONL-only sources work on Node.js 20+)
 
 ## Quick Start
 
