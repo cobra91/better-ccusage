@@ -4,7 +4,7 @@ import { addEmptySeparatorRow, createUsageReportTable, formatTotalsRow, formatUs
 import { Result } from '@praha/byethrow';
 import { define } from 'gunshi';
 import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
-import { DEFAULT_LOCALE } from '../_consts.ts';
+import { DEFAULT_LOCALE, sourceLabel } from '../_consts.ts';
 import { formatDateCompact } from '../_date-utils.ts';
 import { processWithJq } from '../_jq-processor.ts';
 import { sharedCommandConfig } from '../_shared-args.ts';
@@ -50,10 +50,7 @@ export const monthlyCommand = define({
 				log(JSON.stringify(emptyOutput, null, 2));
 			}
 			else {
-				const srcLabel = mergedOptions.source != null
-					? `${mergedOptions.source[0]!.toUpperCase()}${mergedOptions.source.slice(1)}`
-					: 'Claude';
-				logger.warn(`No ${srcLabel} usage data found.`);
+				logger.warn(`No ${sourceLabel(mergedOptions.source)} usage data found.`);
 			}
 			process.exit(0);
 		}

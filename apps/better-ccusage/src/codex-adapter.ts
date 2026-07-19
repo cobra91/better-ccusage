@@ -376,11 +376,15 @@ export async function processCodexSessions(
 				continue;
 			}
 
-			tokenCountEvents += 1;
-
 			if (timestamp == null) {
 				continue;
 			}
+
+			// Count only events that reached the usage-extraction step, so the
+			// #9660 diagnostic condition (droppedNoUsage === tokenCountEvents)
+			// accurately reflects "every usable event lacked usage data" — a
+			// timestamp-missing event must not inflate the denominator.
+			tokenCountEvents += 1;
 
 			const info = tokenPayloadResult.output.info;
 			const lastUsage = normalizeRawUsage(info?.last_token_usage);

@@ -5,7 +5,7 @@ import { Result } from '@praha/byethrow';
 import { define } from 'gunshi';
 import pc from 'picocolors';
 import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
-import { BLOCKS_COMPACT_WIDTH_THRESHOLD, BLOCKS_DEFAULT_TERMINAL_WIDTH, BLOCKS_WARNING_THRESHOLD, DEFAULT_RECENT_DAYS, DEFAULT_REFRESH_INTERVAL_SECONDS, MAX_REFRESH_INTERVAL_SECONDS, MIN_REFRESH_INTERVAL_SECONDS } from '../_consts.ts';
+import { BLOCKS_COMPACT_WIDTH_THRESHOLD, BLOCKS_DEFAULT_TERMINAL_WIDTH, BLOCKS_WARNING_THRESHOLD, DEFAULT_RECENT_DAYS, DEFAULT_REFRESH_INTERVAL_SECONDS, MAX_REFRESH_INTERVAL_SECONDS, MIN_REFRESH_INTERVAL_SECONDS, sourceLabel } from '../_consts.ts';
 import { processWithJq } from '../_jq-processor.ts';
 import {
 	calculateBurnRate,
@@ -185,11 +185,7 @@ export const blocksCommand = define({
 				log(JSON.stringify({ blocks: [] }));
 			}
 			else {
-				const src = ctx.values.source;
-				const srcLabel = src != null
-					? `${src[0]!.toUpperCase()}${src.slice(1)}`
-					: 'Claude';
-				logger.warn(`No ${srcLabel} usage data found.`);
+				logger.warn(`No ${sourceLabel(ctx.values.source)} usage data found.`);
 			}
 			process.exit(0);
 		}

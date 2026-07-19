@@ -1,4 +1,3 @@
-import type { Args } from 'gunshi';
 import process from 'node:process';
 import { SOURCE_ORDER } from '../_consts.ts';
 
@@ -185,6 +184,3 @@ describe('run (CLI dispatch)', () => {
 		}
 	});
 });
-
-// Silence the unused-import lint for Args (kept for type discoverability).
-export type _Args = Args;
