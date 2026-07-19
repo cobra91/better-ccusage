@@ -35,13 +35,11 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ## better-ccusage Family
 
-### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex Usage Analyzer with Multi-Provider Support
+### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code, Droid, ZCode, and OpenAI Codex usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), so no manual export is needed. Codex usage is read from `~/.codex/sessions`.
+The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, and OpenCode usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, and OpenCode usage from `~/.local/share/opencode/opencode.db`.
 
-### 🧠 [@better-ccusage/opencode](https://www.npmjs.com/package/@better-ccusage/opencode) - OpenCode Usage Analyzer
-
-Companion tool for analyzing [OpenCode](https://github.com/opencode-ai/opencode) usage. Track token usage and costs from OpenCode sessions with the same reporting capabilities as better-ccusage.
+> 💡 The standalone `@better-ccusage/codex` and `@better-ccusage/opencode` packages are now deprecated forwarders — Codex and OpenCode support is built directly into `better-ccusage`. Run `npx better-ccusage` to see all sources in one report.
 
 ### 🔌 [@better-ccusage/mcp](https://www.npmjs.com/package/@better-ccusage/mcp) - MCP Server Integration
 

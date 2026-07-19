@@ -1,3 +1,4 @@
+import Macros from 'unplugin-macros/vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -5,5 +6,11 @@ export default defineConfig({
 		watch: false,
 		includeSource: ['src/**/*.{js,ts}'],
 		globals: true,
+		passWithNoTests: true,
 	},
+	plugins: [
+		Macros({
+			include: ['src/index.ts'],
+		}) as any,
+	],
 });

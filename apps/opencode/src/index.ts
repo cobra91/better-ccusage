@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import process from 'node:process';
-import { run } from './commands/index.ts';
+import { run } from './run.ts';
 
-run().catch((error) => {
-	console.error('Fatal error:', error);
-	process.exit(1);
-});
+// eslint-disable-next-line antfu/no-top-level-await
+await run();

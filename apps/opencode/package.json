@@ -1,7 +1,7 @@
 {
   "name": "@better-ccusage/opencode",
   "version": "1.6.0",
-  "description": "Usage analysis tool for OpenCode AI assistant",
+  "description": "Deprecated: OpenCode support is now built into better-ccusage. This package forwards invocations to better-ccusage.",
   "homepage": "https://github.com/cobra91/better-ccusage#readme",
   "bugs": {
     "url": "https://github.com/cobra91/better-ccusage/issues"
@@ -14,15 +14,7 @@
   "license": "MIT",
   "author": "cobra91",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./data-loader": "./src/data-loader.ts",
-    "./cost-utils": "./src/cost-utils.ts",
-    "./package.json": "./package.json"
-  },
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "module": "./dist/index.js",
   "bin": {
     "better-ccusage-opencode": "./src/index.ts"
   },
@@ -39,20 +31,15 @@
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
-    "@better-ccusage/internal": "workspace:*",
-    "@better-ccusage/terminal": "workspace:*",
-    "@praha/byethrow": "catalog:runtime",
     "@ryoppippi/eslint-config": "catalog:lint",
     "@typescript/native-preview": "catalog:types",
+    "better-ccusage": "workspace:*",
     "clean-pkg-json": "catalog:release",
-    "consola": "catalog:runtime",
-    "es-toolkit": "catalog:runtime",
     "eslint": "catalog:lint",
-    "fs-fixture": "catalog:testing",
-    "gunshi": "catalog:runtime",
-    "tinyglobby": "catalog:runtime",
+    "nano-spawn": "catalog:runtime",
     "tsdown": "catalog:",
-    "valibot": "catalog:runtime",
+    "unplugin-macros": "catalog:build",
+    "unplugin-unused": "catalog:build",
     "vitest": "catalog:testing"
   },
   "engines": {
@@ -60,13 +47,7 @@
   },
   "publishConfig": {
     "bin": {
-      "better-ccusage-opencode": "./dist/index.mjs"
-    },
-    "exports": {
-      ".": "./dist/index.mjs",
-      "./data-loader": "./dist/data-loader.mjs",
-      "./cost-utils": "./dist/cost-utils.mjs",
-      "./package.json": "./package.json"
+      "better-ccusage-opencode": "./dist/index.js"
     }
   }
 }

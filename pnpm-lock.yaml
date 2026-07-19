@@ -409,48 +409,33 @@ importers:
 
   apps/opencode:
     devDependencies:
-      '@better-ccusage/internal':
-        specifier: workspace:*
-        version: link:../../packages/internal
-      '@better-ccusage/terminal':
-        specifier: workspace:*
-        version: link:../../packages/terminal
-      '@praha/byethrow':
-        specifier: catalog:runtime
-        version: 0.6.3
       '@ryoppippi/eslint-config':
         specifier: catalog:lint
         version: 0.4.0(@vue/compiler-sfc@3.5.25)(eslint-plugin-format@1.0.2(eslint@9.39.1(jiti@2.6.1)))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.10.1)(happy-dom@16.8.1)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
       '@typescript/native-preview':
         specifier: catalog:types
         version: 7.0.0-dev.20251201.1
+      better-ccusage:
+        specifier: workspace:*
+        version: link:../better-ccusage
       clean-pkg-json:
         specifier: catalog:release
         version: 1.4.1
-      consola:
-        specifier: catalog:runtime
-        version: 3.4.2
-      es-toolkit:
-        specifier: catalog:runtime
-        version: 1.42.0
       eslint:
         specifier: catalog:lint
         version: 9.39.1(jiti@2.6.1)
-      fs-fixture:
-        specifier: catalog:testing
-        version: 2.11.0
-      gunshi:
+      nano-spawn:
         specifier: catalog:runtime
-        version: 0.26.3
-      tinyglobby:
-        specifier: catalog:runtime
-        version: 0.2.15
+        version: 1.0.3
       tsdown:
         specifier: 'catalog:'
         version: 0.16.8(@emnapi/core@1.9.2)(@emnapi/runtime@1.7.1)(@typescript/native-preview@7.0.0-dev.20251201.1)(publint@0.3.18)(synckit@0.11.11)(typescript@5.9.3)(unplugin-unused@0.5.7)
-      valibot:
-        specifier: catalog:runtime
-        version: 1.2.0(typescript@5.9.3)
+      unplugin-macros:
+        specifier: catalog:build
+        version: 0.18.7(@types/node@24.10.1)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+      unplugin-unused:
+        specifier: catalog:build
+        version: 0.5.7
       vitest:
         specifier: catalog:testing
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.10.1)(happy-dom@16.8.1)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)

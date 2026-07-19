@@ -131,7 +131,7 @@ Always prefer indexed searches (tools with `_from_index` suffix) over reading en
    node -e "require('fs').copyFileSync('packages/internal/model_prices_and_context_window.json','apps/<app>/dist/model_prices_and_context_window.json')"
    ```
 
-5. Verify versions: `node apps/<app>/dist/index.js -v` (or `index.mjs` for opencode)
+5. Verify versions: `node apps/<app>/dist/index.js -v`
 6. Publish each: `cd apps/<app> && pnpm publish --no-git-checks --access public`
 
 **Publishing gotchas:**

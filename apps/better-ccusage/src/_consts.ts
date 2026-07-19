@@ -114,6 +114,24 @@ export const DEFAULT_CODEX_SESSIONS_SUBPATH = 'sessions';
 export const CODEX_SESSION_GLOB = '**/*.jsonl';
 
 /**
+ * Environment variable for overriding the OpenCode data directory.
+ * Modern OpenCode stores sessions in a SQLite database (opencode.db) under
+ * this directory.
+ */
+export const OPENCODE_DATA_DIR_ENV = 'OPENCODE_DATA_DIR';
+
+/**
+ * Default OpenCode data directory: `~/.local/share/opencode` (XDG-style).
+ */
+export const DEFAULT_OPENCODE_HOME_PATH = path.join('.local', 'share', 'opencode');
+
+/**
+ * Subpath of the SQLite database that stores OpenCode messages/sessions,
+ * relative to the OpenCode data directory.
+ */
+export const DEFAULT_OPENCODE_DB_SUBPATH = 'opencode.db';
+
+/**
  * Claude projects directory name within the data directory
  * Contains subdirectories for each project with usage data
  */

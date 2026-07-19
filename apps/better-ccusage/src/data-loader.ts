@@ -70,6 +70,7 @@ import { unreachable } from './_utils.ts';
 import { getCodexPath, processCodexSessions } from './codex-adapter.ts';
 import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
 import { logger } from './logger.ts';
+import { getOpenCodeDbPath, processOpenCodeSessions } from './opencode-adapter.ts';
 import { getZcodeDbPath, processZcodeSessions } from './zcode-adapter.ts';
 
 /**
@@ -568,7 +569,7 @@ export function createUniqueHash(data: UsageData): string | null {
  * first so the canonical ordering is preserved. An empty set defaults to
  * 'claude' for backward compatibility with Claude-only data.
  */
-const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex'] as const;
+const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode'] as const;
 
 export function combineSources(sources: Set<string | undefined>): string {
 	const atoms = new Set<string>();
@@ -845,7 +846,23 @@ export async function loadDailyUsageData(
 		}
 	}
 
-	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0) {
+	// Also load OpenCode usage from its SQLite database if available
+	const opencodeDbPath = getOpenCodeDbPath();
+	logger.debug(`OpenCode database path: ${opencodeDbPath}`);
+	let opencodeEntries: UsageData[] = [];
+	if (opencodeDbPath === '') {
+		logger.debug('OpenCode database path is empty');
+	}
+	else {
+		try {
+			opencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load opencode sessions: ${String(error)}`);
+		}
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0) {
 		return [];
 	}
 
@@ -1002,6 +1019,30 @@ export async function loadDailyUsageData(
 		});
 	}
 
+	// Add opencode entries to the collection
+	for (const opencodeData of opencodeEntries) {
+		opencodeData.source ??= createSource('opencode');
+
+		const uniqueHash = createUniqueHash(opencodeData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(opencodeData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? opencodeData.costUSD ?? 0
+			: await calculateCostForEntry(opencodeData, mode, fetcher);
+
+		allEntries.push({
+			data: opencodeData,
+			date,
+			cost,
+			model: opencodeData.message.model,
+			project: opencodeData.cwd ?? path.join('opencode', 'unknown'),
+		});
+	}
+
 	// Group by date, optionally including project
 	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
@@ -1136,7 +1177,23 @@ export async function loadSessionData(
 		}
 	}
 
-	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0) {
+	// Also load OpenCode usage from its SQLite database if available
+	const opencodeDbPath = getOpenCodeDbPath();
+	logger.debug(`OpenCode database path: ${opencodeDbPath}`);
+	let opencodeEntries: UsageData[] = [];
+	if (opencodeDbPath === '') {
+		logger.debug('OpenCode database path is empty');
+	}
+	else {
+		try {
+			opencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+		}
+		catch (error) {
+			logger.warn(`Failed to load opencode sessions: ${String(error)}`);
+		}
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0) {
 		return [];
 	}
 
@@ -1292,6 +1349,26 @@ export async function loadSessionData(
 			cost,
 			timestamp: codexData.timestamp,
 			model: codexData.message.model,
+		});
+	}
+
+	// Add opencode entries to the collection
+	for (const opencodeData of opencodeEntries) {
+		opencodeData.source ??= createSource('opencode');
+
+		const sessionKey = path.join('opencode', opencodeData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? opencodeData.costUSD ?? 0
+			: await calculateCostForEntry(opencodeData, mode, fetcher);
+
+		allEntries.push({
+			data: opencodeData,
+			sessionKey,
+			sessionId: opencodeData.sessionId ?? 'unknown-session',
+			projectPath: opencodeData.cwd ?? path.join('opencode', 'unknown'),
+			cost,
+			timestamp: opencodeData.timestamp,
+			model: opencodeData.message.model,
 		});
 	}
 
@@ -1871,8 +1948,43 @@ export async function loadSessionBlockData(
 		}
 	}
 
-	// Combine Claude, droid, zcode, and codex entries
-	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries];
+	// Also load OpenCode usage from its SQLite database if available.
+	// OpenCode messages carry a pre-calculated `cost` (emitted as costUSD by
+	// the adapter), so we honor it in `auto`/`display` mode; `calculate` mode
+	// recomputes from tokens.
+	const opencodeDbPath = getOpenCodeDbPath();
+	logger.debug(`OpenCode database path for blocks: ${opencodeDbPath}`);
+	let opencodeEntries: LoadedUsageEntry[] = [];
+	if (opencodeDbPath === '') {
+		logger.debug('OpenCode database path for blocks is empty');
+	}
+	else {
+		try {
+			const rawOpencodeEntries = await processOpenCodeSessions(opencodeDbPath, options);
+			opencodeEntries = await Promise.all(rawOpencodeEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+				timestamp: new Date(entry.timestamp),
+				usage: {
+					inputTokens: entry.message.usage.input_tokens,
+					outputTokens: entry.message.usage.output_tokens,
+					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+				},
+				costUSD: fetcher == null
+					? entry.costUSD ?? 0
+					: await calculateCostForEntry(entry, mode, fetcher),
+				model: entry.message.model ?? 'unknown',
+				version: entry.version ?? undefined,
+				usageLimitResetTime: undefined,
+				source: entry.source ?? 'opencode',
+			})));
+		}
+		catch (error) {
+			logger.warn(`Failed to load opencode sessions for blocks: ${String(error)}`);
+		}
+	}
+
+	// Combine Claude, droid, zcode, codex, and opencode entries
+	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries];
 
 	// Identify session blocks
 	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);
@@ -5197,3 +5309,6 @@ export { getCodexPath, processCodexSessions } from './codex-adapter.ts';
 
 // Re-export droid functions for external use
 export { getDroidPath, processDroidSessions } from './droid-adapter.ts';
+
+// Re-export opencode functions for external use
+export { getOpenCodeDbPath, processOpenCodeSessions } from './opencode-adapter.ts';

@@ -1,17 +1,25 @@
 import { defineConfig } from 'tsdown';
-import { copyPricingPlugin } from '../../scripts/copy-pricing-plugin.ts';
+import Macros from 'unplugin-macros/rolldown';
 
 export default defineConfig({
-	entry: [
-		'src/index.ts',
-		'src/data-loader.ts',
-		'src/cost-utils.ts',
-	],
+	entry: ['src/index.ts'],
+	outDir: 'dist',
 	format: 'esm',
-	dts: true,
 	clean: true,
-	minify: false,
-	sourcemap: true,
-	external: [],
-	plugins: [copyPricingPlugin('opencode')],
+	sourcemap: false,
+	minify: 'dce-only',
+	treeshake: true,
+	dts: false,
+	publint: true,
+	unused: true,
+	nodeProtocol: true,
+	fixedExtension: false,
+	plugins: [
+		Macros({
+			include: ['src/index.ts'],
+		}),
+	],
+	define: {
+		'import.meta.vitest': 'undefined',
+	},
 });
