@@ -1,6 +1,8 @@
 import type { TupleToUnion } from 'type-fest';
 import * as v from 'valibot';
 
+import { SOURCE_SUBSETS } from './_consts.ts';
+
 /**
  * Branded Valibot schemas for type safety using brand markers.
  */
@@ -78,45 +80,12 @@ export const projectPathSchema = v.pipe(
 	v.brand('ProjectPath'),
 );
 
-// All non-empty subsets of {claude, droid, zcode, codex, opencode} joined by
-// '/' in canonical order. Enumerated explicitly (rather than computed) because
-// valibot's picklist needs a literal array. Keep in sync with SOURCE_ORDER in
-// data-loader.ts when adding/removing a source.
+// All non-empty subsets of the known sources, joined by '/' in canonical
+// order. Generated from SOURCE_ORDER (see _consts.ts) so adding/removing a
+// source updates both the combiner and this schema automatically.
 export const sourceSchema = v.pipe(
 	v.string(),
-	v.picklist([
-		'claude',
-		'claude/droid',
-		'claude/droid/zcode',
-		'claude/droid/zcode/codex',
-		'claude/droid/zcode/codex/opencode',
-		'claude/droid/zcode/opencode',
-		'claude/droid/codex',
-		'claude/droid/codex/opencode',
-		'claude/droid/opencode',
-		'claude/zcode',
-		'claude/zcode/codex',
-		'claude/zcode/codex/opencode',
-		'claude/zcode/opencode',
-		'claude/codex',
-		'claude/codex/opencode',
-		'claude/opencode',
-		'droid',
-		'droid/zcode',
-		'droid/zcode/codex',
-		'droid/zcode/codex/opencode',
-		'droid/zcode/opencode',
-		'droid/codex',
-		'droid/codex/opencode',
-		'droid/opencode',
-		'zcode',
-		'zcode/codex',
-		'zcode/codex/opencode',
-		'zcode/opencode',
-		'codex',
-		'codex/opencode',
-		'opencode',
-	]),
+	v.picklist(SOURCE_SUBSETS),
 	v.brand('Source'),
 );
 
