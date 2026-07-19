@@ -9,7 +9,10 @@ import spawn, { SubprocessError } from 'nano-spawn';
  * OPENCODE_NO_DEPRECATION_NOTICE to opt out (useful for CI noise reduction).
  */
 function printDeprecationNotice(): void {
-	if (process.stdout.isTTY === false) {
+	// process.stdout.isTTY is `true` on a TTY, `undefined` (not `false`) when
+	// redirected to a pipe/file. Use a truthiness check so the notice is
+	// suppressed in both non-TTY cases.
+	if (!process.stdout.isTTY) {
 		return;
 	}
 	if (process.env.OPENCODE_NO_DEPRECATION_NOTICE === '1') {

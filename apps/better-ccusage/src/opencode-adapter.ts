@@ -269,6 +269,17 @@ export async function processOpenCodeSessions(
 		// input + output + reasoning + cache.read == total across 130 messages),
 		// so the Claude additive cost model applies directly — no subtraction
 		// needed (unlike Codex, where input includes the cached portion).
+		//
+		// `tokens.reasoning` is a SEPARATE bucket in OpenCode (not included in
+		// output, unlike Codex). We intentionally do NOT add it to output_tokens:
+		//   - In `auto` mode (the default), costUSD is OpenCode's pre-calculated
+		//     cost which already accounts for reasoning correctly.
+		//   - In `calculate` mode, the LiteLLM `output_cost_per_token` for these
+		//     models is meant to price the full assistant output including any
+		//     reasoning-style tokens; folding reasoning into output would risk
+		//     double-charging. (Upstream ccusage takes the same approach.)
+		// The reasoning count is therefore dropped, matching how the ZCode and
+		// Codex adapters treat their reasoning fields.
 		const entry: UsageData = {
 			timestamp: createISOTimestamp(timestamp),
 			sessionId: createSessionId(sessionId),
@@ -317,7 +328,10 @@ if (import.meta.vitest != null) {
 			const insertSession = db.prepare('INSERT INTO session (id, directory) VALUES (?, ?)');
 			insertSession.run('ses_1', '/home/user/projects/app');
 			insertMessage.run(
-				'msg_1', 'ses_1', 1777388092686, 1777388092686,
+				'msg_1',
+				'ses_1',
+				1777388092686,
+				1777388092686,
 				JSON.stringify({
 					role: 'assistant',
 					tokens: { total: 17092, input: 15101, output: 30, reasoning: 41, cache: { write: 0, read: 1920 } },
@@ -328,7 +342,10 @@ if (import.meta.vitest != null) {
 			);
 			// A user message without tokens — must be skipped.
 			insertMessage.run(
-				'msg_2', 'ses_1', 1777388092700, 1777388092700,
+				'msg_2',
+				'ses_1',
+				1777388092700,
+				1777388092700,
 				JSON.stringify({ role: 'user', tokens: undefined, modelID: 'deepseek-v4-pro' }),
 			);
 			db[Symbol.dispose]();
@@ -357,7 +374,10 @@ if (import.meta.vitest != null) {
 			const db = new DatabaseSync(dbPath);
 			db.exec(`CREATE TABLE message (id TEXT, session_id TEXT, time_created INTEGER, time_updated INTEGER, data TEXT); CREATE TABLE session (id TEXT, directory TEXT);`);
 			db.prepare('INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?)').run(
-				'msg_x', 'ses_x', 1777388092686, 1777388092686,
+				'msg_x',
+				'ses_x',
+				1777388092686,
+				1777388092686,
 				JSON.stringify({ tokens: { input: 100, output: 50 }, modelID: 'gemini-3-pro-high' }),
 			);
 			db[Symbol.dispose]();
@@ -373,7 +393,10 @@ if (import.meta.vitest != null) {
 			const db = new DatabaseSync(dbPath);
 			db.exec(`CREATE TABLE message (id TEXT, session_id TEXT, time_created INTEGER, time_updated INTEGER, data TEXT); CREATE TABLE session (id TEXT, directory TEXT);`);
 			db.prepare('INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?)').run(
-				'msg_c', 'ses_c', 1777388092686, 1777388092686,
+				'msg_c',
+				'ses_c',
+				1777388092686,
+				1777388092686,
 				JSON.stringify({ tokens: { input: 100, output: 50, cache: 0 }, modelID: 'deepseek-v4-pro' }),
 			);
 			db[Symbol.dispose]();
