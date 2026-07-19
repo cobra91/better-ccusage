@@ -1,151 +1,48 @@
 # OpenCode Usage Tracking
 
-better-ccusage provides usage tracking for [OpenCode](https://github.com/sst/opencode), a terminal-based AI coding assistant. This allows you to monitor token usage and costs when using OpenCode with various AI providers.
+`better-ccusage` reads [OpenCode](https://github.com/sst/opencode) usage directly from its SQLite database and aggregates it alongside Claude, Droid, ZCode, Codex, and Devin data — no separate package required.
 
-## Installation
+> ⚠️ The standalone `@better-ccusage/opencode` package is **deprecated** and only forwards invocations to `better-ccusage`. Run `better-ccusage` directly.
 
-```bash
-# Install the opencode package
-pnpm add @better-ccusage/opencode
+## Where the data comes from
 
-# Or use directly with npx
-pnpm dlx @better-ccusage/opencode daily
-```
+OpenCode stores per-message token usage in a SQLite database. `better-ccusage` reads it (read-only) from:
+
+- Default: `~/.local/share/opencode/opencode.db`
+- Override with the `OPENCODE_DATA_DIR` environment variable (points at the directory that contains `opencode.db`).
+
+Each assistant message with a non-zero token count becomes one usage entry. `tokens.input` already excludes cached tokens, so the Claude additive cost model applies directly; OpenCode's reasoning-token surplus is folded into `output_tokens` (matching upstream `ccusage`).
 
 ## Usage
 
-### Daily Reports
+By default every report aggregates all detected sources. To see OpenCode usage only, use the `<source> <report>` syntax:
 
 ```bash
-pnpm dlx @better-ccusage/opencode daily
+# OpenCode-only daily report
+npx better-ccusage opencode daily
+
+# OpenCode-only billing blocks
+npx better-ccusage opencode blocks
+
+# OpenCode-only session report
+npx better-ccusage opencode session
+
+# Shorthand: 'opencode' alone defaults to 'opencode daily'
+npx better-ccusage opencode
 ```
 
-Shows token usage and costs aggregated by day.
+The equivalent explicit form also works (`npx better-ccusage daily --source opencode`), but the positional form above is preferred. See the [Command-Line Options](/guide/cli-options.md) page for the full flag list.
 
-### Weekly Reports
+## Troubleshooting
 
-```bash
-pnpm dlx @better-ccusage/opencode weekly
-```
+If OpenCode data is missing from your reports, `better-ccusage` now warns when:
 
-Shows usage aggregated by ISO week (format: `YYYY-Www`).
-
-### Monthly Reports
-
-```bash
-pnpm dlx @better-ccusage/opencode monthly
-```
-
-Shows usage aggregated by month (format: `YYYY-MM`).
-
-### Session Reports
-
-```bash
-pnpm dlx @better-ccusage/opencode session
-```
-
-Shows usage grouped by session, with subagent hierarchy displayed.
-
-## Command Options
-
-| Option        | Short | Description                            |
-| ------------- | ----- | -------------------------------------- |
-| `--breakdown` | `-b`  | Show per-model cost breakdown          |
-| `--compact`   |       | Force compact mode for narrow displays |
-
-## Data Location
-
-OpenCode stores its data in:
-
-- **Messages**: `~/.local/share/opencode/storage/message/{sessionID}/msg_{id}.json`
-- **Sessions**: `~/.local/share/opencode/storage/session/{sessionID}.json`
-
-### Custom Data Directory
-
-You can override the data directory using environment variables:
-
-```bash
-# Use custom data directory
-export OPENCODE_DATA_DIR=/custom/path/to/opencode
-
-# Or use XDG Base Directory specification
-export XDG_DATA_HOME=/custom/xdg/data
-```
-
-## Supported Models
-
-OpenCode supports various AI providers. better-ccusage automatically detects and calculates costs for:
-
-- **Anthropic**: Claude models (claude-sonnet-4, claude-opus-4, etc.)
-- **Google**: Gemini models
-- **OpenAI**: GPT models
-- **Other providers**: Any model in the pricing database
-
-### Model Aliases
-
-Some OpenCode-specific model names are automatically mapped to standard pricing names:
-
-| OpenCode Name       | Pricing Database Name    |
-| ------------------- | ------------------------ |
-| `gemini-3-pro-high` | `gemini-3-pro-preview`   |
-| `gemini-2.5-pro`    | `gemini-2.5-pro-preview` |
-
-## Key Differences from Claude Code
-
-| Feature               | Claude Code               | OpenCode                            |
-| --------------------- | ------------------------- | ----------------------------------- |
-| **Data Format**       | JSONL files               | JSON files                          |
-| **Storage Location**  | `~/.claude/projects/`     | `~/.local/share/opencode/storage/`  |
-| **Cost Calculation**  | Pre-calculated `costUSD`  | Often needs calculation from tokens |
-| **Subagent Tracking** | Via `parentID` in entries | Via `parentID` in session metadata  |
-
-## Output Format
-
-### Table Output
-
-Default output shows a formatted table with:
-
-- Date/Week/Month or Session ID
-- Source (opencode)
-- Models used
-- Input/Output tokens
-- Cache creation/read tokens
-- Total tokens
-- Cost (USD)
-
-### Example
-
-```
-┌────────────┬──────────┬────────┬───────┬────────┬──────────────┬────────────┬──────────────┬────────────┐
-│ Date       │ Source   │ Models │ Input │ Output │ Cache Create │ Cache Read │ Total Tokens │ Cost (USD) │
-├────────────┼──────────┼────────┼───────┼────────┼──────────────┼────────────┼──────────────┼────────────┤
-│ 2026-02-14 │ opencode │ claude │ 1,234 │ 567    │ 100          │ 50         │ 1,951        │ $0.0234    │
-└────────────┴──────────┴────────┴───────┴────────┴──────────────┴────────────┴──────────────┴────────────┘
-```
-
-## Library Usage
-
-You can also use the package programmatically:
-
-```typescript
-import { loadDailyUsageData, loadMonthlyUsageData, loadWeeklyUsageData } from '@better-ccusage/opencode/data-loader';
-
-// Load daily usage data
-const dailyData = await loadDailyUsageData();
-console.log(dailyData);
-
-// Load weekly usage data
-const weeklyData = await loadWeeklyUsageData();
-console.log(weeklyData);
-
-// Load monthly usage data
-const monthlyData = await loadMonthlyUsageData();
-console.log(monthlyData);
-```
+- The OpenCode database is not found at the expected path — check `OPENCODE_DATA_DIR` or the default `~/.local/share/opencode/opencode.db`.
+- The database exists and has message rows, but none yielded usage entries — messages without token usage, with all-zero tokens, or without a model id are skipped.
 
 ## Related
 
 - [Daily Reports](/guide/daily-reports.md)
-- [Weekly Reports](/guide/weekly-reports.md)
-- [Monthly Reports](/guide/monthly-reports.md)
 - [Session Reports](/guide/session-reports.md)
+- [Blocks Reports](/guide/blocks-reports.md)
+- [Environment Variables](/guide/environment-variables.md)

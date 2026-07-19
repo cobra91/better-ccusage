@@ -27,6 +27,16 @@ npx better-ccusage blocks
 
 The `Source` column in the output shows `devin` for entries parsed from Devin transcripts.
 
+### Devin-only reports
+
+To see Devin usage on its own (excluding Claude, Droid, etc.), use the `<source> <report>` syntax:
+
+```bash
+npx better-ccusage devin daily       # Devin-only daily report
+npx better-ccusage devin session     # Devin-only session report
+npx better-ccusage devin             # shorthand for "devin daily"
+```
+
 ## Data Location
 
 The Devin CLI writes its data under a platform-specific directory:
