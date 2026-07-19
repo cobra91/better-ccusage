@@ -35,9 +35,9 @@ better-ccusage maintains full compatibility with ccusage while adding comprehens
 
 ## better-ccusage Family
 
-### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode/Devin Usage Analyzer with Multi-Provider Support
+### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode/Devin/pi Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, and Devin usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, and Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`).
+The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`), and pi/oh-my-pi usage from JSONL sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (auto-detected).
 
 > 💡 The standalone `@better-ccusage/codex` and `@better-ccusage/opencode` packages are now deprecated forwarders — Codex and OpenCode support is built directly into `better-ccusage`. Run `npx better-ccusage` to see all sources in one report.
 

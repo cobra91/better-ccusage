@@ -143,6 +143,27 @@ When `DEVIN_DATA_DIR` is not set, better-ccusage automatically looks in:
 
 See the [Devin usage guide](/guide/devin.md) for details on token semantics, hidden-session filtering, and the ATIF transcript format.
 
+## PI_AGENT_DIR
+
+Specifies the pi/oh-my-pi (omp) sessions directory(ies) where better-ccusage should look for JSONL session files. Supports a comma-separated list for multiple directories.
+
+```bash
+# Single directory
+export PI_AGENT_DIR="/path/to/your/pi/sessions"
+better-ccusage daily
+
+# Multiple directories
+export PI_AGENT_DIR="/path/to/pi,/path/to/omp"
+better-ccusage daily
+```
+
+When `PI_AGENT_DIR` is not set, better-ccusage **auto-detects** both default directories (scanning whichever exist):
+
+- **pi**: `~/.pi/agent/sessions/`
+- **oh-my-pi (omp)**: `~/.omp/agent/sessions/`
+
+Setting `PI_AGENT_DIR` overrides auto-detection and scans only the listed directories. Entries are deduplicated, so a session present in both directories is counted once. See the [pi usage guide](/guide/pi.md) for details on token semantics and the JSONL format.
+
 ## LOG_LEVEL
 
 Controls the verbosity of log output. better-ccusage uses [consola](https://github.com/unjs/consola) for logging under the hood.

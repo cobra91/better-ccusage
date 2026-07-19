@@ -76,6 +76,12 @@ export default defineConfig({
 					],
 				},
 				{
+					text: 'pi Source',
+					items: [
+						{ text: 'Overview', link: '/guide/pi' },
+					],
+				},
+				{
 					text: 'Configuration',
 					items: [
 						{ text: 'Overview', link: '/guide/configuration' },

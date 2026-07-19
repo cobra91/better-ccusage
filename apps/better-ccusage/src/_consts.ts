@@ -52,7 +52,7 @@ const XDG_CONFIG_DIR = xdgConfig ?? path.join(USER_HOME_DIR, '.config');
  * `sourceSchema` picklist (via `SOURCE_SUBSETS`). Add a new source here and
  * both the combiner and the schema pick up the extra atom automatically.
  */
-export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode', 'devin'] as const;
+export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode', 'devin', 'pi'] as const;
 
 /**
  * Display labels for each source atom, matching the canonical capitalization
@@ -235,6 +235,33 @@ export const DEVIN_SESSIONS_DB_SUBPATH = 'sessions.db';
  * JSON file glob pattern for finding Devin ATIF transcript files (recursive).
  */
 export const DEVIN_TRANSCRIPT_GLOB = '**/*.json';
+
+/**
+ * Environment variable for overriding the pi-agent sessions directory.
+ *
+ * Supports a comma-separated list of directories. When set, only the listed
+ * directories are scanned (the default pi/omp auto-detection is skipped).
+ */
+export const PI_AGENT_DIR_ENV = 'PI_AGENT_DIR';
+
+/**
+ * Default pi-agent sessions directory: `~/.pi/agent/sessions`.
+ */
+export const DEFAULT_PI_SESSIONS_PATH = path.join('.pi', 'agent', 'sessions');
+
+/**
+ * Default oh-my-pi (omp) sessions directory: `~/.omp/agent/sessions`.
+ *
+ * omp is a widely used pi fork that writes the same JSONL session format.
+ * Auto-detected alongside the pi default when neither `PI_AGENT_DIR` nor a
+ * custom path is set (matches upstream ccusage PR ccusage/ccusage#1338).
+ */
+export const DEFAULT_OMP_SESSIONS_PATH = path.join('.omp', 'agent', 'sessions');
+
+/**
+ * JSONL file glob pattern for finding pi/omp session files (recursive).
+ */
+export const PI_SESSION_GLOB = '**/*.jsonl';
 
 /**
  * Claude projects directory name within the data directory
