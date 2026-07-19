@@ -235,23 +235,43 @@ function mergePricingDatasets(
 export async function loadMergedPricing(): Promise<Record<string, ModelPricing>> {
 	// Step 1: Always load static as base
 	const staticData = loadLocalPricingDataset();
+	const staticCount = Object.keys(staticData).length;
 
-	// Step 2: Check cache
+	// Step 2: Check cache (24h TTL). When fresh, skip the network entirely.
 	const cache = readCacheFile();
 	if (cache != null) {
+		const cacheCount = Object.keys(cache.dataset).length;
 		const merged = mergePricingDatasets(staticData, cache.dataset);
+		const mergedCount = Object.keys(merged).length;
+		const ageMin = Math.max(0, Math.round((Date.now() - cache.timestamp) / 60000));
+		console.warn(
+			`[better-ccusage] Pricing: using cached dataset (${ageMin}min old).`
+			+ ` ${cacheCount} cached + ${staticCount} bundled = ${mergedCount} models`
+			+ ` (bundled entries take priority).`,
+		);
 		return merged;
 	}
 
 	// Step 3: Skip remote fetch if OFFLINE
 	if (process.env.OFFLINE === 'true') {
+		console.warn(
+			`[better-ccusage] Pricing: OFFLINE mode, using bundled dataset only (${staticCount} models).`,
+		);
 		return staticData;
 	}
 
-	// Step 4: Fetch remote
+	// Step 4: Fetch remote (this runs at most once per 24h thanks to the cache)
+	console.warn(`[better-ccusage] Pricing: fetching latest model prices from LiteLLM (runs at most once per 24h)...`);
 	try {
 		const remoteData = await fetchFilteredRemotePricing();
+		const remoteCount = Object.keys(remoteData).length;
 		const merged = mergePricingDatasets(staticData, remoteData);
+		const mergedCount = Object.keys(merged).length;
+		console.warn(
+			`[better-ccusage] Pricing: fetched ${remoteCount} models from LiteLLM.`
+			+ ` Merged with ${staticCount} bundled = ${mergedCount} models`
+			+ ` (bundled entries take priority).`,
+		);
 
 		// Step 5: Write to cache (best-effort, never block on failure)
 		try {
@@ -269,10 +289,9 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 		// silently falling back and producing $0 or mispriced rows for unknown
 		// models.
 		const reason = error instanceof Error ? error.message : String(error);
-		const staticCount = Object.keys(staticData).length;
 		console.warn(
-			`[better-ccusage] Could not fetch the latest model pricing from LiteLLM (${reason}).`
-			+ ` Falling back to the bundled dataset (${staticCount} models).`
+			`[better-ccusage] Pricing: could not fetch from LiteLLM (${reason}).`
+			+ ` Falling back to bundled dataset (${staticCount} models).`
 			+ ` Recently released models may be missing or priced at $0.`,
 		);
 		return staticData;
