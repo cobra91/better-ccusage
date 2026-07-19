@@ -240,8 +240,10 @@ export async function processOpenCodeSessions(
 		}
 
 		const tokens = data.tokens;
-		// Skip all-zero entries (heartbeats, empty turns).
-		if (tokens.input === 0 && tokens.output === 0 && tokens.total === 0) {
+		// Skip all-zero entries (heartbeats, empty turns). Include reasoning in
+		// the check so reasoning-only rows are not dropped (matches upstream
+		// ccusage's non-zero check).
+		if (tokens.input === 0 && tokens.output === 0 && tokens.total === 0 && tokens.reasoning === 0) {
 			continue;
 		}
 
@@ -271,15 +273,13 @@ export async function processOpenCodeSessions(
 		// needed (unlike Codex, where input includes the cached portion).
 		//
 		// `tokens.reasoning` is a SEPARATE bucket in OpenCode (not included in
-		// output, unlike Codex). We intentionally do NOT add it to output_tokens:
-		//   - In `auto` mode (the default), costUSD is OpenCode's pre-calculated
-		//     cost which already accounts for reasoning correctly.
-		//   - In `calculate` mode, the LiteLLM `output_cost_per_token` for these
-		//     models is meant to price the full assistant output including any
-		//     reasoning-style tokens; folding reasoning into output would risk
-		//     double-charging. (Upstream ccusage takes the same approach.)
-		// The reasoning count is therefore dropped, matching how the ZCode and
-		// Codex adapters treat their reasoning fields.
+		// output, unlike Codex). We fold it into `output_tokens` so that:
+		//   - reported token totals account for reasoning (not silently short)
+		//   - in `calculate` mode, the reasoning cost is billed at the output
+		//     rate rather than dropped
+		// This matches upstream ccusage's `cost_usage` which adds
+		// `extra_total_tokens` (the reasoning surplus) to `output_tokens` for
+		// both costing and reporting (see adapter/opencode/parser.rs:126-130).
 		const entry: UsageData = {
 			timestamp: createISOTimestamp(timestamp),
 			sessionId: createSessionId(sessionId),
@@ -287,7 +287,7 @@ export async function processOpenCodeSessions(
 			message: {
 				usage: {
 					input_tokens: tokens.input,
-					output_tokens: tokens.output,
+					output_tokens: tokens.output + tokens.reasoning,
 					cache_creation_input_tokens: cache.write,
 					cache_read_input_tokens: cache.read,
 				},
@@ -361,8 +361,9 @@ if (import.meta.vitest != null) {
 			expect(entry.source).toBe('opencode');
 			expect(entry.message.model).toBe('deepseek-v4-pro');
 			// Additive model: input is the raw value (no cache subtraction).
+			// Reasoning tokens (41) are folded into output_tokens (30 + 41 = 71).
 			expect(entry.message.usage.input_tokens).toBe(15101);
-			expect(entry.message.usage.output_tokens).toBe(30);
+			expect(entry.message.usage.output_tokens).toBe(71);
 			expect(entry.message.usage.cache_creation_input_tokens).toBe(0);
 			expect(entry.message.usage.cache_read_input_tokens).toBe(1920);
 			// Pre-calculated cost emitted as costUSD.

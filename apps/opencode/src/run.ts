@@ -16,6 +16,6 @@ export async function run(): Promise<void> {
 	// argument; filter it out so it doesn't confuse gunshi downstream.
 	const args = process.argv.slice(2).filter(arg => arg !== 'better-ccusage-opencode');
 
-	const betterCcusageBin = resolveBinaryPath();
+	const betterCcusageBin = await resolveBinaryPath();
 	await runForwarder(betterCcusageBin, args);
 }

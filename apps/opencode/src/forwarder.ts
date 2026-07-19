@@ -1,6 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { Result } from '@praha/byethrow';
 import spawn, { SubprocessError } from 'nano-spawn';
 
 /**
@@ -30,9 +31,9 @@ function printDeprecationNotice(): void {
  *
  * The standalone opencode tool historically read only OpenCode data. Under
  * the new unified model, better-ccusage aggregates every detected source by
- * default (matching upstream `ccusage` behavior). We silence Droid and ZCode
- * here so forwarded invocations lean toward OpenCode data, but Claude is
- * intentionally left enabled because `getClaudePaths()` throws when
+ * default (matching upstream `ccusage` behavior). We silence Droid, ZCode,
+ * and Codex here so forwarded invocations lean toward OpenCode data, but
+ * Claude is intentionally left enabled because `getClaudePaths()` throws when
  * CLAUDE_CONFIG_DIR points at an invalid path, and forcing a valid-but-empty
  * Claude dir is brittle.
  *
@@ -71,13 +72,17 @@ function buildIsolatedEnv(): Record<string, string> {
 export async function runForwarder(binPath: string, args: string[]): Promise<void> {
 	printDeprecationNotice();
 
-	try {
-		await spawn(process.execPath, [binPath, ...args], {
+	// Use Result.try per the coding guidelines (prefer Result over try-catch).
+	const spawnResult = await Result.try({
+		try: async () => spawn(process.execPath, [binPath, ...args], {
 			stdio: 'inherit',
 			env: buildIsolatedEnv(),
-		});
-	}
-	catch (error) {
+		}),
+		catch: error => error,
+	})();
+
+	if (Result.isFailure(spawnResult)) {
+		const error = spawnResult.error;
 		if (error instanceof SubprocessError) {
 			// Surface any stderr the child produced, then mirror its exit code.
 			const message = (error.stderr ?? error.stdout ?? '').trim();
