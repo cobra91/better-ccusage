@@ -71,18 +71,20 @@ export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode'] as
  * generated array is not a literal tuple — no consumer relies on literal
  * narrowing, and the validation boundary stays exact.
  */
-function generateSourceSubsets(atoms: readonly string[]): readonly [string, ...string[]] {
-	if (atoms.length === 0) {
-		return [] as unknown as readonly [string, ...string[]];
-	}
+function generateSourceSubsets(atoms: readonly string[]): readonly string[] {
 	const [first, ...rest] = atoms;
+	if (first === undefined) {
+		return [];
+	}
 	const tailSubsets = generateSourceSubsets(rest);
 	const withFirst = [first, ...tailSubsets.map(s => `${first}/${s}`)];
-	const result = [...withFirst, ...tailSubsets];
-	return result as unknown as readonly [string, ...string[]];
+	return [...withFirst, ...tailSubsets];
 }
 
-export const SOURCE_SUBSETS = generateSourceSubsets(SOURCE_ORDER);
+// SOURCE_ORDER is guaranteed non-empty, so the result is a non-empty tuple.
+// Cast at the export boundary so valibot's `picklist` (which rejects a widened
+// `string[]`) accepts it; the helper itself stays honestly typed.
+export const SOURCE_SUBSETS = generateSourceSubsets(SOURCE_ORDER) as unknown as readonly [string, ...string[]];
 
 /**
  * Default Claude data directory path (~/.claude)
