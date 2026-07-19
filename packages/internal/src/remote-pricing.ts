@@ -271,7 +271,7 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 		const mergedCount = Object.keys(merged).length;
 		console.warn(
 			`[better-ccusage] Pricing: fetched ${remoteCount} models from LiteLLM.`
-			+ ` ${remoteCount} remote, ${staticCount} bundled, ${mergedCount} merged unique models`
+			+ ` ${staticCount} bundled, ${mergedCount} merged unique models`
 			+ ` (bundled entries take priority).`,
 		);
 
