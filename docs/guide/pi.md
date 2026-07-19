@@ -1,6 +1,6 @@
 # pi / oh-my-pi Usage Tracking
 
-better-ccusage provides usage tracking for [pi](https://github.com/anthropics/pi) and its widely used fork [oh-my-pi (omp)](https://github.com/oh-my-pi/omp), reading the JSONL session files both CLIs write locally. This lets you monitor token usage and costs across your pi/omp sessions alongside Claude Code, Droid, ZCode, Codex, OpenCode, and Devin — all in one report.
+better-ccusage provides usage tracking for **pi** and its widely used fork **oh-my-pi (omp)**, reading the JSONL session files both CLIs write locally. This lets you monitor token usage and costs across your pi/omp sessions alongside Claude Code, Droid, ZCode, Codex, OpenCode, and Devin — all in one report.
 
 pi/omp support is **built into `better-ccusage`** — there is no separate package to install.
 

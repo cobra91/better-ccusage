@@ -385,8 +385,31 @@ export async function processPiSessions(
 		}
 	}
 
-	logger.info(`Loaded ${results.length} pi usage entries from ${dirs.length} director${dirs.length === 1 ? 'y' : 'ies'}`);
-	return results;
+	// Deduplicate across scanned directories. pi auto-detection scans BOTH
+	// ~/.pi/agent/sessions and ~/.omp/agent/sessions, and a user may symlink or
+	// copy the same sessions into both — without this pass the same message
+	// would be counted twice in loadSessionData and loadSessionBlockData (whose
+	// non-Claude loops don't run the createUniqueHash gate). Key on the
+	// messageId (which already encodes sessionId + timestamp + model + token
+	// buckets), keeping the first occurrence.
+	const seen = new Set<string>();
+	const deduped: UsageData[] = [];
+	for (const entry of results) {
+		// message.id is always set (created via createMessageId above), but the
+		// branded type is optional under noUncheckedIndexedAccess; coerce to a
+		// plain string for the dedup key.
+		const key = entry.message.id ?? '';
+		if (key !== '' && seen.has(key)) {
+			continue;
+		}
+		if (key !== '') {
+			seen.add(key);
+		}
+		deduped.push(entry);
+	}
+
+	logger.info(`Loaded ${deduped.length} pi usage entries from ${dirs.length} director${dirs.length === 1 ? 'y' : 'ies'}${results.length !== deduped.length ? ` (${results.length - deduped.length} duplicate${results.length - deduped.length === 1 ? '' : 's'} dropped)` : ''}`);
+	return deduped;
 }
 
 if (import.meta.vitest != null) {
@@ -535,12 +558,11 @@ if (import.meta.vitest != null) {
 			expect(results).toHaveLength(0);
 		});
 
-		it('deduplicates omp vs pi: same file content in both dirs yields one entry set', async () => {
-			// Two separate fixture dirs with identical session content. The
-			// adapter emits from both, but the loader's createUniqueHash would
-			// collapse identical message+request ids. Here we verify the adapter
-			// itself is stable (same id for same content) so the loader dedup
-			// works: both entries share uniqueId -> collapsed downstream.
+		it('deduplicates omp vs pi: same file content in both dirs yields one entry', async () => {
+			// Two separate fixture dirs with identical session content. pi
+			// auto-detection scans both .pi and .omp, so the adapter deduplicates
+			// by message id (sessionId + timestamp + model + token buckets) to
+			// avoid double-counting. Same content in both dirs -> one entry.
 			const record = JSON.stringify({
 				type: 'message',
 				timestamp: '2026-07-03T10:00:00Z',
@@ -552,12 +574,34 @@ if (import.meta.vitest != null) {
 			});
 
 			const results = await processPiSessions([`${fixture.path}/pi`, `${fixture.path}/omp`]);
-			// Adapter returns 2 (one per dir); they share the same uniqueId so
-			// the loader dedups them to 1 downstream.
-			expect(results).toHaveLength(2);
-			expect(results[0]!.message.id).toBe(results[1]!.message.id);
+			// Same content in both dirs -> deduplicated to a single entry.
+			expect(results).toHaveLength(1);
 			expect(results[0]!.source).toBe('pi');
-			expect(results[1]!.source).toBe('pi');
+		});
+
+		it('keeps distinct sessions that happen to share a timestamp across dirs', async () => {
+			// Two dirs, two DIFFERENT sessions (different token counts) at the
+			// same instant — both must be kept (they are genuinely distinct).
+			await using fixture = await createFixture({
+				pi: {
+					'agent_a.jsonl': JSON.stringify({
+						type: 'message',
+						timestamp: '2026-07-03T10:00:00Z',
+						message: { role: 'assistant', model: 'gpt-5.4', usage: { input: 100, output: 20 } },
+					}),
+				},
+				omp: {
+					'agent_b.jsonl': JSON.stringify({
+						type: 'message',
+						timestamp: '2026-07-03T10:00:00Z',
+						message: { role: 'assistant', model: 'gpt-5.4', usage: { input: 200, output: 40 } },
+					}),
+				},
+			});
+
+			const results = await processPiSessions([`${fixture.path}/pi`, `${fixture.path}/omp`]);
+			// Different sessions (different ids) -> both kept.
+			expect(results).toHaveLength(2);
 		});
 
 		it('returns empty for the empty-path sentinel', async () => {
