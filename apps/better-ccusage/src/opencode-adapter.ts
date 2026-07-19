@@ -248,7 +248,7 @@ export async function processOpenCodeSessions(
 		const cache = extractCache(tokens.cache);
 		// Skip messages without a model id: without it we cannot price the
 		// entry correctly, and guessing (e.g. defaulting to a specific paid
-		// model) would silently misprice. Matches the ZCode adapter behaviour.
+		// model) would silently misprice. Matches the ZCode adapter behavior.
 		const modelRaw = (data.modelID ?? '').trim();
 		if (modelRaw === '') {
 			continue;
