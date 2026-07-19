@@ -57,20 +57,37 @@ for (const [name, command] of subCommandUnion) {
 const mainCommand = dailyCommand;
 
 /**
- * Print a friendly "unknown command" message and exit non-zero.
+ * Error thrown when the first positional argv token is neither a registered
+ * report subcommand nor a known data source. {@link run} catches it, prints
+ * a friendly message (no stack trace), and exits non-zero. Kept as a typed
+ * error class so tests can distinguish it from gunshi's raw
+ * `Command not found:` throw.
+ */
+export class UnknownCommandError extends Error {
+	readonly unknown: string;
+
+	constructor(unknown: string) {
+		super(
+			`Unknown command or source: '${unknown}'\n`
+			+ `\nCommands: ${[...reportNames].join(', ')}`
+			+ `\nSources:  ${[...sourceNames].join(', ')} (use as: ${name} <source> <command>, e.g. ${name} codex daily)`,
+		);
+		this.name = 'UnknownCommandError';
+		this.unknown = unknown;
+	}
+}
+
+/**
+ * Build (and throw) the friendly "unknown command" error.
  *
  * gunshi 0.26 throws a raw `Command not found: <name>` with a stack trace when
  * the first positional is neither a registered subcommand nor omitted. We
  * intercept that here so users get a helpful list of valid commands and
- * sources instead of a stack trace.
+ * sources instead of a stack trace. Throwing (rather than calling process.exit
+ * directly) makes the path unit-testable.
  */
 function failUnknownCommand(unknown: string): never {
-	logger.error(
-		`Unknown command or source: '${unknown}'\n`
-		+ `\nCommands: ${[...reportNames].join(', ')}`
-		+ `\nSources:  ${[...sourceNames].join(', ')} (use as: ${name} <source> <command>, e.g. ${name} codex daily)`,
-	);
-	process.exit(1);
+	throw new UnknownCommandError(unknown);
 }
 
 /**
@@ -83,9 +100,13 @@ function failUnknownCommand(unknown: string): never {
  * Returns the (possibly rewritten) argv. When the first token is a source name
  * but the second is not a report (e.g. `better-ccusage codex` alone), the
  * function injects the default `daily` report so `better-ccusage codex` is a
- * shorthand for `better-ccusage codex daily`.
+ * shorthand for `better-ccusage codex daily`. Throws an {@link UnknownCommandError}
+ * for a first positional that is neither a report nor a source.
+ *
+ * Exported for unit testing (the CLI dispatch itself is hard to exercise
+ * without mocking the pricing fetcher and every adapter).
  */
-function rewriteArgv(args: string[]): string[] {
+export function rewriteArgv(args: string[]): string[] {
 	const first = args[0];
 	if (first == null || first.startsWith('-')) {
 		return args;
@@ -119,9 +140,12 @@ export async function run(): Promise<void> {
 		args = args.slice(1);
 	}
 
-	args = rewriteArgv(args);
-
 	try {
+		// rewriteArgv may throw UnknownCommandError for an unknown first
+		// positional; keep it inside the try so the catch turns it into the
+		// friendly logger.error + non-zero exit instead of a raw throw.
+		args = rewriteArgv(args);
+
 		await cli(args, mainCommand, {
 			name,
 			version,
@@ -131,14 +155,24 @@ export async function run(): Promise<void> {
 		});
 	}
 	catch (error) {
-		// Safety net: gunshi throws a raw `Command not found: <name>` (with a
-		// stack trace) for an unknown first positional. rewriteArgv should
-		// already have handled it, but guard against any other path that reaches
-		// here so users never see a bare stack trace.
+		// Friendly handling for unknown commands: either our UnknownCommandError
+		// (thrown by rewriteArgv, re-thrown here if it escaped) or gunshi's raw
+		// `Command not found: <name>` safety net. In both cases, print the
+		// helpful message and exit non-zero instead of showing a stack trace.
+		if (error instanceof UnknownCommandError) {
+			logger.error(error.message);
+			process.exit(1);
+		}
 		const message = error instanceof Error ? error.message : String(error);
 		if (message.startsWith('Command not found:')) {
 			const unknown = message.slice('Command not found:'.length).trim();
-			failUnknownCommand(unknown);
+			const display = unknown !== '' ? unknown : '<empty>';
+			logger.error(
+				`Unknown command or source: '${display}'\n`
+				+ `\nCommands: ${[...reportNames].join(', ')}`
+				+ `\nSources:  ${[...sourceNames].join(', ')} (use as: ${name} <source> <command>, e.g. ${name} codex daily)`,
+			);
+			process.exit(1);
 		}
 		throw error;
 	}
