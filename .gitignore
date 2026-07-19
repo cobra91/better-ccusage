@@ -24,7 +24,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # npm credentials (never commit auth tokens)
 .npmrc
-**/.npmrc
 
 # caches
 .eslintcache
