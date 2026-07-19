@@ -1,6 +1,6 @@
 {
   "name": "@better-ccusage/opencode",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Deprecated: OpenCode support is now built into better-ccusage. This package forwards invocations to better-ccusage.",
   "homepage": "https://github.com/cobra91/better-ccusage#readme",
   "bugs": {
