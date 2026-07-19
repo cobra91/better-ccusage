@@ -30,14 +30,16 @@
     "test": "TZ=UTC vitest run",
     "typecheck": "tsgo --noEmit"
   },
+  "dependencies": {
+    "better-ccusage": "workspace:*",
+    "nano-spawn": "catalog:runtime"
+  },
   "devDependencies": {
     "@praha/byethrow": "catalog:runtime",
     "@ryoppippi/eslint-config": "catalog:lint",
     "@typescript/native-preview": "catalog:types",
-    "better-ccusage": "workspace:*",
     "clean-pkg-json": "catalog:release",
     "eslint": "catalog:lint",
-    "nano-spawn": "catalog:runtime",
     "tsdown": "catalog:",
     "unplugin-macros": "catalog:build",
     "unplugin-unused": "catalog:build",

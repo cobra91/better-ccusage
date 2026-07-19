@@ -312,6 +312,13 @@ importers:
         version: 5.1.0
 
   apps/codex:
+    dependencies:
+      better-ccusage:
+        specifier: workspace:*
+        version: link:../better-ccusage
+      nano-spawn:
+        specifier: catalog:runtime
+        version: 1.0.3
     devDependencies:
       '@better-ccusage/internal':
         specifier: workspace:*
@@ -325,18 +332,12 @@ importers:
       '@typescript/native-preview':
         specifier: catalog:types
         version: 7.0.0-dev.20251201.1
-      better-ccusage:
-        specifier: workspace:*
-        version: link:../better-ccusage
       clean-pkg-json:
         specifier: catalog:release
         version: 1.4.1
       eslint:
         specifier: catalog:lint
         version: 9.39.1(jiti@2.6.1)
-      nano-spawn:
-        specifier: catalog:runtime
-        version: 1.0.3
       tsdown:
         specifier: 'catalog:'
         version: 0.16.8(@emnapi/core@1.9.2)(@emnapi/runtime@1.7.1)(@typescript/native-preview@7.0.0-dev.20251201.1)(publint@0.3.18)(synckit@0.11.11)(typescript@5.9.3)(unplugin-unused@0.5.7)
@@ -408,6 +409,13 @@ importers:
         version: 3.25.76
 
   apps/opencode:
+    dependencies:
+      better-ccusage:
+        specifier: workspace:*
+        version: link:../better-ccusage
+      nano-spawn:
+        specifier: catalog:runtime
+        version: 1.0.3
     devDependencies:
       '@praha/byethrow':
         specifier: catalog:runtime
@@ -418,18 +426,12 @@ importers:
       '@typescript/native-preview':
         specifier: catalog:types
         version: 7.0.0-dev.20251201.1
-      better-ccusage:
-        specifier: workspace:*
-        version: link:../better-ccusage
       clean-pkg-json:
         specifier: catalog:release
         version: 1.4.1
       eslint:
         specifier: catalog:lint
         version: 9.39.1(jiti@2.6.1)
-      nano-spawn:
-        specifier: catalog:runtime
-        version: 1.0.3
       tsdown:
         specifier: 'catalog:'
         version: 0.16.8(@emnapi/core@1.9.2)(@emnapi/runtime@1.7.1)(@typescript/native-preview@7.0.0-dev.20251201.1)(publint@0.3.18)(synckit@0.11.11)(typescript@5.9.3)(unplugin-unused@0.5.7)
