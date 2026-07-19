@@ -6,10 +6,11 @@ export default defineConfig({
 		watch: false,
 		includeSource: ['src/**/*.{js,ts}'],
 		globals: true,
+		passWithNoTests: true,
 	},
 	plugins: [
 		Macros({
-			include: ['src/index.ts', 'src/pricing.ts'],
+			include: ['src/index.ts'],
 		}) as any,
 	],
 });

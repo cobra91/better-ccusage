@@ -263,8 +263,18 @@ export async function loadMergedPricing(): Promise<Record<string, ModelPricing>>
 
 		return merged;
 	}
-	catch {
-		// Fallback: return static only
+	catch (error) {
+		// Fallback: return static only. Surface the failure so the user knows
+		// pricing may be stale (missing recently-released models), rather than
+		// silently falling back and producing $0 or mispriced rows for unknown
+		// models.
+		const reason = error instanceof Error ? error.message : String(error);
+		const staticCount = Object.keys(staticData).length;
+		console.warn(
+			`[better-ccusage] Could not fetch the latest model pricing from LiteLLM (${reason}).`
+			+ ` Falling back to the bundled dataset (${staticCount} models).`
+			+ ` Recently released models may be missing or priced at $0.`,
+		);
 		return staticData;
 	}
 }

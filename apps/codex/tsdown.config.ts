@@ -1,6 +1,5 @@
 import { defineConfig } from 'tsdown';
 import Macros from 'unplugin-macros/rolldown';
-import { copyPricingPlugin } from '../../scripts/copy-pricing-plugin.ts';
 
 export default defineConfig({
 	entry: ['src/index.ts'],
@@ -17,9 +16,8 @@ export default defineConfig({
 	fixedExtension: false,
 	plugins: [
 		Macros({
-			include: ['src/index.ts', 'src/pricing.ts'],
+			include: ['src/index.ts'],
 		}),
-		copyPricingPlugin('codex'),
 	],
 	define: {
 		'import.meta.vitest': 'undefined',
