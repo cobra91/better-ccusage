@@ -1860,7 +1860,7 @@ export async function loadSessionBlockData(
 			logger.debug(`Attempting to load droid sessions for blocks from ${droidPath}`);
 			const rawDroidEntries = await processDroidSessions(droidPath, options);
 			// Convert droid entries to LoadedUsageEntry format with Date timestamps
-			droidEntries = rawDroidEntries.map((entry): LoadedUsageEntry => ({
+			droidEntries = await Promise.all(rawDroidEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
 				timestamp: new Date(entry.timestamp),
 				usage: {
 					inputTokens: entry.message.usage.input_tokens,
@@ -1868,12 +1868,18 @@ export async function loadSessionBlockData(
 					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
 					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
 				},
-				costUSD: entry.costUSD ?? 0,
+				// Droid entries do not carry a pre-computed costUSD (the adapter
+				// delegates pricing to the shared engine), so we must compute it
+				// here with the same fetcher/mode as the Claude path. Without
+				// this, every droid session block would report $0.
+				costUSD: fetcher == null
+					? entry.costUSD ?? 0
+					: await calculateCostForEntry(entry, mode, fetcher),
 				model: entry.message.model ?? 'unknown',
 				version: entry.version ?? undefined,
 				usageLimitResetTime: undefined,
 				source: entry.source ?? 'droid',
-			}));
+			})));
 			logger.info(`Loaded ${droidEntries.length} droid entries for blocks from ${droidPath}`);
 		}
 		catch (error) {
@@ -1891,8 +1897,11 @@ export async function loadSessionBlockData(
 	else {
 		try {
 			const rawZcodeEntries = await processZcodeSessions(zcodeDbPath, options);
-			// Convert zcode entries to LoadedUsageEntry format with Date timestamps
-			zcodeEntries = rawZcodeEntries.map((entry): LoadedUsageEntry => ({
+			// ZCode entries do not carry a pre-computed costUSD (the adapter
+			// delegates pricing to the shared engine), so we must compute it
+			// here with the same fetcher/mode as the Claude path. Without
+			// this, every zcode session block would report $0.
+			zcodeEntries = await Promise.all(rawZcodeEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
 				timestamp: new Date(entry.timestamp),
 				usage: {
 					inputTokens: entry.message.usage.input_tokens,
@@ -1900,12 +1909,14 @@ export async function loadSessionBlockData(
 					cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
 					cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
 				},
-				costUSD: entry.costUSD ?? 0,
+				costUSD: fetcher == null
+					? entry.costUSD ?? 0
+					: await calculateCostForEntry(entry, mode, fetcher),
 				model: entry.message.model ?? 'unknown',
 				version: entry.version ?? undefined,
 				usageLimitResetTime: undefined,
 				source: entry.source ?? 'zcode',
-			}));
+			})));
 		}
 		catch (error) {
 			logger.warn(`Failed to load zcode sessions for blocks: ${String(error)}`);

@@ -314,6 +314,7 @@ if (import.meta.vitest != null) {
 	// Hoist the sqlite import once for all tests (CLAUDE.md discourages
 	// repeated `await import()` in test bodies; the runtime-detection
 	// justification from the production code does not apply under vitest).
+	// eslint-disable-next-line antfu/no-top-level-await -- test-only hoisted import inside the vitest guard
 	const { DatabaseSync } = await import('node:sqlite');
 
 	describe('processOpenCodeSessions', () => {
