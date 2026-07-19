@@ -398,7 +398,9 @@ export async function processDevinSessions(
 
 	const transcriptsDir = path.join(dataDir, DEVIN_TRANSCRIPTS_SUBPATH);
 	if (!existsSync(transcriptsDir)) {
-		logger.debug(`Devin transcripts directory not found at ${transcriptsDir}`);
+		// warn (not debug): a missing transcripts dir is the most common reason
+		// Devin data is invisible in reports, and debug is hidden by default.
+		logger.warn(`Devin transcripts directory not found at ${transcriptsDir}`);
 		return [];
 	}
 
@@ -544,7 +546,16 @@ export async function processDevinSessions(
 		}
 	}
 
-	logger.info(`Loaded ${results.length} Devin usage entries from ${transcriptsDir}`);
+	logger.info(`Loaded ${results.length} Devin usage entries from ${transcriptsDir} (${files.length} transcript file${files.length === 1 ? '' : 's'})`);
+
+	// Surface the "transcripts exist but nothing extracted" case so Devin being
+	// invisible in reports is diagnosable instead of silent.
+	if (results.length === 0 && files.length > 0) {
+		logger.warn(
+			`Devin transcripts directory at ${transcriptsDir} had ${files.length} file(s) but none yielded usage entries. Transcripts without token/step data or with an unrecognized schema are skipped.`,
+		);
+	}
+
 	return results;
 }
 

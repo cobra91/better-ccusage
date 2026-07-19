@@ -178,7 +178,9 @@ export async function processOpenCodeSessions(
 	}
 
 	if (!existsSync(dbPath)) {
-		logger.debug(`OpenCode database not found at ${dbPath}`);
+		// warn (not debug): a missing DB is the most common reason OpenCode
+		// data is invisible in reports, and debug is hidden by default.
+		logger.warn(`OpenCode database not found at ${dbPath}`);
 		return [];
 	}
 
@@ -306,7 +308,16 @@ export async function processOpenCodeSessions(
 		results.push(entry);
 	}
 
-	logger.info(`Loaded ${results.length} OpenCode usage entries from ${dbPath}`);
+	logger.info(`Loaded ${results.length} OpenCode usage entries from ${dbPath} (${rows.length} message row${rows.length === 1 ? '' : 's'})`);
+
+	// Surface the "data exists but nothing extracted" case so OpenCode being
+	// invisible in reports is diagnosable instead of silent.
+	if (results.length === 0 && rows.length > 0) {
+		logger.warn(
+			`OpenCode database at ${dbPath} had ${rows.length} message row(s) but none yielded usage entries. Rows without token usage, with all-zero tokens, or without a model id are skipped.`,
+		);
+	}
+
 	return results;
 }
 

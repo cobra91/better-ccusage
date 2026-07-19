@@ -285,7 +285,9 @@ export async function processCodexSessions(
 		catch: error => error,
 	})();
 	if (Result.isFailure(dirStat) || !dirStat.value.isDirectory()) {
-		logger.debug(`Codex sessions directory not found or not a directory: ${codexPath}`);
+		// warn (not debug): a missing Codex directory is the most common reason
+		// Codex data is invisible in reports, and debug is hidden by default.
+		logger.warn(`Codex sessions directory not found or not a directory: ${codexPath}`);
 		return [];
 	}
 
@@ -294,7 +296,18 @@ export async function processCodexSessions(
 		absolute: true,
 	});
 
+	if (files.length === 0) {
+		// Directory exists but has no .jsonl session files — surface it so the
+		// user can tell an empty dir apart from a misconfigured CODEX_HOME.
+		logger.warn(`Codex sessions directory exists but contains no .jsonl files: ${codexPath}`);
+		return [];
+	}
+
 	const results: UsageData[] = [];
+	// Aggregate diagnostics across all session files so we can emit ONE helpful
+	// message at the end instead of N per-file warnings (which would be noisy).
+	let tokenCountEvents = 0;
+	let droppedNoUsage = 0;
 
 	for (const file of files) {
 		const relativeSessionPath = path.relative(codexPath, file);
@@ -306,7 +319,7 @@ export async function processCodexSessions(
 			catch: error => error,
 		})();
 		if (Result.isFailure(fileContentResult)) {
-			logger.debug(`Failed to read Codex session file ${file}: ${String(fileContentResult.error)}`);
+			logger.warn(`Failed to read Codex session file ${file}: ${String(fileContentResult.error)}`);
 			continue;
 		}
 
@@ -357,6 +370,8 @@ export async function processCodexSessions(
 				continue;
 			}
 
+			tokenCountEvents += 1;
+
 			if (timestamp == null) {
 				continue;
 			}
@@ -375,6 +390,7 @@ export async function processCodexSessions(
 			}
 
 			if (raw == null) {
+				droppedNoUsage += 1;
 				continue;
 			}
 
@@ -435,7 +451,24 @@ export async function processCodexSessions(
 		}
 	}
 
-	logger.info(`Loaded ${results.length} Codex usage entries from ${codexPath}`);
+	logger.info(`Loaded ${results.length} Codex usage entries from ${codexPath} (${files.length} session file${files.length === 1 ? '' : 's'})`);
+
+	// The single most common cause of "Codex data is invisible": the user runs
+	// the Codex TUI interactively, and interactive sessions do not write
+	// per-turn token_count events to the rollout JSONL (only `codex exec` does).
+	// See https://github.com/openai/codex/issues/9660. Without this warning the
+	// adapter returns [] with no explanation.
+	if (results.length === 0 && tokenCountEvents > 0 && droppedNoUsage === tokenCountEvents) {
+		logger.warn(
+			`Codex sessions at ${codexPath} contained ${tokenCountEvents} token_count event(s) but none had usable usage data (last_token_usage/total_token_usage). This is expected for interactive Codex TUI sessions, which do not log per-turn token usage to disk — see https://github.com/openai/codex/issues/9660. Use \`codex exec\` (non-interactive) if you need usage logging.`,
+		);
+	}
+	else if (results.length === 0) {
+		logger.warn(
+			`No Codex usage entries were extracted from ${files.length} session file(s) at ${codexPath}. The files exist but contain no token_count events with non-zero deltas.`,
+		);
+	}
+
 	return results;
 }
 
@@ -618,6 +651,49 @@ if (import.meta.vitest != null) {
 
 			const results = await processCodexSessions(fixture.getPath('sessions'));
 			expect(results).toHaveLength(0);
+		});
+
+		it('warns when token_count events have no usable usage (interactive session shape)', async () => {
+			// Reproduces the "codex invisible in --breakdown" bug: an interactive
+			// Codex TUI session writes event_msg/token_count entries but with an
+			// empty info object (no last_token_usage / total_token_usage). The
+			// adapter must (a) return [] and (b) warn pointing at #9660 instead
+			// of failing silently. See https://github.com/openai/codex/issues/9660.
+			await using fixture = await createFixture({
+				sessions: {
+					'interactive.jsonl': [
+						JSON.stringify({
+							timestamp: '2025-09-18T10:00:00.000Z',
+							type: 'session_meta',
+							payload: { id: 'sess-1' },
+						}),
+						JSON.stringify({
+							timestamp: '2025-09-18T10:00:05.000Z',
+							type: 'event_msg',
+							payload: { type: 'token_count', info: {} },
+						}),
+						JSON.stringify({
+							timestamp: '2025-09-18T10:00:10.000Z',
+							type: 'event_msg',
+							payload: { type: 'agent_message', content: 'hi' },
+						}),
+					].join('\n'),
+				},
+			});
+
+			const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+			try {
+				const results = await processCodexSessions(fixture.getPath('sessions'));
+				expect(results).toHaveLength(0);
+				// Exactly one #9660 diagnostic should be emitted (not N per-event).
+				const diagnosticCalls = warnSpy.mock.calls.filter(args =>
+					String(args[0]).includes('openai/codex/issues/9660'),
+				);
+				expect(diagnosticCalls).toHaveLength(1);
+			}
+			finally {
+				warnSpy.mockRestore();
+			}
 		});
 	});
 
