@@ -74,6 +74,12 @@ export default defineConfig({
 					],
 				},
 				{
+					text: 'Devin Source',
+					items: [
+						{ text: 'Overview', link: '/guide/devin' },
+					],
+				},
+				{
 					text: 'Configuration',
 					items: [
 						{ text: 'Overview', link: '/guide/configuration' },
