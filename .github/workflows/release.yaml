@@ -5,10 +5,11 @@ on:
     tags:
       - "*"
 
-# Serialize releases: if two tags are pushed close together, the second run
-# waits for the first instead of racing on the same npm versions.
+# Serialize ALL release runs globally. A static group name (rather than one
+# per tag via github.ref) ensures that two different tags pushed close
+# together queue instead of racing on npm publish / GitHub release creation.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 jobs:
