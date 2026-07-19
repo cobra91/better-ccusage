@@ -318,7 +318,7 @@ export async function processPiSessions(
 				const message = piLine.message!;
 				const piUsage = message.usage!;
 
-				// Resolve timestamp; skip if unparseable.
+				// Resolve timestamp; skip if unparsable.
 				const timestamp = piLine.timestamp?.trim();
 				if (timestamp == null || timestamp === '') {
 					continue;
