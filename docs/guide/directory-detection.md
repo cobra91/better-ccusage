@@ -129,7 +129,7 @@ export CLAUDE_CONFIG_DIR="$SNAP/config,$SNAP/legacy"
 better-ccusage monthly --breakdown   # totals as of the snapshot date
 ```
 
-If you only have one root (e.g. a fresh install on `~/.config/claude`), the `CLAUDE_CONFIG_DIR` list naturally contains just that one path. Keep snapshots around for as long as you need auditable numbers; they're plain JSONL files, so they compress well. See [#40](https://github.com/cobra91/better-ccusage/issues/40) for the original field report and repro.
+If you only have one root (e.g. a fresh install on `~/.config/claude`), `rmdir` removes the empty stub for the missing root and better-ccusage silently skips it, so the report still runs against the one root you copied (the stale entry in `CLAUDE_CONFIG_DIR` simply won't resolve). Keep snapshots around for as long as you need auditable numbers; they're plain JSONL files, so they compress well. See [#40](https://github.com/cobra91/better-ccusage/issues/40) for the original field report and repro.
 
 ## Related Documentation
 
