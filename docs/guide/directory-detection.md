@@ -108,6 +108,25 @@ better-ccusage daily
 LOG_LEVEL=4 better-ccusage daily
 ```
 
+## Audit-grade reports (snapshot before resume/compact)
+
+Claude Code rewrites session JSONL files when you `resume` or `compact` a session, and in doing so can drop or rewrite earlier messages. Because better-ccusage reads those files faithfully, totals computed after a rewrite can drift from what you actually used earlier — historical usage that was compacted away is gone from the source.
+
+This is an [upstream Claude Code behavior](https://github.com/anthropics/claude-code/issues/36583), not a better-ccusage bug, and better-ccusage intentionally does not reconstruct a different history (no shadow ledger). For billing reconciliation or audit-grade totals, snapshot the Claude data directory before resuming/compacting long sessions, then point `CLAUDE_CONFIG_DIR` at the snapshot when you need an accurate-as-of-then report:
+
+```bash
+# 1. Snapshot the current Claude data (do this before resume/compact)
+SNAP="$HOME/claude-snapshots/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$SNAP"
+cp -r ~/.config/claude/projects "$SNAP/projects"
+
+# 2. Later, run reports against the frozen snapshot
+export CLAUDE_CONFIG_DIR="$SNAP"
+better-ccusage monthly --breakdown   # totals as of the snapshot date
+```
+
+Keep snapshots around for as long as you need auditable numbers; they're plain JSONL files, so they compress well. See [#40](https://github.com/cobra91/better-ccusage/issues/40) for the original field report and repro.
+
 ## Related Documentation
 
 - [Environment Variables](/guide/environment-variables) - Configure with CLAUDE_CONFIG_DIR
