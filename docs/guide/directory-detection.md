@@ -112,20 +112,24 @@ LOG_LEVEL=4 better-ccusage daily
 
 Claude Code rewrites session JSONL files when you `resume` or `compact` a session, and in doing so can drop or rewrite earlier messages. Because better-ccusage reads those files faithfully, totals computed after a rewrite can drift from what you actually used earlier — historical usage that was compacted away is gone from the source.
 
-This is an [upstream Claude Code behavior](https://github.com/anthropics/claude-code/issues/36583), not a better-ccusage bug, and better-ccusage intentionally does not reconstruct a different history (no shadow ledger). For billing reconciliation or audit-grade totals, snapshot the Claude data directory before resuming/compacting long sessions, then point `CLAUDE_CONFIG_DIR` at the snapshot when you need an accurate-as-of-then report:
+This is an [upstream Claude Code behavior](https://github.com/anthropics/claude-code/issues/36583), not a better-ccusage bug, and better-ccusage intentionally does not reconstruct a different history (no shadow ledger). For billing reconciliation or audit-grade totals, snapshot the Claude data directory before resuming/compacting long sessions, then point `CLAUDE_CONFIG_DIR` at the snapshot when you need an accurate-as-of-then report.
+
+better-ccusage aggregates **both** Claude data roots by default — the new `~/.config/claude/projects/` and the legacy `~/.claude/projects/` (see [Default Directory Locations](#default-directory-locations)). A correct snapshot must capture each root that exists on your machine, then report against all of them via a comma-separated `CLAUDE_CONFIG_DIR`:
 
 ```bash
-# 1. Snapshot the current Claude data (do this before resume/compact)
+# 1. Snapshot every Claude data root that exists (do this before resume/compact)
 SNAP="$HOME/claude-snapshots/$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$SNAP"
-cp -r ~/.config/claude/projects "$SNAP/projects"
+mkdir -p "$SNAP/config" "$SNAP/legacy"
+# Copy each existing root; ignore the ones you don't have.
+cp -r ~/.config/claude/projects "$SNAP/config/projects" 2>/dev/null || rmdir "$SNAP/config"
+cp -r ~/.claude/projects       "$SNAP/legacy/projects" 2>/dev/null || rmdir "$SNAP/legacy"
 
-# 2. Later, run reports against the frozen snapshot
-export CLAUDE_CONFIG_DIR="$SNAP"
+# 2. Later, run reports against the frozen snapshot (list every root you copied)
+export CLAUDE_CONFIG_DIR="$SNAP/config,$SNAP/legacy"
 better-ccusage monthly --breakdown   # totals as of the snapshot date
 ```
 
-Keep snapshots around for as long as you need auditable numbers; they're plain JSONL files, so they compress well. See [#40](https://github.com/cobra91/better-ccusage/issues/40) for the original field report and repro.
+If you only have one root (e.g. a fresh install on `~/.config/claude`), the `CLAUDE_CONFIG_DIR` list naturally contains just that one path. Keep snapshots around for as long as you need auditable numbers; they're plain JSONL files, so they compress well. See [#40](https://github.com/cobra91/better-ccusage/issues/40) for the original field report and repro.
 
 ## Related Documentation
 
