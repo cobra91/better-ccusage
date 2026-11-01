@@ -3,13 +3,18 @@ import { getClaudePaths } from 'better-ccusage/data-loader';
 
 /**
  * Create default loading options using the first available Claude data path.
+ * When no Claude data exists the path is left empty: the child CLI then runs
+ * its own default discovery, which degrades gracefully in multi-provider
+ * setups instead of failing server startup.
  * @returns LoadOptions with the default claudePath resolved
- * @throws Error if no valid Claude path is found
  */
 export function defaultOptions(): LoadOptions {
-	const paths = getClaudePaths();
-	if (paths.length === 0) {
-		throw new Error('No valid Claude path found. Ensure getClaudePaths() returns at least one valid path.');
+	let paths: string[];
+	try {
+		paths = getClaudePaths();
 	}
-	return { claudePath: paths[0] } as const satisfies LoadOptions;
+	catch {
+		paths = [];
+	}
+	return { claudePath: paths[0] ?? '' } as const satisfies LoadOptions;
 }

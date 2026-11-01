@@ -51,9 +51,9 @@ export function createMcpServer(options?: LoadOptions): McpServer {
 	});
 
 	const { claudePath = '' } = options ?? defaultOptions();
-	if (claudePath === '') {
-		throw new Error('Claude path is required');
-	}
+	// An empty path means no Claude data was found on this machine: tool calls
+	// then let the child CLI run its own default discovery, which degrades
+	// gracefully in multi-provider setups instead of failing server startup.
 
 	// Register daily tool
 	server.registerTool(
@@ -1028,11 +1028,16 @@ if (import.meta.vitest != null) {
 					arguments: { mode: 'auto' },
 				});
 
+				// The CLI is multi-provider: missing Claude data is not an error
+				// anymore. It degrades to an empty result like other expected
+				// empty cases, so the tool call succeeds.
 				expect(result).toHaveProperty('content');
 				expect(Array.isArray(result.content)).toBe(true);
 				expect(result.content).toHaveLength(1);
-				expect(result.isError).toBe(true);
-				expect((result.content as any)[0].text).toContain('No valid Claude data directories found');
+				expect(result.isError).toBeFalsy();
+				const data = JSON.parse((result.content as any)[0].text as string);
+				expect(data).toHaveProperty('daily');
+				expect(data.daily).toHaveLength(0);
 
 				await client.close();
 				await server.close();

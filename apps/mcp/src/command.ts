@@ -53,14 +53,19 @@ export const mcpCommand = define({
 			logger.level = 0;
 		}
 
-		const paths = getClaudePaths();
-		if (paths.length === 0) {
-			logger.error('No valid Claude data directory found');
-			throw new Error('No valid Claude data directory found');
+		// Multi-provider: missing Claude data is not fatal. The child CLI
+		// performs its own default discovery and degrades gracefully, so the
+		// server can still serve reports from other sources.
+		let claudePaths: string[];
+		try {
+			claudePaths = getClaudePaths();
+		}
+		catch {
+			claudePaths = [];
 		}
 
 		const options: CommandOptions = {
-			claudePath: paths.at(0),
+			claudePath: claudePaths.at(0),
 			mode,
 		};
 
