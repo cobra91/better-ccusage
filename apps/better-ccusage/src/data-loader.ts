@@ -8,6 +8,7 @@
  * @module data-loader
  */
 
+import type { FsFixture } from 'fs-fixture';
 import type { WeekDay } from './_consts.ts';
 import type { LoadedUsageEntry, SessionBlock } from './_session-blocks.ts';
 import type {
@@ -18,7 +19,9 @@ import type {
 	SortOrder,
 	Version,
 } from './_types.ts';
-import { readFile } from 'node:fs/promises';
+import { constants } from 'node:buffer';
+import { createReadStream } from 'node:fs';
+import { appendFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { toArray } from '@antfu/utils';
@@ -589,21 +592,60 @@ export function combineSources(sources: Set<string | undefined>): string {
 }
 
 /**
+ * Stream a JSONL file and pass each non-empty line to `processLine`, in file order.
+ *
+ * The file is streamed instead of read whole because a single transcript can be larger
+ * than V8's maximum string length (~512 MiB on 64-bit), where `readFile(path, 'utf-8')`
+ * throws "RangeError: Invalid string length". Lines are split on LF only; `node:readline`
+ * is not used because it also splits on U+2028/U+2029, which `JSON.stringify` leaves unescaped.
+ * @param filePath - Path to the JSONL file
+ * @param processLine - Called for each non-empty line; awaited before the next line is handled
+ */
+async function processJSONLFileByLine(
+	filePath: string,
+	processLine: (line: string) => void | Promise<void>,
+): Promise<void> {
+	let isFirstLine = true;
+	const handleLine = async (rawLine: string): Promise<void> => {
+		let line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+		// readFile(...).trim() used to drop a UTF-8 BOM at the start of the file; keep doing so
+		if (isFirstLine && line.startsWith('\uFEFF')) {
+			line = line.slice(1);
+		}
+		isFirstLine = false;
+		if (line.trim().length === 0) {
+			return;
+		}
+		await processLine(line);
+	};
+
+	const chunks: AsyncIterable<string> = createReadStream(filePath, { encoding: 'utf-8' });
+	let pending = '';
+	for await (const chunk of chunks) {
+		let start = 0;
+		let newlineIndex = chunk.indexOf('\n', start);
+		while (newlineIndex !== -1) {
+			const line = pending + chunk.slice(start, newlineIndex);
+			pending = '';
+			await handleLine(line);
+			start = newlineIndex + 1;
+			newlineIndex = chunk.indexOf('\n', start);
+		}
+		pending += chunk.slice(start);
+	}
+	// The last line may not end with LF
+	await handleLine(pending);
+}
+
+/**
  * Extract the earliest timestamp from a JSONL file
  * Scans through the file until it finds a valid timestamp
  */
 export async function getEarliestTimestamp(filePath: string): Promise<Date | null> {
 	try {
-		const content = await readFile(filePath, 'utf-8');
-		const lines = content.trim().split('\n');
-
 		let earliestDate: Date | null = null;
 
-		for (const line of lines) {
-			if (line.trim() === '') {
-				continue;
-			}
-
+		await processJSONLFileByLine(filePath, (line) => {
 			try {
 				const json = JSON.parse(line) as Record<string, unknown>;
 				if (json.timestamp != null && typeof json.timestamp === 'string') {
@@ -617,9 +659,8 @@ export async function getEarliestTimestamp(filePath: string): Promise<Date | nul
 			}
 			catch {
 				// Skip invalid JSON lines
-				continue;
 			}
-		}
+		});
 
 		return earliestDate;
 	}
@@ -952,18 +993,12 @@ export async function loadDailyUsageData(
 	const allEntries: { data: UsageData; date: string; cost: number; model: string | undefined; project: string }[] = [];
 
 	for (const file of sortedFiles) {
-		const content = await readFile(file, 'utf-8');
-		const lines = content
-			.trim()
-			.split('\n')
-			.filter(line => line.length > 0);
-
-		for (const line of lines) {
+		await processJSONLFileByLine(file, async (line) => {
 			try {
 				const parsed = JSON.parse(line) as unknown;
 				const result = v.safeParse(usageDataSchema, parsed);
 				if (!result.success) {
-					continue;
+					return;
 				}
 				const data = result.output;
 
@@ -974,7 +1009,7 @@ export async function loadDailyUsageData(
 				const uniqueHash = createUniqueHash(data);
 				if (isDuplicateEntry(uniqueHash, processedHashes)) {
 					// Skip duplicate message
-					continue;
+					return;
 				}
 
 				// Mark this combination as processed
@@ -996,7 +1031,7 @@ export async function loadDailyUsageData(
 			catch {
 				// Skip invalid JSON lines
 			}
-		}
+		});
 	}
 
 	// Add droid entries to the collection
@@ -1402,18 +1437,12 @@ export async function loadSessionData(
 		const sessionId = path.basename(file, '.jsonl');
 		const projectPath = extractProjectFromPath(file);
 
-		const content = await readFile(file, 'utf-8');
-		const lines = content
-			.trim()
-			.split('\n')
-			.filter(line => line.length > 0);
-
-		for (const line of lines) {
+		await processJSONLFileByLine(file, async (line) => {
 			try {
 				const parsed = JSON.parse(line) as unknown;
 				const result = v.safeParse(usageDataSchema, parsed);
 				if (!result.success) {
-					continue;
+					return;
 				}
 				const data = result.output;
 
@@ -1424,7 +1453,7 @@ export async function loadSessionData(
 				const uniqueHash = createUniqueHash(data);
 				if (isDuplicateEntry(uniqueHash, processedHashes)) {
 					// Skip duplicate message
-					continue;
+					return;
 				}
 
 				// Mark this combination as processed
@@ -1448,7 +1477,7 @@ export async function loadSessionData(
 			catch {
 				// Skip invalid JSON lines
 			}
-		}
+		});
 	}
 
 	// Add droid entries to the collection
@@ -1713,8 +1742,6 @@ export async function loadSessionUsageById(
 	if (file == null) {
 		return null;
 	}
-	const content = await readFile(file, 'utf-8');
-	const lines = content.trim().split('\n').filter(line => line.length > 0);
 
 	const mode = options?.mode ?? 'auto';
 	const fetcher = mode === 'display' ? null : new CcusagePricingFetcher();
@@ -1722,12 +1749,12 @@ export async function loadSessionUsageById(
 	const entries: UsageData[] = [];
 	let totalCost = 0;
 
-	for (const line of lines) {
+	await processJSONLFileByLine(file, async (line) => {
 		try {
 			const parsed = JSON.parse(line) as unknown;
 			const result = v.safeParse(usageDataSchema, parsed);
 			if (!result.success) {
-				continue;
+				return;
 			}
 			const data = result.output;
 
@@ -1741,7 +1768,7 @@ export async function loadSessionUsageById(
 		catch {
 			// Skip invalid JSON lines
 		}
-	}
+	});
 
 	return { totalCost, entries };
 }
@@ -1991,13 +2018,7 @@ export async function loadSessionBlockData(
 	const allUserMessages: UserMessage[] = [];
 
 	for (const file of sortedFiles) {
-		const content = await readFile(file, 'utf-8');
-		const lines = content
-			.trim()
-			.split('\n')
-			.filter(line => line.length > 0);
-
-		for (const line of lines) {
+		await processJSONLFileByLine(file, async (line) => {
 			try {
 				const parsed = JSON.parse(line) as unknown;
 				// Try to parse as usage data (assistant messages with tokens)
@@ -2009,7 +2030,7 @@ export async function loadSessionBlockData(
 					const uniqueHash = createUniqueHash(data);
 					if (isDuplicateEntry(uniqueHash, processedHashes)) {
 						// Skip duplicate message
-						continue;
+						return;
 					}
 
 					// Mark this combination as processed
@@ -2036,7 +2057,7 @@ export async function loadSessionBlockData(
 						usageLimitResetTime: usageLimitResetTime ?? undefined,
 						source: data.source,
 					});
-					continue;
+					return;
 				}
 
 				// Try to parse as user message (for prompt counting)
@@ -2044,7 +2065,6 @@ export async function loadSessionBlockData(
 				if (userResult.success) {
 					const userMessage = userResult.output;
 					allUserMessages.push(userMessage);
-					continue;
 				}
 				// Skip lines that don't match either schema
 			}
@@ -2052,7 +2072,7 @@ export async function loadSessionBlockData(
 				// Skip invalid JSON lines but log for debugging purposes
 				logger.debug(`Skipping invalid JSON line in 5-hour blocks: ${error instanceof Error ? error.message : String(error)}`);
 			}
-		}
+		});
 	}
 
 	// Also load droid sessions if available
@@ -2838,6 +2858,35 @@ invalid json line
 			expect(result).toHaveLength(1);
 			expect(result[0]?.inputTokens).toBe(400); // 100 + 300
 			expect(result[0]?.totalCost).toBe(0.04); // 0.01 + 0.03
+		});
+
+		it('counts a usage entry whose message content contains U+2028', async () => {
+			// JSON.stringify leaves U+2028 unescaped, so the separator is raw in the file,
+			// as it is in real Claude Code transcripts
+			const fixture = await createFixture({
+				projects: {
+					project1: {
+						session1: {
+							'file.jsonl': `${JSON.stringify({
+								timestamp: '2024-01-01T12:00:00Z',
+								message: {
+									id: 'msg_line_separator',
+									usage: { input_tokens: 100, output_tokens: 50 },
+									model: 'claude-sonnet-4-20250514',
+									content: [{ type: 'text', text: 'first\u2028second' }],
+								},
+								requestId: 'req_line_separator',
+								costUSD: 0.01,
+							})}\n`,
+						},
+					},
+				},
+			});
+
+			const result = await loadDailyUsageData({ claudePath: fixture.path });
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({ date: '2024-01-01', inputTokens: 100, outputTokens: 50 });
 		});
 	});
 
@@ -5373,6 +5422,226 @@ if (import.meta.vitest != null) {
 				}
 			});
 		});
+	});
+
+	describe('processJSONLFileByLine', () => {
+		it('passes each non-empty line to the callback in file order', async () => {
+			await using fixture = await createFixture({
+				'test.jsonl': ['{"line":1}', '{"line":2}', '{"line":3}'].join('\n'),
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual(['{"line":1}', '{"line":2}', '{"line":3}']);
+		});
+
+		it('skips empty and whitespace-only lines', async () => {
+			await using fixture = await createFixture({
+				'test.jsonl': '\n{"line":1}\n\n{"line":2}\n  \n\t\n{"line":3}\n\n',
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual(['{"line":1}', '{"line":2}', '{"line":3}']);
+		});
+
+		it('strips CRLF line endings', async () => {
+			await using fixture = await createFixture({
+				'test.jsonl': '{"line":1}\r\n{"line":2}\r\n',
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual(['{"line":1}', '{"line":2}']);
+		});
+
+		it('strips a UTF-8 BOM from the start of the file', async () => {
+			await using fixture = await createFixture({
+				'test.jsonl': '\uFEFF{"line":1}\n\uFEFF{"line":2}\n',
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual(['{"line":1}', '\uFEFF{"line":2}']);
+		});
+
+		it('does not split lines on U+2028 or U+2029', async () => {
+			// JSON.stringify leaves both separators unescaped inside strings
+			const lineWithLineSeparator = JSON.stringify({ text: 'a\u2028b' });
+			const lineWithParagraphSeparator = JSON.stringify({ text: 'c\u2029d' });
+			await using fixture = await createFixture({
+				'test.jsonl': `${lineWithLineSeparator}\n${lineWithParagraphSeparator}\n`,
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual([lineWithLineSeparator, lineWithParagraphSeparator]);
+		});
+
+		it('does not treat a lone carriage return as a line break', async () => {
+			await using fixture = await createFixture({
+				'test.jsonl': 'a\rb\nc\n',
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual(['a\rb', 'c']);
+		});
+
+		it('waits for an async callback to finish before handling the next line', async () => {
+			// Each line is a delay in ms. Earlier lines wait longer, so callbacks that
+			// overlapped (or were not awaited) would reorder or drop the "end" events.
+			await using fixture = await createFixture({
+				'test.jsonl': '30\n15\n0\n',
+			});
+
+			const events: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('test.jsonl'), async (line) => {
+				events.push(`start ${line}`);
+				await new Promise(resolve => setTimeout(resolve, Number(line)));
+				events.push(`end ${line}`);
+			});
+
+			expect(events).toEqual(['start 30', 'end 30', 'start 15', 'end 15', 'start 0', 'end 0']);
+		});
+
+		it('rejects when the file does not exist', async () => {
+			await using fixture = await createFixture({});
+
+			await expect(
+				processJSONLFileByLine(fixture.getPath('missing.jsonl'), () => {}),
+			).rejects.toMatchObject({ code: 'ENOENT' });
+		});
+
+		it('handles an empty file', async () => {
+			await using fixture = await createFixture({
+				'empty.jsonl': '',
+			});
+
+			const lines: string[] = [];
+			await processJSONLFileByLine(fixture.getPath('empty.jsonl'), (line) => {
+				lines.push(line);
+			});
+
+			expect(lines).toEqual([]);
+		});
+	});
+
+	describe('JSONL files larger than the maximum string length', () => {
+		// Regression tests for #53: a single transcript larger than V8's maximum string
+		// length made every report crash with "RangeError: Invalid string length".
+		const LARGE_FILE_TIMEOUT_MS = 120_000;
+		const LARGE_FILE = '.claude/projects/large-project/large-session.jsonl';
+		const firstEntry = {
+			timestamp: '2025-01-10T10:00:00Z',
+			message: {
+				id: 'msg_large_first',
+				usage: { input_tokens: 100, output_tokens: 50 },
+				model: 'claude-sonnet-4-20250514',
+			},
+			requestId: 'req_large_first',
+			costUSD: 0.01,
+			sessionId: 'large-session',
+		};
+		const lastEntry = {
+			timestamp: '2025-01-11T10:00:00Z',
+			message: {
+				id: 'msg_large_last',
+				usage: { input_tokens: 200, output_tokens: 80 },
+				model: 'claude-sonnet-4-20250514',
+			},
+			requestId: 'req_large_last',
+			costUSD: 0.02,
+			sessionId: 'large-session',
+		};
+
+		let fixture: FsFixture;
+
+		beforeAll(async () => {
+			fixture = await createFixture({
+				[LARGE_FILE]: `${JSON.stringify(firstEntry)}\n`,
+			});
+			const largeFilePath = fixture.getPath(LARGE_FILE);
+
+			// Pad the file with 64 MiB lines of non-JSON filler (cheap for every parser to
+			// skip) until it is larger than the maximum string length. The filler is
+			// appended one line at a time so the test never builds a huge string itself.
+			const fillerLine = `${'x'.repeat(64 * 1024 * 1024)}\n`;
+			let fillerLength = 0;
+			while (fillerLength <= constants.MAX_STRING_LENGTH) {
+				await appendFile(largeFilePath, fillerLine);
+				fillerLength += fillerLine.length;
+			}
+
+			await appendFile(largeFilePath, `${JSON.stringify(lastEntry)}\n`);
+		}, LARGE_FILE_TIMEOUT_MS);
+
+		afterAll(async () => {
+			await fixture.rm();
+		});
+
+		afterEach(() => {
+			vi.unstubAllEnvs();
+		});
+
+		it('getEarliestTimestamp returns the timestamp of the first line', async () => {
+			const timestamp = await getEarliestTimestamp(fixture.getPath(LARGE_FILE));
+
+			expect(timestamp).toEqual(new Date('2025-01-10T10:00:00Z'));
+		}, LARGE_FILE_TIMEOUT_MS);
+
+		it('loadDailyUsageData reports the entries before and after the filler', async () => {
+			const daily = await loadDailyUsageData({ claudePath: fixture.getPath('.claude') });
+
+			expect(daily).toHaveLength(2);
+			expect(daily).toEqual(expect.arrayContaining([
+				expect.objectContaining({ date: '2025-01-10', inputTokens: 100, outputTokens: 50 }),
+				expect.objectContaining({ date: '2025-01-11', inputTokens: 200, outputTokens: 80 }),
+			]));
+		}, LARGE_FILE_TIMEOUT_MS);
+
+		it('loadSessionData reports the session with both entries', async () => {
+			const sessions = await loadSessionData({ claudePath: fixture.getPath('.claude') });
+
+			expect(sessions).toHaveLength(1);
+			expect(sessions[0]).toMatchObject({ sessionId: 'large-session', inputTokens: 300, outputTokens: 130 });
+		}, LARGE_FILE_TIMEOUT_MS);
+
+		it('loadSessionBlockData puts both entries into blocks', async () => {
+			const blocks = await loadSessionBlockData({ claudePath: fixture.getPath('.claude') });
+
+			const entries = blocks.filter(block => block.isGap !== true).flatMap(block => block.entries);
+			expect(entries.map(entry => entry.timestamp.toISOString()).toSorted()).toEqual([
+				'2025-01-10T10:00:00.000Z',
+				'2025-01-11T10:00:00.000Z',
+			]);
+		}, LARGE_FILE_TIMEOUT_MS);
+
+		it('loadSessionUsageById returns both entries', async () => {
+			vi.stubEnv('CLAUDE_CONFIG_DIR', fixture.getPath('.claude'));
+
+			const session = await loadSessionUsageById('large-session', { mode: 'display' });
+
+			expect(session?.entries.map(entry => entry.message.id)).toEqual(['msg_large_first', 'msg_large_last']);
+		}, LARGE_FILE_TIMEOUT_MS);
 	});
 
 	describe('getClaudePaths', () => {
