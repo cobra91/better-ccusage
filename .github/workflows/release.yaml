@@ -5,6 +5,16 @@ on:
     tags:
       - "*"
 
+# Publishing uses npm trusted publishing (OIDC): no NPM_TOKEN. Each package
+# must have a trusted publisher configured on npmjs.com pointing at this
+# repository and this workflow filename (release.yaml), with the "npm publish"
+# action allowed. Authentication is automatic when the job has
+# `id-token: write` and no registry token in the environment.
+#
+# Packages are packed with pnpm (resolves workspace:/catalog: protocols into
+# real versions and runs prepack: build + clean-pkg-json) and the tarball is
+# uploaded with the npm CLI, which performs the OIDC exchange.
+#
 # Serialize ALL release runs globally. A static group name (rather than one
 # per tag via github.ref) ensures that two different tags pushed close
 # together queue instead of racing on npm publish / GitHub release creation.
@@ -56,9 +66,11 @@ jobs:
           fi
       - name: Publish better-ccusage (core)
         if: steps.check-core.outputs.exists != 'true'
-        run: pnpm --filter='better-ccusage' publish --provenance --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./apps/better-ccusage/package.json').version")
+          mkdir -p "$RUNNER_TEMP/publish"
+          pnpm --filter='better-ccusage' pack --pack-destination "$RUNNER_TEMP/publish"
+          npm publish "$RUNNER_TEMP/publish/better-ccusage-${VERSION}.tgz" --access public
 
   # Job 2: publish the dependent apps in a fresh checkout. The core package.json
   # here is the unmodified source, so clean-pkg-json hasn't stripped its dev
@@ -100,6 +112,7 @@ jobs:
         # failed publish aborts the whole step (fail-fast). The remaining apps
         # will be retried on the next run thanks to the per-app `npm view` skip.
         run: |
+          mkdir -p "$RUNNER_TEMP/publish"
           for app in codex mcp opencode; do
             pkg="@better-ccusage/${app}"
             dir="apps/${app}"
@@ -109,10 +122,9 @@ jobs:
               continue
             fi
             echo "Publishing ${pkg}@${version}..."
-            pnpm --filter="${pkg}" publish --provenance --no-git-checks --access public
+            pnpm --filter="${pkg}" pack --pack-destination "$RUNNER_TEMP/publish"
+            npm publish "$RUNNER_TEMP/publish/better-ccusage-${app}-${version}.tgz" --access public
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   release:
     needs:
