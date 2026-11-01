@@ -80,9 +80,24 @@ export async function detectMismatches(
 		claudeDir = claudePath;
 	}
 	else {
-		const paths = getClaudePaths();
-		if (paths.length === 0) {
-			throw new Error('No valid Claude data directory found');
+		// With no Claude data directories there is nothing to compare; skip
+		// mismatch detection instead of crashing --debug runs that are really
+		// about other sources.
+		let paths: string[];
+		try {
+			paths = getClaudePaths();
+		}
+		catch {
+			logger.debug('No Claude data directories found - skipping mismatch detection');
+			return {
+				totalEntries: 0,
+				entriesWithBoth: 0,
+				matches: 0,
+				mismatches: 0,
+				discrepancies: [],
+				modelStats: new Map(),
+				versionStats: new Map(),
+			};
 		}
 		claudeDir = path.join(paths[0]!, CLAUDE_PROJECTS_DIR_NAME);
 	}

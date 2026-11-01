@@ -149,6 +149,37 @@ ${envPaths.split(',').map(p => `- ${path.join(p.trim(), CLAUDE_PROJECTS_DIR_NAME
 }
 
 /**
+ * Resolve Claude data directories for the multi-source report loaders.
+ *
+ * `getClaudePaths()` throws when no Claude data directory exists. For the
+ * default multi-source reports that must not be fatal — the tool aggregates
+ * other sources (codex, opencode, droid, ...) too — so the error is downgraded
+ * to a warning and no Claude paths are returned. When the user explicitly
+ * filtered to Claude (`--source claude` / `better-ccusage claude <report>`),
+ * the original error is re-thrown so the setup guidance reaches someone who
+ * asked for Claude data specifically.
+ *
+ * @param claudePath - Explicit path from load options; bypasses discovery entirely
+ * @param strictClaude - True when the caller explicitly requested the Claude source
+ * @returns Claude data directory paths, or an empty array when none exist and the caller tolerates that
+ */
+function resolveClaudePaths(claudePath: string | undefined, strictClaude: boolean): string[] {
+	if (claudePath != null) {
+		return toArray(claudePath);
+	}
+	try {
+		return toArray(getClaudePaths());
+	}
+	catch (error) {
+		if (strictClaude) {
+			throw error;
+		}
+		logger.warn('No Claude data directories found - skipping Claude source (set CLAUDE_CONFIG_DIR to override)');
+		return [];
+	}
+}
+
+/**
  * Extract project name from Claude JSONL file path
  * @param jsonlPath - Absolute path to JSONL file
  * @returns Project name extracted from path, or "unknown" if malformed
@@ -845,12 +876,12 @@ export async function loadDailyUsageData(
 	const sourceFilter = options?.source;
 
 	// Get all Claude paths or use the specific one from options.
-	// Skip Claude entirely when filtering to a different source: getClaudePaths()
-	// throws when no Claude data dir exists, which would break
-	// `better-ccusage codex daily` on a machine with no Claude data.
+	// Skip Claude entirely when filtering to a different source (see below).
+	// With no source filter the tool is multi-provider: missing Claude data
+	// downgrades to a warning rather than an error.
 	const claudePaths = sourceFilter != null && sourceFilter !== 'claude'
 		? []
-		: toArray(options?.claudePath ?? getClaudePaths());
+		: resolveClaudePaths(options?.claudePath, sourceFilter === 'claude');
 
 	// Collect files from all paths in parallel
 	const allFiles = await globUsageFiles(claudePaths);
@@ -1271,10 +1302,10 @@ export async function loadSessionData(
 
 	// Get all Claude paths or use the specific one from options.
 	// Skip Claude entirely when filtering to a different source (see
-	// loadDailyUsageData for the getClaudePaths() throw rationale).
+	// loadDailyUsageData for the multi-provider rationale).
 	const claudePaths = sourceFilter != null && sourceFilter !== 'claude'
 		? []
-		: toArray(options?.claudePath ?? getClaudePaths());
+		: resolveClaudePaths(options?.claudePath, sourceFilter === 'claude');
 
 	// Collect files from all paths with their base directories in parallel
 	const filesWithBase = await globUsageFiles(claudePaths);
@@ -1720,7 +1751,9 @@ export async function loadSessionUsageById(
 	sessionId: string,
 	options?: { mode?: CostMode },
 ): Promise<{ totalCost: number; entries: UsageData[] } | null> {
-	const claudePaths = getClaudePaths();
+	// Sessions are Claude transcript files; with no Claude data directories
+	// there is nothing to find, so degrade to "not found" instead of throwing.
+	const claudePaths = resolveClaudePaths(undefined, false);
 
 	// Find the JSONL file for this session ID.
 	// Use cwd-based glob per path to avoid tinyglobby issues with Windows 8.3
@@ -1973,10 +2006,10 @@ export async function loadSessionBlockData(
 
 	// Get all Claude paths or use the specific one from options.
 	// Skip Claude entirely when filtering to a different source (see
-	// loadDailyUsageData for the getClaudePaths() throw rationale).
+	// loadDailyUsageData for the multi-provider rationale).
 	const claudePaths = sourceFilter != null && sourceFilter !== 'claude'
 		? []
-		: toArray(options?.claudePath ?? getClaudePaths());
+		: resolveClaudePaths(options?.claudePath, sourceFilter === 'claude');
 
 	// Collect files from all paths
 	const allFiles: string[] = [];
@@ -5642,6 +5675,96 @@ if (import.meta.vitest != null) {
 
 			expect(session?.entries.map(entry => entry.message.id)).toEqual(['msg_large_first', 'msg_large_last']);
 		}, LARGE_FILE_TIMEOUT_MS);
+	});
+
+	describe('machines without Claude data (multi-provider)', () => {
+		// Points CLAUDE_CONFIG_DIR at a directory that cannot exist, making
+		// getClaudePaths() throw deterministically regardless of the machine
+		// running the tests (default paths may exist on some runners).
+		const stubNoClaudeEnv = (): void => {
+			vi.stubEnv('CLAUDE_CONFIG_DIR', path.join('definitely', 'missing', 'better-ccusage-no-claude'));
+		};
+
+		afterEach(() => {
+			vi.unstubAllEnvs();
+		});
+
+		it('loadDailyUsageData returns [] instead of throwing', async () => {
+			stubNoClaudeEnv();
+
+			await expect(loadDailyUsageData()).resolves.toEqual([]);
+		});
+
+		it('loadSessionData returns [] instead of throwing', async () => {
+			stubNoClaudeEnv();
+
+			await expect(loadSessionData()).resolves.toEqual([]);
+		});
+
+		it('loadSessionBlockData returns [] instead of throwing', async () => {
+			stubNoClaudeEnv();
+
+			await expect(loadSessionBlockData()).resolves.toEqual([]);
+		});
+
+		it('loadSessionUsageById returns null instead of throwing', async () => {
+			stubNoClaudeEnv();
+
+			await expect(loadSessionUsageById('some-session')).resolves.toBeNull();
+		});
+
+		it('loadDailyUsageData still aggregates other sources', async () => {
+			await using fixture = await createFixture({
+				sessions: {
+					'codex-session.jsonl': [
+						JSON.stringify({
+							timestamp: '2025-09-11T18:25:30.000Z',
+							type: 'turn_context',
+							payload: { model: 'gpt-5' },
+						}),
+						JSON.stringify({
+							timestamp: '2025-09-11T18:25:40.670Z',
+							type: 'event_msg',
+							payload: {
+								type: 'token_count',
+								info: {
+									last_token_usage: {
+										input_tokens: 1_200,
+										cached_input_tokens: 200,
+										output_tokens: 500,
+										reasoning_output_tokens: 0,
+										total_tokens: 1_700,
+									},
+									model: 'gpt-5',
+								},
+							},
+						}),
+					].join('\n'),
+				},
+			});
+			stubNoClaudeEnv();
+			vi.stubEnv('CODEX_HOME', fixture.path);
+
+			const result = await loadDailyUsageData({ mode: 'display' });
+
+			// input = 1_200 raw - 200 cached (cache-read carries the rest)
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				date: '2025-09-11',
+				source: 'codex',
+				inputTokens: 1_000,
+				cacheReadTokens: 200,
+				outputTokens: 500,
+			});
+		});
+
+		it('loadDailyUsageData throws setup guidance when Claude is requested explicitly', async () => {
+			stubNoClaudeEnv();
+
+			await expect(loadDailyUsageData({ source: 'claude' }))
+				.rejects
+				.toThrow(/No valid Claude data directories found/);
+		});
 	});
 
 	describe('getClaudePaths', () => {

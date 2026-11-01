@@ -53,13 +53,20 @@ export type ConfigData = {
  * Get configuration file search paths in priority order (highest to lowest)
  * 1. Local .better-ccusage/better-ccusage.json
  * 2. User config directories from getClaudePaths() + better-ccusage.json
+ *
+ * Missing Claude data directories are skipped rather than fatal: the tool is
+ * multi-provider, and config discovery must not crash the CLI on machines
+ * that only use other sources (codex, opencode, ...).
  */
 function getConfigSearchPaths(): string[] {
-	const claudeConfigDirs = [
-		join(process.cwd(), '.better-ccusage'),
-		...toArray(getClaudePaths()),
-	];
-	return claudeConfigDirs.map(dir => join(dir, CONFIG_FILE_NAME));
+	const configDirs = [join(process.cwd(), '.better-ccusage')];
+	try {
+		configDirs.push(...toArray(getClaudePaths()));
+	}
+	catch {
+		logger.debug('No Claude data directories found - skipping them for config discovery');
+	}
+	return configDirs.map(dir => join(dir, CONFIG_FILE_NAME));
 }
 
 /**
@@ -389,6 +396,21 @@ if (import.meta.vitest != null) {
 
 		afterEach(() => {
 			vi.restoreAllMocks();
+			vi.unstubAllEnvs();
+		});
+
+		it('returns undefined without throwing when no Claude data directories exist', async () => {
+			// Multi-provider machines may have no Claude installation at all;
+			// config discovery must skip those paths instead of crashing the CLI
+			await using fixture = await createFixture({
+				'no-local-config': '',
+			});
+
+			vi.spyOn(process, 'cwd').mockReturnValue(fixture.getPath());
+			vi.stubEnv('CLAUDE_CONFIG_DIR', join('definitely', 'missing', 'no-claude'));
+
+			const config = loadConfig();
+			expect(config).toBeUndefined();
 		});
 
 		it('should load valid configuration from .better-ccusage/better-ccusage.json', async () => {

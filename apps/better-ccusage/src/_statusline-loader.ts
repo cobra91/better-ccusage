@@ -56,7 +56,16 @@ export async function loadStatuslineData(
 	options: StatuslineDataOptions,
 	fetcher: CcusagePricingFetcher,
 ): Promise<StatuslineDataResult> {
-	const claudePaths = getClaudePaths();
+	// The statusline runs under Claude Code, so Claude data normally exists;
+	// treat a missing installation like any other read failure and report
+	// zeroes instead of crashing the statusline process.
+	let claudePaths: string[];
+	try {
+		claudePaths = getClaudePaths();
+	}
+	catch {
+		return { sessionCost: 0, todayCost: 0, activeBlock: null };
+	}
 
 	// 1. Find the session file directly (targeted glob)
 	const sessionFilePatterns = claudePaths.map(
