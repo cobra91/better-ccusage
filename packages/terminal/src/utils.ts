@@ -322,19 +322,22 @@ export function drawEmoji(emoji: string): string {
 
 if (import.meta.vitest != null) {
 	describe('drawEmoji', () => {
-		it('should always return a string with width as same as original', () => {
+		it('should advance the cursor by exactly the emoji width', () => {
+			// drawEmoji wraps the emoji in DECSC/DECRC cursor controls, so the
+			// width of the raw escape sequence is not meaningful (string-width
+			// 7+ counts the literal digits of ESC 7/ESC 8). Assert the actual
+			// contract: the cursor-forward count equals the emoji's width.
 			// 2-width emojis
-			expect(stringWidth(drawEmoji('⏱️'))).toBe(2);
-			expect(stringWidth(drawEmoji('🔥'))).toBe(2);
-			expect(stringWidth(drawEmoji('📈'))).toBe(2);
-			expect(stringWidth(drawEmoji('⚙️'))).toBe(2);
-			expect(stringWidth(drawEmoji('❌'))).toBe(2);
-			expect(stringWidth(drawEmoji('⚠️'))).toBe(2);
-			expect(stringWidth(drawEmoji('⚡'))).toBe(2);
+			for (const emoji of ['⏱️', '🔥', '📈', '⚙️', '❌', '⚠️', '⚡']) {
+				expect(stringWidth(emoji)).toBe(2);
+				expect(drawEmoji(emoji).endsWith(ansiEscapes.cursorForward(2))).toBe(true);
+			}
 
 			// 1-width emojis
-			expect(stringWidth(drawEmoji('✓'))).toBe(1);
-			expect(stringWidth(drawEmoji('↻'))).toBe(1);
+			for (const emoji of ['✓', '↻']) {
+				expect(stringWidth(emoji)).toBe(1);
+				expect(drawEmoji(emoji).endsWith(ansiEscapes.cursorForward(1))).toBe(true);
+			}
 		});
 	});
 }

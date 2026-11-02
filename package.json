@@ -39,6 +39,20 @@
 		"sitemcp": "catalog:mcp",
 		"sort-package-json": "catalog:release"
 	},
+	"pnpm": {
+		"overrides": {
+			"@mizchi/lsmcp>glob": "^14.0.2",
+			"@mozilla/readability": "^0.6.0",
+			"esbuild": "^0.28.1",
+			"happy-dom": "^21.0.0",
+			"minimatch@^10": "^11.0.1",
+			"minimatch@^3.1.5": "^11.0.1",
+			"minimatch@^9": "^11.0.1",
+			"tinypool": "^2.1.2",
+			"vite@^5.0.0": "^6.4.5",
+			"zod@^3.25.76": "^4.6.6"
+		}
+	},
 	"lint-staged": {
 		"*.{ts,js,mjs,cjs,json,md}": [
 			"eslint --cache --fix --no-warn-ignored"

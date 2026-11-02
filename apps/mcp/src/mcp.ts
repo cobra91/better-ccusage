@@ -209,9 +209,10 @@ export async function startMcpServerStdio(
 export function createMcpHttpApp(options?: LoadOptions): Hono {
 	const app = new Hono();
 
-	const mcpServer = createMcpServer(options ?? defaultOptions());
-
 	app.all('/', async (c) => {
+		// @modelcontextprotocol/sdk >= 1.32 rejects connecting an McpServer
+		// that already has a transport, so each request gets its own instance.
+		const mcpServer = createMcpServer(options ?? defaultOptions());
 		const transport = new StreamableHTTPTransport();
 		await mcpServer.connect(transport);
 		return transport.handleRequest(c);
@@ -862,7 +863,8 @@ if (import.meta.vitest != null) {
 				});
 				expect(result.isError).toBe(true);
 				expect(result.content).toHaveLength(1);
-				expect((result.content as any)[0].text).toContain('Invalid enum value');
+				// zod 4 words enum failures as "Invalid option: expected one of ..."
+				expect((result.content as any)[0].text).toMatch(/Invalid (enum value|option)/);
 
 				await client.close();
 				await server.close();
