@@ -43,6 +43,7 @@
 		"overrides": {
 			"@mizchi/lsmcp>glob": "^14.0.2",
 			"@mozilla/readability": "^0.6.0",
+			"@types/markdown-it": "14.1.2",
 			"esbuild": "^0.28.1",
 			"happy-dom": "^21.0.0",
 			"minimatch@^10": "^11.0.1",
