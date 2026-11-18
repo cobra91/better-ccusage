@@ -40,7 +40,7 @@ catalogs:
   runtime:
     '@antfu/utils': ^9.2.1
     '@hono/mcp': ^0.1.5
-    '@hono/node-server': ^2.1.3
+    '@hono/node-server': ^2.1.6
     '@modelcontextprotocol/sdk': ^1.32.0
     '@praha/byethrow': ^0.6.3
     '@ryoppippi/limo': jsr:^0.2.2
