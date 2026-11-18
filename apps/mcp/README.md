@@ -7,8 +7,6 @@
     <a href="https://socket.dev/api/npm/package/@better-ccusage/mcp"><img src="https://socket.dev/api/badge/npm/package/@better-ccusage/mcp" alt="Socket Badge" /></a>
     <a href="https://npmjs.com/package/@better-ccusage/mcp"><img src="https://img.shields.io/npm/v/@better-ccusage/mcp?color=yellow" alt="npm version" /></a>
     <a href="https://tanstack.com/stats/npm?packageGroups=%5B%7B%22packages%22:%5B%7B%22name%22:%22@better-ccusage/mcp%22%7D%5D%7D%5D&range=30-days&transform=none&binType=daily&showDataMode=all&height=400"><img src="https://img.shields.io/npm/dy/@better-ccusage/mcp" alt="NPM Downloads" /></a>
-    <a href="https://packagephobia.com/result?p=@better-ccusage/mcp"><img src="https://packagephobia.com/badge?p=@better-ccusage/mcp" alt="install size" /></a>
-    <a href="https://deepwiki.com/cobra91/better-ccusage"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <div align="center">

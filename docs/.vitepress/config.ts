@@ -39,7 +39,6 @@ export default defineConfig({
 					{ text: 'GitHub', link: 'https://github.com/cobra91/better-ccusage' },
 					{ text: 'npm', link: 'https://www.npmjs.com/package/better-ccusage' },
 					{ text: 'Changelog', link: 'https://github.com/cobra91/better-ccusage/releases' },
-					{ text: 'DeepWiki', link: 'https://deepwiki.com/cobra91/better-ccusage' },
 					{ text: 'Package Stats', link: 'https://tanstack.com/better-ccusage?npmPackage=better-ccusage' },
 					{ text: 'Sponsor', link: 'https://github.com/sponsors/cobra91' },
 				],
@@ -161,7 +160,6 @@ export default defineConfig({
 				entries: [
 					{ from: '/gh', to: 'https://github.com/cobra91/better-ccusage', status: 302 },
 					{ from: '/npm', to: 'https://www.npmjs.com/package/better-ccusage', status: 302 },
-					{ from: '/deepwiki', to: 'https://deepwiki.com/cobra91/better-ccusage', status: 302 },
 					{ from: '/sponsor', to: 'https://github.com/sponsors/cobra91', status: 302 },
 				],
 			}) as any,
