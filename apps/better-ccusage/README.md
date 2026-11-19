@@ -19,7 +19,7 @@
 
 ## About better-ccusage
 
-**better-ccusage** is an enhanced fork of the [ccusage](https://github.com/ccusage/ccusage) project. It aggregates token usage and costs across **seven local AI coding tools** into a single report, with broad multi-provider pricing support.
+**better-ccusage** is an enhanced fork of the [ccusage](https://github.com/ccusage/ccusage) project. It aggregates token usage and costs across **nine local AI coding tools** into a single report, with broad multi-provider pricing support.
 
 ### Supported data sources
 
@@ -34,6 +34,8 @@ better-ccusage reads usage data directly from each tool's local files (JSONL or 
 | `opencode` | [OpenCode](https://github.com/sst/opencode)                                          | `~/.local/share/opencode/opencode.db`                                     |
 | `devin`    | [Devin](https://devin.ai) (Cognition)                                                | `~/.local/share/devin/cli/transcripts/` + `sessions.db`                   |
 | `pi`       | [pi](https://github.com/anthropics/pi) + [oh-my-pi](https://github.com/oh-my-pi/omp) | `~/.pi/agent/sessions/` + `~/.omp/agent/sessions/` (auto-detected, JSONL) |
+| `gemini`   | [Gemini CLI](https://github.com/google-gemini/gemini-cli)                            | `~/.gemini/tmp/` (JSON chat sessions + JSONL logs)                        |
+| `antigravity` | [Antigravity](https://antigravity.google)                                         | `~/.gemini/antigravity*/conversations/` (SQLite + protobuf)               |
 
 Filter to a single source with the positional syntax: `better-ccusage <source> <report>` (e.g. `better-ccusage devin daily`).
 
@@ -41,7 +43,7 @@ Filter to a single source with the positional syntax: `better-ccusage <source> <
 
 The original ccusage project focused exclusively on Claude Code usage with Anthropic models. better-ccusage extends this in two directions:
 
-- **Multi-source**: added ZCode (SQLite), Droid, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi on top of Claude Code — all aggregated in one report. (Devin and pi are ported from upstream ccusage's open PRs [#1398](https://github.com/ccusage/ccusage/pull/1398) and [#1338](https://github.com/ccusage/ccusage/pull/1338); better-ccusage ships them ahead of upstream.)
+- **Multi-source**: added ZCode (SQLite), Droid, OpenAI Codex, OpenCode, Devin, pi/oh-my-pi, Gemini CLI, and Antigravity on top of Claude Code — all aggregated in one report. (Devin and pi are ported from upstream ccusage's open PRs [#1398](https://github.com/ccusage/ccusage/pull/1398) and [#1338](https://github.com/ccusage/ccusage/pull/1338); better-ccusage ships them ahead of upstream.)
 - **Multi-provider pricing**: accurate cost calculation for external providers that run Claude Code with their own models — Anthropic, Zai (all GLM models including GLM-5-Turbo, GLM-5.2), Dashscope, Kwaipilot (kat-coder), Moonshot (kimi), Minimax, Qwen-Max, and more.
 
 > **Note:** better-ccusage and upstream ccusage have diverged significantly in architecture and scope. better-ccusage is a TypeScript monorepo; upstream ccusage is a Rust workspace. They are maintained independently — feature ports go in both directions but are not kept in lockstep.
@@ -50,7 +52,7 @@ The original ccusage project focused exclusively on Claude Code usage with Anthr
 
 ### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode/Devin/pi Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`), and pi/oh-my-pi usage from JSONL sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (auto-detected).
+The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, pi/oh-my-pi, Gemini CLI, and Antigravity usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`), and pi/oh-my-pi usage from JSONL sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (auto-detected), Gemini CLI usage from `~/.gemini/tmp` (JSON sessions + JSONL logs), and Antigravity usage from the `conversations/` SQLite databases under `~/.gemini/antigravity*`.
 
 > 💡 The standalone `@better-ccusage/codex` and `@better-ccusage/opencode` packages are now deprecated forwarders — Codex and OpenCode support is built directly into `better-ccusage`. Run `npx better-ccusage` to see all sources in one report.
 
@@ -231,10 +233,13 @@ better-ccusage extends the original ccusage functionality with automatic support
 | Original ccusage Features        | ✅      | ✅             |
 | Show prompt usage for Coding     | ❌      | ✅             |
 | Droid usage                      | ❌      | ✅             |
-| ZCode usage                      | ❌      | ✅             |
-| Codex usage                      | ❌      | ✅             |
+| ZCode usage                      | ✅      | ✅             |
+| Codex usage                      | ✅      | ✅             |
 | OpenCode usage                   | ❌      | ✅             |
 | Devin usage                      | ❌      | ✅             |
+| pi usage                         | ❌      | ✅             |
+| Gemini CLI usage                 | ✅      | ✅             |
+| Antigravity usage                | ✅      | ✅             |
 | Per-source filtering             | ❌      | ✅             |
 
 ## Star History

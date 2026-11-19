@@ -70,9 +70,11 @@ import {
 	weeklyDateSchema,
 } from './_types.ts';
 import { unreachable } from './_utils.ts';
+import { getAntigravityPaths, processAntigravitySessions } from './antigravity-adapter.ts';
 import { getCodexPath, processCodexSessions } from './codex-adapter.ts';
 import { getDevinPath, processDevinSessions } from './devin-adapter.ts';
 import { getDroidPath, processDroidSessions } from './droid-adapter.ts';
+import { getGeminiPaths, processGeminiSessions } from './gemini-adapter.ts';
 import { logger } from './logger.ts';
 import { getOpenCodeDbPath, processOpenCodeSessions } from './opencode-adapter.ts';
 import { getPiPaths, processPiSessions } from './pi-adapter.ts';
@@ -997,7 +999,43 @@ export async function loadDailyUsageData(
 		}
 	}
 
-	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0 && piEntries.length === 0) {
+	// Also load Gemini CLI usage from its log directory if available
+	let geminiEntries: UsageData[] = [];
+	if (sourceFilter == null || sourceFilter === 'gemini') {
+		const geminiPaths = getGeminiPaths();
+		logger.debug(`Gemini data paths: ${geminiPaths.join(', ')}`);
+		if (geminiPaths.length === 0 || (geminiPaths.length === 1 && geminiPaths[0] === '')) {
+			logger.debug('Gemini data paths are empty');
+		}
+		else {
+			try {
+				geminiEntries = await processGeminiSessions(geminiPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load Gemini sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	// Also load Antigravity usage from its conversation databases if available
+	let antigravityEntries: UsageData[] = [];
+	if (sourceFilter == null || sourceFilter === 'antigravity') {
+		const antigravityPaths = getAntigravityPaths();
+		logger.debug(`Antigravity data paths: ${antigravityPaths.join(', ')}`);
+		if (antigravityPaths.length === 0 || (antigravityPaths.length === 1 && antigravityPaths[0] === '')) {
+			logger.debug('Antigravity data paths are empty');
+		}
+		else {
+			try {
+				antigravityEntries = await processAntigravitySessions(antigravityPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load Antigravity sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	if (fileList.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0 && piEntries.length === 0 && geminiEntries.length === 0 && antigravityEntries.length === 0) {
 		return [];
 	}
 
@@ -1220,6 +1258,54 @@ export async function loadDailyUsageData(
 		});
 	}
 
+	// Add Gemini CLI entries to the collection
+	for (const geminiData of geminiEntries) {
+		geminiData.source ??= createSource('gemini');
+
+		const uniqueHash = createUniqueHash(geminiData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(geminiData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? geminiData.costUSD ?? 0
+			: await calculateCostForEntry(geminiData, mode, fetcher);
+
+		allEntries.push({
+			data: geminiData,
+			date,
+			cost,
+			model: geminiData.message.model,
+			project: geminiData.cwd ?? path.join('gemini', 'unknown'),
+		});
+	}
+
+	// Add Antigravity entries to the collection
+	for (const antigravityData of antigravityEntries) {
+		antigravityData.source ??= createSource('antigravity');
+
+		const uniqueHash = createUniqueHash(antigravityData);
+		if (isDuplicateEntry(uniqueHash, processedHashes)) {
+			continue;
+		}
+		markAsProcessed(uniqueHash, processedHashes);
+
+		const date = formatDate(antigravityData.timestamp, options?.timezone, DEFAULT_LOCALE);
+		const cost = fetcher == null
+			? antigravityData.costUSD ?? 0
+			: await calculateCostForEntry(antigravityData, mode, fetcher);
+
+		allEntries.push({
+			data: antigravityData,
+			date,
+			cost,
+			model: antigravityData.message.model,
+			project: antigravityData.cwd ?? path.join('antigravity', 'unknown'),
+		});
+	}
+
 	// Group by date, optionally including project
 	// This will combine Claude and droid entries from the same date
 	// Automatically enable project grouping when project filter is specified
@@ -1420,7 +1506,43 @@ export async function loadSessionData(
 		}
 	}
 
-	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0 && piEntries.length === 0) {
+	// Also load Gemini CLI usage from its log directory if available
+	let geminiEntries: UsageData[] = [];
+	if (sourceFilter == null || sourceFilter === 'gemini') {
+		const geminiPaths = getGeminiPaths();
+		logger.debug(`Gemini data paths: ${geminiPaths.join(', ')}`);
+		if (geminiPaths.length === 0 || (geminiPaths.length === 1 && geminiPaths[0] === '')) {
+			logger.debug('Gemini data paths are empty');
+		}
+		else {
+			try {
+				geminiEntries = await processGeminiSessions(geminiPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load Gemini sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	// Also load Antigravity usage from its conversation databases if available
+	let antigravityEntries: UsageData[] = [];
+	if (sourceFilter == null || sourceFilter === 'antigravity') {
+		const antigravityPaths = getAntigravityPaths();
+		logger.debug(`Antigravity data paths: ${antigravityPaths.join(', ')}`);
+		if (antigravityPaths.length === 0 || (antigravityPaths.length === 1 && antigravityPaths[0] === '')) {
+			logger.debug('Antigravity data paths are empty');
+		}
+		else {
+			try {
+				antigravityEntries = await processAntigravitySessions(antigravityPaths, options);
+			}
+			catch (error) {
+				logger.warn(`Failed to load Antigravity sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	if (filesWithBase.length === 0 && droidEntries.length === 0 && zcodeEntries.length === 0 && codexEntries.length === 0 && opencodeEntries.length === 0 && devinEntries.length === 0 && piEntries.length === 0 && geminiEntries.length === 0 && antigravityEntries.length === 0) {
 		return [];
 	}
 
@@ -1630,6 +1752,44 @@ export async function loadSessionData(
 			cost,
 			timestamp: piData.timestamp,
 			model: piData.message.model,
+		});
+	}
+
+	for (const geminiData of geminiEntries) {
+		geminiData.source ??= createSource('gemini');
+
+		const sessionKey = path.join('gemini', geminiData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? geminiData.costUSD ?? 0
+			: await calculateCostForEntry(geminiData, mode, fetcher);
+
+		allEntries.push({
+			data: geminiData,
+			sessionKey,
+			sessionId: geminiData.sessionId ?? 'unknown-session',
+			projectPath: geminiData.cwd ?? path.join('gemini', 'unknown'),
+			cost,
+			timestamp: geminiData.timestamp,
+			model: geminiData.message.model,
+		});
+	}
+
+	for (const antigravityData of antigravityEntries) {
+		antigravityData.source ??= createSource('antigravity');
+
+		const sessionKey = path.join('antigravity', antigravityData.sessionId ?? 'unknown-session');
+		const cost = fetcher == null
+			? antigravityData.costUSD ?? 0
+			: await calculateCostForEntry(antigravityData, mode, fetcher);
+
+		allEntries.push({
+			data: antigravityData,
+			sessionKey,
+			sessionId: antigravityData.sessionId ?? 'unknown-session',
+			projectPath: antigravityData.cwd ?? path.join('antigravity', 'unknown'),
+			cost,
+			timestamp: antigravityData.timestamp,
+			model: antigravityData.message.model,
 		});
 	}
 
@@ -2324,8 +2484,70 @@ export async function loadSessionBlockData(
 		}
 	}
 
-	// Combine Claude, droid, zcode, codex, and opencode entries
-	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries, ...devinEntries, ...piEntries];
+	// Also load Gemini CLI usage if available
+	let geminiEntries: LoadedUsageEntry[] = [];
+	if (sourceFilter == null || sourceFilter === 'gemini') {
+		const geminiPaths = getGeminiPaths();
+		logger.debug(`Gemini CLI data paths: ${geminiPaths.join(', ')}`);
+		if (geminiPaths.length > 0 && !(geminiPaths.length === 1 && geminiPaths[0] === '')) {
+			try {
+				const rawGeminiEntries = await processGeminiSessions(geminiPaths, options);
+				geminiEntries = await Promise.all(rawGeminiEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'gemini',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load Gemini CLI sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	// Also load Antigravity usage if available
+	let antigravityEntries: LoadedUsageEntry[] = [];
+	if (sourceFilter == null || sourceFilter === 'antigravity') {
+		const antigravityPaths = getAntigravityPaths();
+		logger.debug(`Antigravity data paths: ${antigravityPaths.join(', ')}`);
+		if (antigravityPaths.length > 0 && !(antigravityPaths.length === 1 && antigravityPaths[0] === '')) {
+			try {
+				const rawAntigravityEntries = await processAntigravitySessions(antigravityPaths, options);
+				antigravityEntries = await Promise.all(rawAntigravityEntries.map(async (entry): Promise<LoadedUsageEntry> => ({
+					timestamp: new Date(entry.timestamp),
+					usage: {
+						inputTokens: entry.message.usage.input_tokens,
+						outputTokens: entry.message.usage.output_tokens,
+						cacheCreationInputTokens: entry.message.usage.cache_creation_input_tokens ?? 0,
+						cacheReadInputTokens: entry.message.usage.cache_read_input_tokens ?? 0,
+					},
+					costUSD: fetcher == null
+						? entry.costUSD ?? 0
+						: await calculateCostForEntry(entry, mode, fetcher),
+					model: entry.message.model ?? 'unknown',
+					version: entry.version ?? undefined,
+					usageLimitResetTime: undefined,
+					source: entry.source ?? 'antigravity',
+				})));
+			}
+			catch (error) {
+				logger.warn(`Failed to load Antigravity sessions: ${String(error)}`);
+			}
+		}
+	}
+
+	// Combine Claude and every adapter's entries (droid, zcode, codex, opencode, devin, pi, gemini, antigravity)
+	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries, ...devinEntries, ...piEntries, ...geminiEntries, ...antigravityEntries];
 
 	// Identify session blocks
 	const blocks = identifySessionBlocks(combinedEntries, allUserMessages, options?.sessionDurationHours);

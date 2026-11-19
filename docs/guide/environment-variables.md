@@ -164,6 +164,22 @@ When `PI_AGENT_DIR` is not set, better-ccusage **auto-detects** both default dir
 
 Setting `PI_AGENT_DIR` overrides auto-detection and scans only the listed directories. Entries are deduplicated, so a session present in both directories is counted once. See the [pi usage guide](/guide/pi.md) for details on token semantics and the JSONL format.
 
+## GEMINI_DATA_DIR
+
+Overrides the Gemini CLI log directory (default: `~/.gemini/tmp`). Accepts a comma-separated list of directories; only the listed directories are scanned.
+
+```bash
+GEMINI_DATA_DIR=/path/to/gemini/tmp better-ccusage gemini daily
+```
+
+## ANTIGRAVITY_DATA_DIR
+
+Overrides the Antigravity data roots (default: `~/.gemini/antigravity`, `~/.gemini/antigravity-cli`, `~/.gemini/antigravity-ide`, `~/.gemini/antigravity-backup`, `~/.gemini/antigravity-acp`, and `~/.config/antigravity`). Accepts a comma-separated list; a root containing a `conversations/` subdirectory uses it, otherwise the root itself is scanned.
+
+```bash
+ANTIGRAVITY_DATA_DIR=/path/to/antigravity better-ccusage antigravity daily
+```
+
 ## LOG_LEVEL
 
 Controls the verbosity of log output. better-ccusage uses [consola](https://github.com/unjs/consola) for logging under the hood.

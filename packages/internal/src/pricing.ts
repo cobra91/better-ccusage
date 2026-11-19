@@ -226,6 +226,15 @@ export class PricingFetcher implements Disposable {
 		const candidates = new Set<string>();
 		candidates.add(modelName);
 
+		// Gemini effort variants (`-high`/`-medium`/`-low`/`-tiered`, emitted by
+		// Gemini CLI and Antigravity) share the base flash model's pricing, so
+		// try the base name as a fallback candidate (mirrors upstream ccusage's
+		// gemini_flash_pricing_alias).
+		const effortVariant = /^(gemini-[\d.]+-flash)-(?:extra-low|low|medium|high|tiered)$/.exec(modelName);
+		if (effortVariant != null) {
+			candidates.add(effortVariant[1]!);
+		}
+
 		for (const prefix of this.providerPrefixes) {
 			candidates.add(`${prefix}${modelName}`);
 		}

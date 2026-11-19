@@ -72,6 +72,8 @@ export default defineConfig({
 						{ text: 'Codex', link: '/guide/codex/' },
 						{ text: 'OpenCode', link: '/guide/opencode' },
 						{ text: 'Devin', link: '/guide/devin' },
+						{ text: 'Gemini CLI', link: '/guide/gemini' },
+						{ text: 'Antigravity', link: '/guide/antigravity' },
 					],
 				},
 				{

@@ -1,11 +1,11 @@
 # Getting Started
 
-Welcome to better-ccusage! This guide will help you get up and running with analyzing usage data from your local AI coding tools (Claude Code, Droid, ZCode, Codex, OpenCode, Devin, and pi/oh-my-pi).
+Welcome to better-ccusage! This guide will help you get up and running with analyzing usage data from your local AI coding tools (Claude Code, Droid, ZCode, Codex, OpenCode, Devin, pi/oh-my-pi, Gemini CLI, and Antigravity).
 
 ## Prerequisites
 
-- At least one supported tool installed and used (Claude Code, Droid, ZCode, Codex, OpenCode, Devin, or pi/oh-my-pi)
-- Node.js 22.13+ or Bun runtime (ZCode/OpenCode/Devin usage requires Node.js 22.13+ for the built-in SQLite reader; the JSONL-only sources work on Node.js 20+)
+- At least one supported tool installed and used (Claude Code, Droid, ZCode, Codex, OpenCode, Devin, pi/oh-my-pi, Gemini CLI, or Antigravity)
+- Node.js 22.13+ or Bun runtime (ZCode/OpenCode/Devin/Antigravity usage requires Node.js 22.13+ for the built-in SQLite reader; the JSONL-only sources work on Node.js 20+)
 
 ## Quick Start
 
