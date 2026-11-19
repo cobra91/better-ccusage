@@ -279,7 +279,7 @@ async function parseJsonDocFile(filePath: string): Promise<GeminiUsageEvent[]> {
 		return events;
 	}
 	if (record.type === 'gemini') {
-		const event = eventFromRecord(record, null, sessionId, fallbackTimestamp);
+		const event = eventFromRecord(record, null, sessionId, sessionTimestamp);
 		return event == null ? [] : [event];
 	}
 	return eventsFromStats(statsValueOf(record), modelOf(record), sessionId, parseTimestampValue(record.timestamp) ?? fallbackTimestamp);
@@ -337,12 +337,14 @@ async function parseJsonlFile(filePath: string): Promise<GeminiUsageEvent[]> {
 				continue;
 			}
 			if (event.messageId != null) {
-				const existing = directEventIndexes.get(event.messageId);
+				// Scope the key by session so the same raw id in two sessions
+				// never replaces an unrelated event.
+				const existing = directEventIndexes.get(`${sessionId}:${event.messageId}`);
 				if (existing !== undefined) {
 					events[existing] = event;
 				}
 				else {
-					directEventIndexes.set(event.messageId, events.length);
+					directEventIndexes.set(`${sessionId}:${event.messageId}`, events.length);
 					events.push(event);
 				}
 			}
@@ -401,10 +403,13 @@ export async function processGeminiSessions(dataDirs: string[], _options: LoadOp
 	for (const dir of dataDirs.slice(1)) {
 		files.push(...await glob([...GEMINI_LOG_GLOB], { cwd: dir, absolute: true, onlyFiles: true }));
 	}
-	files.sort();
+	// Overlapping GEMINI_DATA_DIR entries (or nested roots) can surface the
+	// same file twice — parse each file exactly once (same trap as pi).
+	const uniqueFiles = [...new Set(files)];
+	uniqueFiles.sort();
 
 	const events: GeminiUsageEvent[] = [];
-	for (const file of files) {
+	for (const file of uniqueFiles) {
 		try {
 			const parsed = file.endsWith('.jsonl')
 				? await parseJsonlFile(file)

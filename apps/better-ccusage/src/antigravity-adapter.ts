@@ -300,10 +300,14 @@ const MODEL_NAME_BY_ID = new Map<number, string>([
 ]);
 
 function modelNameFromId(modelId: number): string {
+	const mapped = MODEL_NAME_BY_ID.get(modelId);
+	if (mapped != null) {
+		return mapped;
+	}
 	if (modelId >= 1000) {
 		return `${UNRESOLVED_PLACEHOLDER_PREFIX}${modelId - 1000}`;
 	}
-	return MODEL_NAME_BY_ID.get(modelId) ?? `${UNRESOLVED_ID_PREFIX}${modelId}`;
+	return `${UNRESOLVED_ID_PREFIX}${modelId}`;
 }
 
 /** Placeholder names like `model_placeholder_m318` → canonical model. */
@@ -765,7 +769,7 @@ async function parseAntigravityDb(
 
 		let trajectoryTimestamp: number | null = null;
 		if (tableExists(db, 'trajectory_metadata_blob')) {
-			for (const row of db.prepare('SELECT data FROM trajectory_metadata_blob ORDER BY rowid ASC').all() as { data: Uint8Array }[]) {
+			for (const row of db.prepare('SELECT data FROM trajectory_metadata_blob WHERE data IS NOT NULL ORDER BY rowid ASC').all() as { data: Uint8Array }[]) {
 				const fields = decodeMessage(row.data);
 				if (fields == null) {
 					continue;
@@ -783,7 +787,7 @@ async function parseAntigravityDb(
 
 		const generationRows: Array<{ idx: number; metadata: GeneratorMetadata | null }> = [];
 		if (tableExists(db, 'gen_metadata')) {
-			for (const row of db.prepare('SELECT idx, data FROM gen_metadata ORDER BY idx ASC').all() as { idx: number; data: Uint8Array }[]) {
+			for (const row of db.prepare('SELECT idx, data FROM gen_metadata WHERE data IS NOT NULL ORDER BY idx ASC').all() as { idx: number; data: Uint8Array }[]) {
 				generationRows.push({ idx: row.idx, metadata: parseGeneratorMetadata(row.data) });
 			}
 		}

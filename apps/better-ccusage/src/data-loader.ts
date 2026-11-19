@@ -2546,7 +2546,7 @@ export async function loadSessionBlockData(
 		}
 	}
 
-	// Combine Claude, droid, zcode, codex, and opencode entries
+	// Combine Claude and every adapter's entries (droid, zcode, codex, opencode, devin, pi, gemini, antigravity)
 	const combinedEntries = [...allEntries, ...droidEntries, ...zcodeEntries, ...codexEntries, ...opencodeEntries, ...devinEntries, ...piEntries, ...geminiEntries, ...antigravityEntries];
 
 	// Identify session blocks
