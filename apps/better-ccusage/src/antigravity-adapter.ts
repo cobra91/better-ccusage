@@ -115,6 +115,14 @@ function decodeFields(blob: Uint8Array): ProtoField[] | null {
 	return fields;
 }
 
+/**
+ * Scalar accessors are deliberately asymmetric — varint reads the LAST
+ * occurrence, bytes the FIRST — mirroring upstream ccusage's Rust accessors
+ * (`field_varint` scans `.rev()`, `field_bytes` scans forward). The fields we
+ * read this way are singular in the real blobs (only retry_infos at 17/28 and
+ * step_indices are repeated, via `fieldBytesAll`/explicit loops), so the
+ * first-vs-last distinction only matters for malformed data.
+ */
 function fieldVarint(fields: ProtoField[], number: number): number | null {
 	for (let i = fields.length - 1; i >= 0; i--) {
 		const field = fields[i]!;
