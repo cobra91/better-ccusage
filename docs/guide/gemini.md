@@ -1,6 +1,6 @@
 # Gemini CLI Source
 
-better-ccusage reads [Gemini CLI](https://github.com/google-gemini/gemini-cli) usage directly from its local log directory — no API keys, no network calls.
+better-ccusage reads [Gemini CLI](https://github.com/google-gemini/gemini-cli) usage directly from its local log directory — no API keys required. (Model pricing may still be fetched from LiteLLM once per 24h unless a cached copy exists; see the environment variables guide to disable it.)
 
 ## Usage
 

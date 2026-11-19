@@ -173,7 +173,10 @@ function parseTimestampMessage(blob: Uint8Array): number | null {
 		return null;
 	}
 	const nanos = Math.min(fieldVarint(fields, 2) ?? 0, 999_999_999);
-	return seconds * 1000 + Math.floor(nanos / 1_000_000);
+	const milliseconds = seconds * 1000 + Math.floor(nanos / 1_000_000);
+	// Damaged rows can carry values outside JavaScript's date range; treat
+	// those as absent so the timestamp fallback chain still applies.
+	return Number.isSafeInteger(milliseconds) && Math.abs(milliseconds) <= 8.64e15 ? milliseconds : null;
 }
 
 type ModelUsage = {
@@ -628,8 +631,8 @@ function appendUsageEvent(
 	const resolvedIdModel = idModel != null && modelResolution(idModel) === 2 ? idModel : null;
 	const resolvedSameModelRow = sameModelRow != null && modelResolution(sameModelRow) === 2 ? sameModelRow : null;
 	const model = resolvedIdModel
-		?? idModel
 		?? resolvedSameModelRow
+		?? idModel
 		?? normalizeAntigravityModel(context.model)
 		?? DEFAULT_MODEL;
 	const { id: messageId, rank: messageIdRank } = preferredMessageId(usage);
@@ -851,7 +854,9 @@ async function parseAntigravityDb(
 		logger.warn(`Failed to parse Antigravity database ${dbPath}: ${String(error)}`);
 	}
 	finally {
-		db[Symbol.dispose]();
+		// db.close() is available on every node:sqlite release we support;
+		// Symbol.dispose only landed on DatabaseSync in Node 22.15.
+		db.close();
 	}
 	events = deduplicateEvents(events);
 	return events;
@@ -938,7 +943,9 @@ export async function processAntigravitySessions(dataDirs: string[], _options: L
 	deduplicated.sort((a, b) => a.timestamp - b.timestamp);
 
 	const results: UsageData[] = deduplicated.map((event, index) => {
-		const messageId = event.messageId ?? `${event.sessionId}:${event.identities[0] ?? index}:${event.timestamp}`;
+		// Prefix with the source so the shared loader-level dedup key can never
+		// collide with an identical raw id from another source.
+		const messageId = `antigravity:${event.messageId ?? `${event.sessionId}:${event.identities[0] ?? index}:${event.timestamp}`}`;
 		return {
 			timestamp: createISOTimestamp(new Date(event.timestamp).toISOString()),
 			sessionId: createSessionId(event.sessionId),
@@ -1065,7 +1072,7 @@ if (import.meta.vitest != null) {
 			CREATE TABLE trajectory_metadata_blob (id INTEGER PRIMARY KEY, data BLOB);
 		`);
 		insert(db);
-		db[Symbol.dispose]();
+		db.close();
 		return dbPath;
 	}
 
@@ -1094,7 +1101,7 @@ if (import.meta.vitest != null) {
 		// Billed output is total output (visible 400 + reasoning 100).
 		expect(entry.message.usage.output_tokens).toBe(500);
 		expect(entry.message.usage.cache_read_input_tokens).toBe(200);
-		expect(entry.message.id).toBe('resp-1');
+		expect(entry.message.id).toBe('antigravity:resp-1');
 	});
 
 	it('decodes gen_metadata usage and maps placeholder names', async () => {
@@ -1116,7 +1123,7 @@ if (import.meta.vitest != null) {
 		expect(results[0]!.message.model).toBe('gemini-3.8-flash-low');
 		expect(results[0]!.message.usage.input_tokens).toBe(50);
 		expect(results[0]!.message.usage.output_tokens).toBe(20);
-		expect(results[0]!.message.id).toBe('msg-9');
+		expect(results[0]!.message.id).toBe('antigravity:msg-9');
 	});
 
 	it('deduplicates events sharing an identity across databases', async () => {
@@ -1151,7 +1158,7 @@ if (import.meta.vitest != null) {
 		const dbPath = `${fixture.path}/fresh.db`;
 		const db = new DatabaseSync(dbPath);
 		db.exec('CREATE TABLE gen_metadata (idx INTEGER PRIMARY KEY, data BLOB);');
-		db[Symbol.dispose]();
+		db.close();
 
 		const results = await processAntigravitySessions([fixture.path]);
 

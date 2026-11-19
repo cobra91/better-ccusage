@@ -30,7 +30,7 @@ Each conversation is a SQLite database whose `gen_metadata` and `steps` rows emb
 - Antigravity's `input_tokens` counter is **fresh input**: the cached shares live in their own `cache_read` / `cache_creation` counters and are billed at their own rates.
 - The **total output** counter includes reasoning tokens; reasoning is billed at the output rate.
 - Duplicate reports (same message/response id across retries or databases) are merged into a single billable event — the max of every counter wins.
-- Numeric model ids map to canonical names (`gemini-3.8-flash-high`, `claude-opus-4-6`, …); unknown ids surface as `model_placeholder_m<N>`. Gemini effort variants (`-high`/`-medium`/`-low`/`-tiered`) share their base flash model's pricing.
+- Numeric model ids map to canonical names (`gemini-3.8-flash-high`, `claude-opus-4-6`, …); unknown ids surface as `model_placeholder_m<N>` (ids ≥ 1000) or `antigravity-model-<id>` (smaller unmapped ids). Gemini effort variants (`-high`/`-medium`/`-low`/`-tiered`) share their base flash model's pricing.
 
 ## Environment Variable
 

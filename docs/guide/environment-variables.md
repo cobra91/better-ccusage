@@ -174,7 +174,7 @@ GEMINI_DATA_DIR=/path/to/gemini/tmp better-ccusage gemini daily
 
 ## ANTIGRAVITY_DATA_DIR
 
-Overrides the Antigravity data roots (default: every `~/.gemini/antigravity*` installation plus `~/.config/antigravity`). Accepts a comma-separated list; a root containing a `conversations/` subdirectory uses it, otherwise the root itself is scanned.
+Overrides the Antigravity data roots (default: `~/.gemini/antigravity`, `~/.gemini/antigravity-cli`, `~/.gemini/antigravity-ide`, `~/.gemini/antigravity-backup`, `~/.gemini/antigravity-acp`, and `~/.config/antigravity`). Accepts a comma-separated list; a root containing a `conversations/` subdirectory uses it, otherwise the root itself is scanned.
 
 ```bash
 ANTIGRAVITY_DATA_DIR=/path/to/antigravity better-ccusage antigravity daily

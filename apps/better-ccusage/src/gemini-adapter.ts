@@ -97,7 +97,10 @@ function normalizeSessionInput(tokens: GeminiTokens): { freshInput: number; cach
 
 function parseTimestampValue(value: unknown): number | null {
 	if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-		return value < 1e12 ? value * 1000 : value;
+		const milliseconds = value < 1e12 ? value * 1000 : value;
+		// Values outside JavaScript's date range cannot be serialized later;
+		// treat them as absent so the fallback chain still applies.
+		return Math.abs(milliseconds) <= 8.64e15 ? milliseconds : null;
 	}
 	if (typeof value === 'string' && value.trim() !== '') {
 		const parsed = Date.parse(value);
@@ -415,7 +418,9 @@ export async function processGeminiSessions(dataDirs: string[], _options: LoadOp
 	events.sort((a, b) => a.timestamp - b.timestamp);
 
 	const results: UsageData[] = events.map((event, index) => {
-		const messageId = event.messageId ?? `${event.sessionId}:${event.timestamp}:${index}`;
+		// Prefix with the source so the shared loader-level dedup key can never
+		// collide with an identical raw id from another source.
+		const messageId = `gemini:${event.messageId ?? `${event.sessionId}:${event.timestamp}:${index}`}`;
 		return {
 			timestamp: createISOTimestamp(new Date(event.timestamp).toISOString()),
 			sessionId: createSessionId(event.sessionId),
@@ -499,7 +504,7 @@ if (import.meta.vitest != null) {
 			expect(usage.input_tokens).toBe(8608);
 			expect(usage.output_tokens).toBe(119);
 			expect(usage.cache_read_input_tokens).toBe(0);
-			expect(results[0]!.message.id).toBe('g1');
+			expect(results[0]!.message.id).toBe('gemini:g1');
 		});
 
 		it('parses stats blocks with per-model breakdown (overlapping input)', async () => {
