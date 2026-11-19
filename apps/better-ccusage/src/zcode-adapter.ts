@@ -19,6 +19,7 @@ import type { LoadOptions, UsageData } from './data-loader.ts';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { createFixture } from 'fs-fixture';
 import { DEFAULT_ZCODE_DB_SUBPATH, DEFAULT_ZCODE_HOME_PATH, USER_HOME_DIR, ZCODE_HOME_ENV } from './_consts.ts';
 import {
 	createISOTimestamp,
@@ -34,10 +35,13 @@ import { logger } from './logger.ts';
 /**
  * Raw shape of a `model_usage` row joined with its `session`.
  *
- * `input_tokens` is the **total** prompt tokens billed at the input rate; the
- * cached share (`cache_read_input_tokens`) is a subset of it and is priced
- * separately at the cached rate. `output_tokens` already includes any
- * reasoning charge. See the project CLAUDE.md for the full mapping table.
+ * `input_tokens` follows the OpenAI convention: it is the **total** prompt
+ * size, and the cached share (`cache_read_input_tokens`,
+ * `cache_creation_input_tokens`) is a subset of it. The Claude usage schema
+ * consumed downstream expects fresh (non-cached) input, so the adapter must
+ * subtract the cached buckets before emitting the entry — otherwise cached
+ * tokens are billed at the full input rate on top of their cache rate.
+ * `output_tokens` already includes any reasoning charge.
  */
 type ModelUsageRow = {
 	started_at: number | bigint;
@@ -168,10 +172,13 @@ export async function processZcodeSessions(dbPath: string, _options: LoadOptions
 			continue;
 		}
 
-		const inputTokens = toFiniteNumber(row.input_tokens);
+		const totalInputTokens = toFiniteNumber(row.input_tokens);
 		const cacheReadTokens = toFiniteNumber(row.cache_read_input_tokens);
 		const cacheCreationTokens = toFiniteNumber(row.cache_creation_input_tokens);
 		const outputTokens = toFiniteNumber(row.output_tokens);
+		// Total prompt minus the cached buckets = fresh input. Clamp at zero in
+		// case a provider ever reports inconsistent counters.
+		const inputTokens = Math.max(0, totalInputTokens - cacheReadTokens - cacheCreationTokens);
 		// ZCode tracks reasoning_tokens separately, but they are already included
 		// in output_tokens for billing, so we do not surface them in the usage
 		// object (the Claude schema has no field for it).
@@ -215,4 +222,100 @@ export async function processZcodeSessions(dbPath: string, _options: LoadOptions
 
 	logger.info(`Loaded ${results.length} ZCode usage entries from ${dbPath}`);
 	return results;
+}
+
+if (import.meta.vitest != null) {
+	// Hoist the sqlite import once for all tests (matches the OpenCode adapter
+	// test block; the runtime-detection justification above does not apply
+	// under vitest).
+	// eslint-disable-next-line antfu/no-top-level-await -- test-only hoisted import inside the vitest guard
+	const { DatabaseSync } = await import('node:sqlite');
+
+	describe('processZcodeSessions', () => {
+		async function buildZcodeDb(dir: string): Promise<string> {
+			const dbPath = `${dir}/zcode.db`;
+			const db = new DatabaseSync(dbPath);
+			db.exec(`
+				CREATE TABLE session (id TEXT PRIMARY KEY, directory TEXT);
+				CREATE TABLE model_usage (
+					id TEXT PRIMARY KEY,
+					logical_request_id TEXT,
+					attempt_index INTEGER NOT NULL DEFAULT 0,
+					session_id TEXT NOT NULL,
+					model_id TEXT NOT NULL,
+					started_at INTEGER NOT NULL,
+					input_tokens INTEGER NOT NULL DEFAULT 0,
+					output_tokens INTEGER NOT NULL DEFAULT 0,
+					cache_creation_input_tokens INTEGER NOT NULL DEFAULT 0,
+					cache_read_input_tokens INTEGER NOT NULL DEFAULT 0
+				);
+			`);
+			db.prepare('INSERT INTO session (id, directory) VALUES (?, ?)').run('ses_1', '/home/user/projects/app');
+			db[Symbol.dispose]();
+			return dbPath;
+		}
+
+		it('bills fresh input only: total prompt minus cached read', async () => {
+			await using fixture = await createFixture({});
+			const dbPath = await buildZcodeDb(fixture.path);
+			const db = new DatabaseSync(dbPath);
+			db.prepare(
+				`INSERT INTO model_usage
+					(id, logical_request_id, attempt_index, session_id, model_id, started_at, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			).run('mu_1', 'req_1', 0, 'ses_1', 'GLM-5.3', 1777388092686, 259329, 1257, 0, 258112);
+			db[Symbol.dispose]();
+
+			const results = await processZcodeSessions(dbPath);
+
+			expect(results).toHaveLength(1);
+			const usage = results[0]!.message.usage;
+			// input_tokens is the TOTAL prompt (259,329 incl. 258,112 cached);
+			// only the 1,217 fresh tokens may be billed at the input rate.
+			expect(usage.input_tokens).toBe(1217);
+			expect(usage.cache_read_input_tokens).toBe(258112);
+			expect(usage.cache_creation_input_tokens).toBe(0);
+			expect(usage.output_tokens).toBe(1257);
+			expect(results[0]!.source).toBe('zcode');
+		});
+
+		it('subtracts cache creation alongside cache read', async () => {
+			await using fixture = await createFixture({});
+			const dbPath = await buildZcodeDb(fixture.path);
+			const db = new DatabaseSync(dbPath);
+			db.prepare(
+				`INSERT INTO model_usage
+					(id, logical_request_id, attempt_index, session_id, model_id, started_at, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			).run('mu_2', 'req_2', 0, 'ses_1', 'GLM-5.3', 1777388092686, 1000, 500, 300, 200);
+			db[Symbol.dispose]();
+
+			const results = await processZcodeSessions(dbPath);
+
+			expect(results).toHaveLength(1);
+			const usage = results[0]!.message.usage;
+			expect(usage.input_tokens).toBe(500);
+			expect(usage.cache_read_input_tokens).toBe(200);
+			expect(usage.cache_creation_input_tokens).toBe(300);
+			expect(usage.output_tokens).toBe(500);
+		});
+
+		it('clamps fresh input at zero when counters are inconsistent', async () => {
+			await using fixture = await createFixture({});
+			const dbPath = await buildZcodeDb(fixture.path);
+			const db = new DatabaseSync(dbPath);
+			db.prepare(
+				`INSERT INTO model_usage
+					(id, logical_request_id, attempt_index, session_id, model_id, started_at, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			).run('mu_3', 'req_3', 0, 'ses_1', 'GLM-5.3', 1777388092686, 100, 10, 0, 250);
+			db[Symbol.dispose]();
+
+			const results = await processZcodeSessions(dbPath);
+
+			expect(results).toHaveLength(1);
+			expect(results[0]!.message.usage.input_tokens).toBe(0);
+			expect(results[0]!.message.usage.cache_read_input_tokens).toBe(250);
+		});
+	});
 }
