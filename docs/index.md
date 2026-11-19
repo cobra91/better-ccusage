@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: better-ccusage
-  text: Claude Code/Droid/ZCode Usage Analysis
-  tagline: A powerful CLI tool for analyzing Claude Code/Droid/ZCode Usage from local files
+  text: AI Coding CLI Usage Analysis
+  tagline: A powerful CLI tool for analyzing token usage and costs of Claude Code, Droid, ZCode, Codex, OpenCode, Devin, pi, Gemini CLI, and Antigravity from local files
   image:
     src: /logo.svg
     alt: better-ccusage logo

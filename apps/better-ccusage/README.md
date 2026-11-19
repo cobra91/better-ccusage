@@ -52,7 +52,7 @@ The original ccusage project focused exclusively on Claude Code usage with Anthr
 
 ### 📊 [better-ccusage](https://www.npmjs.com/package/better-ccusage) - Enhanced Claude Code/Droid/ZCode/Codex/OpenCode/Devin/pi Usage Analyzer with Multi-Provider Support
 
-The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, and pi/oh-my-pi usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`), and pi/oh-my-pi usage from JSONL sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (auto-detected).
+The main CLI tool for analyzing Claude Code, Droid, ZCode, OpenAI Codex, OpenCode, Devin, pi/oh-my-pi, Gemini CLI, and Antigravity usage from local JSONL/SQLite files with support for multiple AI providers including Anthropic, Zai, and all GLM models (including GLM-5-Turbo, GLM-5.2), kat-coder models. Track daily, weekly, monthly, and session-based usage with beautiful tables and live monitoring. ZCode usage is read directly from its SQLite database (`~/.zcode/cli/db/db.sqlite`), Codex usage from `~/.codex/sessions`, OpenCode usage from `~/.local/share/opencode/opencode.db`, Devin usage from ATIF transcripts under `~/.local/share/devin/cli/transcripts/` (enriched by `sessions.db`), and pi/oh-my-pi usage from JSONL sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (auto-detected), Gemini CLI usage from `~/.gemini/tmp` (JSON sessions + JSONL logs), and Antigravity usage from the `conversations/` SQLite databases under `~/.gemini/antigravity*`.
 
 > 💡 The standalone `@better-ccusage/codex` and `@better-ccusage/opencode` packages are now deprecated forwarders — Codex and OpenCode support is built directly into `better-ccusage`. Run `npx better-ccusage` to see all sources in one report.
 
@@ -233,10 +233,13 @@ better-ccusage extends the original ccusage functionality with automatic support
 | Original ccusage Features        | ✅      | ✅             |
 | Show prompt usage for Coding     | ❌      | ✅             |
 | Droid usage                      | ❌      | ✅             |
-| ZCode usage                      | ❌      | ✅             |
-| Codex usage                      | ❌      | ✅             |
+| ZCode usage                      | ✅      | ✅             |
+| Codex usage                      | ✅      | ✅             |
 | OpenCode usage                   | ❌      | ✅             |
 | Devin usage                      | ❌      | ✅             |
+| pi usage                         | ❌      | ✅             |
+| Gemini CLI usage                 | ✅      | ✅             |
+| Antigravity usage                | ✅      | ✅             |
 | Per-source filtering             | ❌      | ✅             |
 
 ## Star History
