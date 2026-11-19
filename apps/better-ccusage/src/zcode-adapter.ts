@@ -173,11 +173,12 @@ export async function processZcodeSessions(dbPath: string, _options: LoadOptions
 		}
 
 		const totalInputTokens = toFiniteNumber(row.input_tokens);
-		const cacheReadTokens = toFiniteNumber(row.cache_read_input_tokens);
-		const cacheCreationTokens = toFiniteNumber(row.cache_creation_input_tokens);
 		const outputTokens = toFiniteNumber(row.output_tokens);
-		// Total prompt minus the cached buckets = fresh input. Clamp at zero in
-		// case a provider ever reports inconsistent counters.
+		// Clamp each cached bucket to the total prompt so inconsistent provider
+		// counters can never bill phantom tokens (mirrors the Codex adapter).
+		const cacheReadTokens = Math.min(toFiniteNumber(row.cache_read_input_tokens), totalInputTokens);
+		const cacheCreationTokens = Math.min(toFiniteNumber(row.cache_creation_input_tokens), totalInputTokens - cacheReadTokens);
+		// Total prompt minus the cached buckets = fresh input.
 		const inputTokens = Math.max(0, totalInputTokens - cacheReadTokens - cacheCreationTokens);
 		// ZCode tracks reasoning_tokens separately, but they are already included
 		// in output_tokens for billing, so we do not surface them in the usage
@@ -315,7 +316,8 @@ if (import.meta.vitest != null) {
 
 			expect(results).toHaveLength(1);
 			expect(results[0]!.message.usage.input_tokens).toBe(0);
-			expect(results[0]!.message.usage.cache_read_input_tokens).toBe(250);
+			// The oversized cache bucket is clamped to the total prompt.
+			expect(results[0]!.message.usage.cache_read_input_tokens).toBe(100);
 		});
 	});
 }
