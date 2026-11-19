@@ -425,7 +425,7 @@ export async function processGeminiSessions(dataDirs: string[], _options: LoadOp
 	const results: UsageData[] = events.map((event, index) => {
 		// Prefix with the source so the shared loader-level dedup key can never
 		// collide with an identical raw id from another source.
-		const messageId = `gemini:${event.messageId ?? `${event.sessionId}:${event.timestamp}:${index}`}`;
+		const messageId = `gemini:${event.sessionId}:${event.messageId ?? `${event.timestamp}:${index}`}`;
 		return {
 			timestamp: createISOTimestamp(new Date(event.timestamp).toISOString()),
 			sessionId: createSessionId(event.sessionId),
@@ -509,7 +509,7 @@ if (import.meta.vitest != null) {
 			expect(usage.input_tokens).toBe(8608);
 			expect(usage.output_tokens).toBe(119);
 			expect(usage.cache_read_input_tokens).toBe(0);
-			expect(results[0]!.message.id).toBe('gemini:g1');
+			expect(results[0]!.message.id).toBe('gemini:session-b:g1');
 		});
 
 		it('parses stats blocks with per-model breakdown (overlapping input)', async () => {
