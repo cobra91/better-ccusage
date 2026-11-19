@@ -52,7 +52,7 @@ const XDG_CONFIG_DIR = xdgConfig ?? path.join(USER_HOME_DIR, '.config');
  * `sourceSchema` picklist (via `SOURCE_SUBSETS`). Add a new source here and
  * both the combiner and the schema pick up the extra atom automatically.
  */
-export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode', 'devin', 'pi'] as const;
+export const SOURCE_ORDER = ['claude', 'droid', 'zcode', 'codex', 'opencode', 'devin', 'pi', 'gemini', 'antigravity'] as const;
 
 /**
  * Display labels for each source atom, matching the canonical capitalization
@@ -67,6 +67,9 @@ const SOURCE_LABELS: Record<string, string> = {
 	codex: 'Codex',
 	opencode: 'OpenCode',
 	devin: 'Devin',
+	pi: 'Pi',
+	gemini: 'Gemini',
+	antigravity: 'Antigravity',
 };
 
 /**
@@ -262,6 +265,53 @@ export const DEFAULT_OMP_SESSIONS_PATH = path.join('.omp', 'agent', 'sessions');
  * JSONL file glob pattern for finding pi/omp session files (recursive).
  */
 export const PI_SESSION_GLOB = '**/*.jsonl';
+
+/**
+ * Environment variable for overriding the Gemini CLI data directory.
+ *
+ * Supports a comma-separated list of directories. When set, only the listed
+ * directories are scanned (the default `~/.gemini/tmp` is skipped).
+ */
+export const GEMINI_DATA_DIR_ENV = 'GEMINI_DATA_DIR';
+
+/**
+ * Default Gemini CLI log root: `~/.gemini/tmp`. Both whole-file chat session
+ * documents (`chats/session-*.json`) and JSONL logs are discovered under it.
+ */
+export const DEFAULT_GEMINI_TMP_PATH = path.join('.gemini', 'tmp');
+
+/**
+ * Glob patterns for Gemini CLI log files: every JSON/JSONL document under the
+ * root (envelopes without usage are skipped at parse time).
+ */
+export const GEMINI_LOG_GLOB = ['**/*.json', '**/*.jsonl'] as const;
+
+/**
+ * Environment variable for overriding the Antigravity data roots.
+ *
+ * Supports a comma-separated list of directories. When set, only the listed
+ * roots are scanned (the default home roots are skipped).
+ */
+export const ANTIGRAVITY_DATA_DIR_ENV = 'ANTIGRAVITY_DATA_DIR';
+
+/**
+ * Default Antigravity data roots, relative to the home directory. The IDE
+ * variants install side by side (`~/.gemini/antigravity*`).
+ */
+export const DEFAULT_ANTIGRAVITY_ROOT_PATHS = [
+	'.gemini/antigravity',
+	'.gemini/antigravity-cli',
+	'.gemini/antigravity-ide',
+	'.gemini/antigravity-backup',
+	'.gemini/antigravity-acp',
+	'.config/antigravity',
+] as const;
+
+/**
+ * Per-conversation SQLite databases live in this subdirectory; a root without
+ * it is scanned directly (custom `ANTIGRAVITY_DATA_DIR` layouts).
+ */
+export const ANTIGRAVITY_CONVERSATIONS_DIR = 'conversations';
 
 /**
  * Claude projects directory name within the data directory
