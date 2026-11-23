@@ -53,6 +53,10 @@ const RELEVANT_PROVIDER_PATTERNS = [
 	'qwen-',
 	'google/',
 	'gemini-',
+	// LiteLLM lists first-party Google models under `gemini/` (e.g.
+	// `gemini/gemini-4-hydrogen`) with no bare entry — keep those keys so the
+	// suffix-matching lookup can price new Gemini releases on day one.
+	'gemini/',
 ];
 
 /**
@@ -334,6 +338,8 @@ if (import.meta.vitest != null) {
 		it('keeps Gemini models', () => {
 			expect(isRelevantProvider('gemini-2.5-pro', { provider: 'google' })).toBe(true);
 			expect(isRelevantProvider('google/gemini-2.5-pro', { provider: undefined })).toBe(true);
+			// LiteLLM lists newer Gemini releases only under the `gemini/` prefix.
+			expect(isRelevantProvider('gemini/gemini-4-hydrogen', { provider: undefined })).toBe(true);
 		});
 
 		it('strips Bedrock variants', () => {

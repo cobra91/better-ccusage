@@ -611,6 +611,48 @@ export class PricingFetcher implements Disposable {
 }
 
 if (import.meta.vitest != null) {
+	// Imported here rather than at the top: pricing-fetch-utils imports its
+	// schemas from this module.
+	// eslint-disable-next-line antfu/no-top-level-await -- test-only import inside the vitest guard
+	const { loadLocalPricingDataset } = await import('./pricing-fetch-utils.ts');
+
+	describe('bundled pricing dataset', () => {
+		// Resolution against the bundled file only, i.e. what an offline run
+		// sees. Guards the loader path: a stale copy shadowing the canonical
+		// bundle, or a sync that drops a shipped model, fails here.
+		function bundledFetcher(): PricingFetcher {
+			return new PricingFetcher({ offlineLoader: async () => loadLocalPricingDataset() });
+		}
+
+		it('loads the canonical bundle, not a stale copy', () => {
+			expect(Object.keys(loadLocalPricingDataset()).length).toBeGreaterThan(600);
+		});
+
+		it('resolves the models emitted by the ZCode and Antigravity sources', async () => {
+			using fetcher = bundledFetcher();
+
+			// Only the bundle carries GLM-5.4: LiteLLM has no entry for it.
+			expect((await Result.unwrap(fetcher.getModelPricing('GLM-5.4')))?.input_cost_per_token).toBe(6e-08);
+			// The gemini-4 models resolve through the bundled `gemini/` keys.
+			expect((await Result.unwrap(fetcher.getModelPricing('gemini-4-hydrogen')))?.input_cost_per_token).toBe(1.5e-06);
+			expect((await Result.unwrap(fetcher.getModelPricing('gemini-4-argon')))?.input_cost_per_token).toBe(2e-06);
+		});
+
+		it('carries the LiteLLM prices of the 2026-11-23 sync', async () => {
+			using fetcher = bundledFetcher();
+
+			expect((await Result.unwrap(fetcher.getModelPricing('gpt-5.6-sol')))?.input_cost_per_token).toBe(4e-06);
+			expect((await Result.unwrap(fetcher.getModelPricing('gpt-5.6-luna')))?.input_cost_per_token).toBe(2e-07);
+		});
+
+		it('keeps a synced model whose only price is tiered', async () => {
+			using fetcher = bundledFetcher();
+
+			const pricing = await Result.unwrap(fetcher.getModelPricing('dashscope/qwen3.7-plus'));
+			expect(pricing?.tiered_pricing).toHaveLength(2);
+		});
+	});
+
 	describe('PricingFetcher', () => {
 		it('returns pricing data from model pricing dataset', async () => {
 			using fetcher = new PricingFetcher({
