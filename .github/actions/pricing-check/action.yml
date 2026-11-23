@@ -1,0 +1,39 @@
+name: Pricing freshness check
+description: >-
+  Fails when a price bundled in model_prices_and_context_window.json is behind
+  LiteLLM, or when a bundle copy differs from the canonical file. Requires pnpm
+  dependencies to be installed and Bun to be available. Missing LiteLLM data
+  only warns, so an unreachable host cannot block a release by itself.
+runs:
+  using: composite
+  steps:
+    - name: Check bundled prices against LiteLLM
+      shell: bash
+      run: |
+        log="$RUNNER_TEMP/pricing-check.log"
+        code=0
+        pnpm sync-pricing --check > "$log" 2>&1 || code=$?
+        cat "$log"
+        case "$code" in
+          0) verdict="Bundled prices are up to date with LiteLLM." ;;
+          1) verdict="Pricing check failed: bundled prices are behind LiteLLM, or a bundle copy differs from the canonical file. Details below." ;;
+          2) verdict="LiteLLM data was not usable, bundled prices were not verified." ;;
+          *) verdict="The pricing check did not run (exit code $code). This is a tooling failure, not a pricing result." ;;
+        esac
+        {
+          echo "### Pricing freshness"
+          echo
+          echo "$verdict"
+          echo
+          echo '```'
+          grep '^\[sync-pricing\]' "$log" || true
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        if [ "$code" -eq 2 ]; then
+          echo "::warning::$verdict"
+          exit 0
+        fi
+        if [ "$code" -ne 0 ]; then
+          echo "::error::$verdict"
+          exit 1
+        fi

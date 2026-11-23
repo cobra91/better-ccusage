@@ -1,0 +1,30 @@
+name: pricing-check
+
+# Runs the same check the release workflow applies before publishing, so it
+# can be exercised on pull requests and on demand instead of first at release
+# time. A pull request that syncs the bundle should show this check green.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/actions/pricing-check/**"
+      - ".github/workflows/pricing-check.yaml"
+      - ".github/workflows/release.yaml"
+      - "packages/internal/model_prices_and_context_window.json"
+      - "packages/internal/src/pricing.ts"
+      - "packages/internal/src/pricing-fetch-utils.ts"
+      - "packages/internal/src/remote-pricing.ts"
+      - "scripts/sync-pricing.ts"
+
+jobs:
+  pricing-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+      - uses: oven-sh/setup-bun@v2
+      - run: pnpm install --no-frozen-lockfile
+      - uses: ./.github/actions/pricing-check

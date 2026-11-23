@@ -64,6 +64,12 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+      # Bundled prices override LiteLLM at runtime, so a bundle that is behind
+      # LiteLLM would publish wrong costs. Same check as pricing-check.yaml;
+      # skipped when the version is already on npm (nothing left to publish).
+      - name: Refuse to publish stale bundled prices
+        if: steps.check-core.outputs.exists != 'true'
+        uses: ./.github/actions/pricing-check
       - name: Publish better-ccusage (core)
         if: steps.check-core.outputs.exists != 'true'
         run: |
