@@ -644,6 +644,13 @@ if (import.meta.vitest != null) {
 			expect((await Result.unwrap(fetcher.getModelPricing('gpt-5.6-sol')))?.input_cost_per_token).toBe(4e-06);
 			expect((await Result.unwrap(fetcher.getModelPricing('gpt-5.6-luna')))?.input_cost_per_token).toBe(2e-07);
 		});
+
+		it('keeps a synced model whose only price is tiered', async () => {
+			using fetcher = bundledFetcher();
+
+			const pricing = await Result.unwrap(fetcher.getModelPricing('dashscope/qwen3.7-plus'));
+			expect(pricing?.tiered_pricing).toHaveLength(2);
+		});
 	});
 
 	describe('PricingFetcher', () => {

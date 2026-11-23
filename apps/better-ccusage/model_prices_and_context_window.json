@@ -9890,5 +9890,30 @@
 		"max_input_tokens": 1048576,
 		"max_output_tokens": 65536,
 		"mode": "chat"
+	},
+	"dashscope/qwen3.7-plus": {
+		"max_input_tokens": 991808,
+		"max_output_tokens": 65536,
+		"tiered_pricing": [
+			{
+				"input_cost_per_token": 4e-7,
+				"output_cost_per_token": 0.0000016,
+				"range": [
+					0,
+					256000
+				],
+				"cache_read_input_token_cost": 8e-8
+			},
+			{
+				"input_cost_per_token": 0.0000012,
+				"output_cost_per_token": 0.0000048,
+				"range": [
+					256000,
+					1000000
+				],
+				"cache_read_input_token_cost": 2.4e-7
+			}
+		],
+		"mode": "chat"
 	}
 }
