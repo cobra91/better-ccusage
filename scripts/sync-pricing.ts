@@ -45,19 +45,27 @@ const staticJsonPath = resolve(monorepoRoot, 'packages', 'internal', 'model_pric
 /**
  * Tracked copies kept identical to the canonical file. They are only read as
  * fallbacks, so a copy left behind by a sync would shadow the canonical file.
+ * All of them must exist: a missing copy fails the check, which would
+ * otherwise skip it silently.
  */
 const siblingJsonPaths = [
 	resolve(monorepoRoot, 'model_prices_and_context_window.json'),
 	resolve(monorepoRoot, 'apps', 'better-ccusage', 'model_prices_and_context_window.json'),
-].filter(path => existsSync(path));
+];
 
 /**
- * LiteLLM serves about 7000 models, of which about 450 pass the provider
- * filter. Below these floors the dataset is empty or its schema has drifted,
- * and comparing against it would approve anything.
+ * Floors below which the comparison proves nothing. LiteLLM serves about 7000
+ * models, about 450 pass the provider filter, and about 400 of those share a
+ * price with the bundle. An empty or truncated dataset fails the first two. A
+ * renamed price field leaves those counts intact but compares no price, which
+ * is what the third floor catches.
  */
 const MIN_FETCHED_MODELS = 1000;
 const MIN_RELEVANT_MODELS = 100;
+const MIN_COMPARED_PRICES = 100;
+
+/** Price fields of one pricing tier, as the bundled pricing schema defines them. */
+const TIER_PRICE_FIELDS = ['input_cost_per_token', 'output_cost_per_token', 'range', 'cache_read_input_token_cost'];
 
 type StaticBundle = Record<string, Record<string, unknown>>;
 
@@ -74,7 +82,23 @@ type SyncChanges = {
 	metadataOnly: string[];
 	/** LiteLLM models left out because the cost engine cannot price them. */
 	skippedUnpriceable: number;
+	/** Bundled entries whose price was actually compared with LiteLLM. */
+	comparedPrices: number;
+	/** Models priced by tiers in the bundle that LiteLLM carries no tiers for. */
+	tiersOnlyInBundle: string[];
 };
+
+function isTierList(value: unknown): value is Record<string, unknown>[] {
+	return Array.isArray(value);
+}
+
+/**
+ * The prices inside a tier list, ignoring field order and fields the engine
+ * does not read, so that a mere difference of shape is not a price change.
+ */
+function tierPrices(tiers: Record<string, unknown>[]): string {
+	return JSON.stringify(tiers.map(tier => TIER_PRICE_FIELDS.map(field => tier[field] ?? null)));
+}
 
 function isPriceField(key: string): boolean {
 	return key.toLowerCase().includes('cost');
@@ -93,7 +117,10 @@ function isPriceable(entry: Record<string, unknown>): boolean {
 }
 
 function formatValue(value: unknown): string {
-	return typeof value === 'number' ? String(value) : 'none';
+	if (typeof value === 'number') {
+		return String(value);
+	}
+	return isTierList(value) ? JSON.stringify(value) : 'none';
 }
 
 /**
@@ -101,7 +128,7 @@ function formatValue(value: unknown): string {
  * changed. The bundle is modified in place.
  */
 function mergeInto(staticData: StaticBundle, relevant: Record<string, LiteLLMModelPricing>): SyncChanges {
-	const changes: SyncChanges = { added: [], priceChanges: [], metadataOnly: [], skippedUnpriceable: 0 };
+	const changes: SyncChanges = { added: [], priceChanges: [], metadataOnly: [], skippedUnpriceable: 0, comparedPrices: 0, tiersOnlyInBundle: [] };
 
 	for (const [name, pricing] of Object.entries(relevant)) {
 		const incoming = pricing as unknown as Record<string, unknown>;
@@ -143,6 +170,23 @@ function mergeInto(staticData: StaticBundle, relevant: Record<string, LiteLLMMod
 			}
 		}
 
+		// Tiers are a list, so the scalar copy above never reaches them. LiteLLM
+		// is followed only where it carries tiers for the model; tiers that exist
+		// only in the bundle are neither updated nor verified.
+		if (isTierList(incoming['tiered_pricing'])) {
+			const incomingTiers = tierPrices(incoming['tiered_pricing']);
+			if (!isTierList(existing['tiered_pricing']) || incomingTiers !== tierPrices(existing['tiered_pricing'])) {
+				merged['tiered_pricing'] = incoming['tiered_pricing'];
+				modelPriceChanges.push({ name, field: 'tiered_pricing', before: existing['tiered_pricing'], after: incoming['tiered_pricing'] });
+			}
+		}
+		else if (isTierList(existing['tiered_pricing'])) {
+			changes.tiersOnlyInBundle.push(name);
+		}
+		if (isPriceable(incoming)) {
+			changes.comparedPrices += 1;
+		}
+
 		staticData[name] = merged;
 		if (modelPriceChanges.length > 0) {
 			changes.priceChanges.push(...modelPriceChanges);
@@ -158,6 +202,10 @@ function mergeInto(staticData: StaticBundle, relevant: Record<string, LiteLLMMod
 function printReport(changes: SyncChanges): void {
 	console.log(`[sync-pricing] ${changes.added.length} new models added, ${changes.skippedUnpriceable} left out (no usable price).`);
 	console.log(`[sync-pricing] ${changes.priceChanges.length} bundled prices out of date, ${changes.metadataOnly.length} models with metadata-only differences.`);
+	console.log(`[sync-pricing] Compared ${changes.comparedPrices} bundled prices with LiteLLM.`);
+	if (changes.tiersOnlyInBundle.length > 0) {
+		console.log(`[sync-pricing] ${changes.tiersOnlyInBundle.length} bundled tiered prices exist only in the bundle and were not checked: ${changes.tiersOnlyInBundle.join(', ')}`);
+	}
 
 	const byModel = new Map<string, PriceChange[]>();
 	for (const change of changes.priceChanges) {
@@ -201,6 +249,15 @@ async function main(): Promise<void> {
 	// Load existing static JSON
 	const staticRaw = readFileSync(staticJsonPath, 'utf8');
 	const staticData = JSON.parse(staticRaw) as StaticBundle;
+	const missingCopies = [staticJsonPath, ...siblingJsonPaths].filter(path => !existsSync(path));
+	if (missingCopies.length > 0) {
+		const detail = `Bundle ${missingCopies.length === 1 ? 'copy is' : 'copies are'} missing: ${missingCopies.join(', ')}`;
+		if (!isCheck) {
+			throw new Error(detail);
+		}
+		console.error(`[sync-pricing] ${detail}. Restore ${missingCopies.length === 1 ? 'it' : 'them'} from the canonical file and commit.`);
+		exit(1);
+	}
 
 	// Filter LiteLLM to relevant providers
 	const relevantModels: Record<string, LiteLLMModelPricing> = {};
@@ -212,8 +269,11 @@ async function main(): Promise<void> {
 	const relevantCount = Object.keys(relevantModels).length;
 	console.log(`[sync-pricing] ${relevantCount} models after provider filter.`);
 
-	if (fetchedCount < MIN_FETCHED_MODELS || relevantCount < MIN_RELEVANT_MODELS) {
-		const detail = `LiteLLM returned ${fetchedCount} models, ${relevantCount} after the provider filter (expected at least ${MIN_FETCHED_MODELS} and ${MIN_RELEVANT_MODELS})`;
+	const changes = mergeInto(staticData, relevantModels);
+
+	const tooSmall = fetchedCount < MIN_FETCHED_MODELS || relevantCount < MIN_RELEVANT_MODELS;
+	if (tooSmall || changes.comparedPrices < MIN_COMPARED_PRICES) {
+		const detail = `LiteLLM returned ${fetchedCount} models, ${relevantCount} after the provider filter and ${changes.comparedPrices} prices comparable with the bundle (expected at least ${MIN_FETCHED_MODELS}, ${MIN_RELEVANT_MODELS} and ${MIN_COMPARED_PRICES})`;
 		if (isCheck) {
 			console.error(`[sync-pricing] ${detail}: the dataset looks empty or its schema changed, bundled prices were not verified.`);
 			exit(2);
@@ -221,7 +281,6 @@ async function main(): Promise<void> {
 		throw new Error(detail);
 	}
 
-	const changes = mergeInto(staticData, relevantModels);
 	printReport(changes);
 	console.log(`[sync-pricing] Total models in static JSON: ${Object.keys(staticData).length}.`);
 
