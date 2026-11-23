@@ -53,6 +53,10 @@ const RELEVANT_PROVIDER_PATTERNS = [
 	'qwen-',
 	'google/',
 	'gemini-',
+	// LiteLLM lists first-party Google models under `gemini/` (e.g.
+	// `gemini/gemini-4-hydrogen`) with no bare entry — keep those keys so the
+	// suffix-matching lookup can price new Gemini releases on day one.
+	'gemini/',
 ];
 
 /**
