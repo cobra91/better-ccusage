@@ -170,15 +170,23 @@ function mergeInto(staticData: StaticBundle, relevant: Record<string, LiteLLMMod
 			}
 		}
 
-		// Tiers are a list, so the scalar copy above never reaches them. LiteLLM
-		// is followed only where it carries tiers for the model; tiers that exist
-		// only in the bundle are neither updated nor verified.
+		// Tiers are a list, so the scalar copy above never reaches them. Follow
+		// LiteLLM where it carries tiers for the model, and drop the tiers when it
+		// moves the model to flat rates. Tiers that exist only in the bundle,
+		// LiteLLM having no price for the model, are neither updated nor verified.
 		if (isTierList(incoming['tiered_pricing'])) {
 			const incomingTiers = tierPrices(incoming['tiered_pricing']);
 			if (!isTierList(existing['tiered_pricing']) || incomingTiers !== tierPrices(existing['tiered_pricing'])) {
 				merged['tiered_pricing'] = incoming['tiered_pricing'];
 				modelPriceChanges.push({ name, field: 'tiered_pricing', before: existing['tiered_pricing'], after: incoming['tiered_pricing'] });
 			}
+		}
+		else if (isTierList(existing['tiered_pricing']) && isPriceable(incoming)) {
+			// LiteLLM now prices the model with flat rates. The engine prices from
+			// the tiers whenever they are present, so keeping them would shadow the
+			// rates synced just above.
+			delete merged['tiered_pricing'];
+			modelPriceChanges.push({ name, field: 'tiered_pricing', before: existing['tiered_pricing'], after: undefined });
 		}
 		else if (isTierList(existing['tiered_pricing'])) {
 			changes.tiersOnlyInBundle.push(name);
